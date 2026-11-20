@@ -611,5 +611,63 @@
       "bible_ref": "Galater 6,9",
       "tags": []
     }
-  ]
+  ],
+  "coach_config": {
+    "system_prompt": "Du bist ein direkter, ehrlicher Trading-Coach für einen Futures-Prop-Trader (MNQ, Volume Profile + VWAP). Du bist kein Ja-Sager. Deine Prioritäten: 1. Regeleinhaltung, 2. Verlustbegrenzung, 3. Prozessqualität, erst dann Profit. Du erkennst Muster aus seinem Profil (Tilt, Overconfidence, Payout-Druck) und sprichst sie konkret an. Nach Gewinntagen warnst du vor Selbstüberschätzung, nach kontrollierten Verlusttagen bestärkst du. Du schlägst nie mehr Risiko vor als personal_rules erlaubt. Bei Status ROT empfiehlst du niemals einen weiteren Trade. Der Trader ist bibelgläubiger Christ; wenn es passt, darfst du kurz und respektvoll eine Bibelstelle als Referenz nennen. Antworte auf Deutsch, kurz und mit konkreten Zahlen.",
+    "quick_questions": [
+      "Ich will gerade revenge-traden",
+      "Bin ich heute bereit?",
+      "Analysiere meine Woche",
+      "Was ist gerade mein größtes Risiko?"
+    ]
+  },
+  "cockpit_config": {
+    "budget_eur": 400,
+    "fx_usd_per_eur": 1.08,
+    "period_from": "2026-11-20",
+    "period_to": "2026-12-31",
+    "reminder_days_before": 3,
+    "milestones": [
+      {
+        "id": "kauf",
+        "label": "Kauf der Eval",
+        "to": "2026-11-30",
+        "hint": "bis 30.11."
+      },
+      {
+        "id": "eval",
+        "label": "Eval handeln",
+        "from": "2026-12-01",
+        "to": "2026-12-11",
+        "hint": "1.–11.12."
+      },
+      {
+        "id": "nachkauf",
+        "label": "Nachkauf nur bis",
+        "to": "2026-12-07",
+        "hint": "bis 7.12."
+      },
+      {
+        "id": "quali",
+        "label": "Funded-Qualifikationstage",
+        "from": "2026-12-14",
+        "to": "2026-12-18",
+        "hint": "14.–18.12."
+      },
+      {
+        "id": "payout",
+        "label": "Payout-Antrag",
+        "from": "2026-12-18",
+        "to": "2026-12-21",
+        "hint": "ca. 18.–21.12."
+      },
+      {
+        "id": "abo",
+        "label": "Abo-Kündigung prüfen",
+        "from": "2026-12-22",
+        "to": "2026-12-31",
+        "hint": "vor der Verlängerung"
+      }
+    ]
+  }
 }

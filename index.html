@@ -242,6 +242,12 @@ details.more>summary::-webkit-details-marker{display:none}
 .pt-scale button{border:0;border-radius:12px;background:var(--elev);font-weight:700;font-size:16px;padding:11px 0;cursor:pointer;color:var(--fg)}
 .pt-scale button.on{background:var(--brand);color:#fff}
 .hide-pnl .kpi .v,.hide-pnl .cal .p,.hide-pnl .pnlv,.hide-pnl #main svg[aria-label="Equity-Kurve"]{filter:blur(9px);user-select:none}
+/* cockpit timeline */
+.tl{position:relative;display:flex;flex-direction:column;gap:14px;padding-left:4px}
+.tl::before{content:"";position:absolute;left:10px;top:6px;bottom:6px;width:2px;background:var(--line)}
+.tl-i{display:flex;gap:12px;align-items:flex-start;position:relative}
+.tl-d{width:14px;height:14px;border-radius:50%;flex:none;margin-top:3px;box-shadow:0 0 0 3px var(--surface)}
+.tl-i.done{opacity:.6}
 /* daily check-in */
 .ci-card{max-width:640px}
 .ci-dot{flex:1;aspect-ratio:1;max-width:72px;border-radius:50%;border:0;background:var(--elev);font-size:20px;font-weight:700;color:var(--fg);cursor:pointer;transition:transform .12s}
@@ -345,6 +351,7 @@ const ICON={
  journal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 2.5h10v15H5z"/><path d="M8 6h4M8 9h4M8 12h2"/></svg>',
  rules:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M4 10h12M4 15h12"/><circle cx="7" cy="5" r="1.6" fill="currentColor"/><circle cx="13" cy="10" r="1.6" fill="currentColor"/><circle cx="9" cy="15" r="1.6" fill="currentColor"/></svg>',
  market:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15"/><path d="M3.5 13l4-4.5 3 2.5 5.5-6.5"/><path d="M13 4.5h3v3"/></svg>',
+ flag:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 17.5V3"/><path d="M4.5 3.5h10l-2 3.5 2 3.5h-10"/></svg>',
  person:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="6.5" r="3.2"/><path d="M3.5 17c.8-3.3 3.4-5 6.5-5s5.7 1.7 6.5 5"/></svg>',
  chart:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h14"/><rect x="4.5" y="10" width="2.6" height="5" rx=".8"/><rect x="8.7" y="6" width="2.6" height="9" rx=".8"/><rect x="12.9" y="3" width="2.6" height="12" rx=".8"/></svg>',
  gauge:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14a7 7 0 1 1 14 0"/><path d="M10 14l3.5-4.5"/><circle cx="10" cy="14" r="1.3" fill="currentColor"/></svg>',
@@ -355,7 +362,7 @@ const ICON={
  shield:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2.5l6 2.5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/></svg>',
  smile:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7.5"/><path d="M7 12c1.6 1.6 4.4 1.6 6 0"/><circle cx="7.5" cy="8" r=".6" fill="currentColor"/><circle cx="12.5" cy="8" r=".6" fill="currentColor"/></svg>'
 };
-const VIEWS=[['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
+const VIEWS=[['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['cockpit','Dezember-Cockpit','flag'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
 
 const TABS=[['markt','Markt','market'],['checkin','Check-in','heart'],['risiko','Risiko','gauge'],['prop','Prop','prop']];
 const VERSES=[
@@ -380,8 +387,8 @@ const DEF_SET={maxDailyLoss:500,maxTrades:4,maxConsec:2,revengeMin:10,cooldownMi
  rules:'Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet'};
 
 /* ============ store ============ */
-const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log'];
-const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[]};
+const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log','cost_history'];
+const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[],cost_history:[]};
 /* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
 let SEED={account_rules:[],personal_rules:null};
 fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
@@ -592,7 +599,7 @@ function render(){
   $('#tabbar').innerHTML=TABS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('')+`<a role="button" tabindex="0" data-act="more" class="${TABS.some(t=>t[0]===UI.view)?'':'on'}">${ICON.more}<span>Mehr</span></a>`;
   $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('');
   document.body.classList.toggle('hide-pnl',hidePnlNow());
-  const f={profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
+  const f={cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
   $('#main').innerHTML=f();setSync();
   if(UI.view==='coach'){const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}
   if(UI.view==='agents')tickCooldown();
@@ -643,7 +650,7 @@ const INS_KEY={dax:'DAX',nasdaq:'Nasdaq',gold:'Gold'};
 function vMarket(){
   const bs=[...S.briefings].sort((a,b)=>b.id.localeCompare(a.id)),b=bs[0],today=TODAY();
   const head=`<div class="head"><div><h1>Markt-Lage</h1><div class="sub">${b?(b.id<today?'Briefing vom '+dLabel(b.id):'Heute')+' · Stand '+esc((b.asOf||'').split(', ')[1]||b.asOf||''):'DAX · Nasdaq · Gold'}</div></div></div>`;
-  if(!b)return head+riskBar()+ciBanner()+mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})+`<div class="card">${emptyBox(MODE==='loading'?'Briefing wird geladen…':'Noch kein Briefing','Jeden Handelstag um 07:16 Uhr kommt hier die Lage zu DAX, Nasdaq und Gold.')}</div>`;
+  if(!b)return head+reminderHTML()+riskBar()+ciBanner()+mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})+`<div class="card">${emptyBox(MODE==='loading'?'Briefing wird geladen…':'Noch kein Briefing','Jeden Handelstag um 07:16 Uhr kommt hier die Lage zu DAX, Nasdaq und Gold.')}</div>`;
   const sent=b.sentiment||{},sc=clamp(num(sent.score),-100,100),fc=sc<=-20?'var(--loss)':sc>=20?'var(--win)':'var(--faint)';
   const sents=(b.summary||'').split(/(?<=[.!?])\s+/),first=sents[0]||'',rest=sents.slice(1).join(' ');
   const card=x=>{const ch=num(x.change),c=cls(ch),u=(x.unit||'Punkte')==='Punkte'?'Pkt.':esc(x.unit);
@@ -653,7 +660,7 @@ function vMarket(){
     <div class="small muted" style="margin-top:8px">Vortag ${fmtN(x.prev)}</div>
     ${x.note||x.pre?`<details class="more"><summary>Warum?</summary><p class="small" style="margin:6px 0 0">${x.pre?'<b>Vorbörslich:</b> '+esc(x.pre)+'<br>':''}${esc(x.note||'')}</p></details>`:''}</div>`};
   const dir={up:['▲','win'],down:['▼','loss'],flat:['–','']},impC={hoch:'var(--loss)',mittel:'var(--warn)',niedrig:'var(--faint)'};
-  return head+riskBar()+ciBanner()+mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})+`
+  return head+reminderHTML()+riskBar()+ciBanner()+mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})+`
   <div class="mkt-hero">
    <div class="mood"><div class="face" style="background:${fc}">${sc>0?'+':''}${sc}</div><div style="flex:1;min-width:0"><div class="row" style="justify-content:space-between"><b style="font-size:17px">${esc(sent.label||'')}</b><span class="small muted">Marktstimmung</span></div><div class="gauge" role="img" aria-label="Stimmung ${sc} von -100 bis 100"><i style="left:${(sc+100)/2}%"></i></div><div class="gauge-l"><span>Angst</span><span>Neutral</span><span>Gier</span></div></div></div>
   </div>
@@ -975,8 +982,9 @@ function acctCard(a,m){a=EA(a);
 /* ============ VIEW: coach ============ */
 function vCoach(){
   const from=addDays(TODAY(),-90),trs=S.trades.filter(t=>t.date>=from),pats=patterns(trs);
-  const Q=['Warum habe ich letzte Woche Geld verloren?','Was wäre, wenn ich nur meine Top-2-Setups handle?','Bin ich auf Kurs für einen profitablen Dezember?','Prüfe meine Challenge-Regeln: wo bin ich gefährdet?','Was soll ich morgen anders machen?'];
-  return `<div class="head"><div><h1>Strategix Coach</h1><div class="sub">Fragen an deine eigenen Daten, nicht an generische Ratschläge.</div></div></div>
+  const Q=CC().quick_questions||[];const red=ENGINE().status==='RED';
+  return `<div class="head"><div><h1>Strategix Coach</h1><div class="sub">Direkt, ehrlich, mit deinen Zahlen. Kennt dein Profil, deine Regeln und deinen Status heute.</div></div></div>
+  ${red?'<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>Status ROT.</b> Der Coach empfiehlt heute keinen weiteren Trade.</div></div>':''}
   <div class="grid g-side">
    <div class="card"><div class="lbl" style="margin-bottom:8px">Gespräch</div>
     <div class="chat" id="chatBox">${UI.chat.length?UI.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'a'}">${esc(m.content)}</div>`).join(''):`<div class="muted small">Der Coach liest deine Trades, Setups, Prop-Regeln und Journal-Einträge und antwortet konkret mit Zahlen. Wähle eine Frage oder schreib eine eigene.</div>`}
@@ -991,29 +999,19 @@ function vCoach(){
   </div>`;
 }
 function coachContext(){
-  const st=SET(),from=addDays(TODAY(),-90),trs=S.trades.filter(t=>t.date>=from).sort(byDT);
-  const s=stats(trs),bs={};trs.forEach(t=>{const k=t.setupId||'_';(bs[k]=bs[k]||[]).push(t)});
-  return JSON.stringify({heute:TODAY(),persoenlicheRegeln:{...st,rules:st.rules.split('\n')},
-   statistik90Tage:{trades:s.n,net:+s.net.toFixed(2),winRate:+s.wr.toFixed(3),profitFactor:isFinite(s.pf)?+s.pf.toFixed(2):'inf',avgWin:+s.avgW.toFixed(2),avgLoss:+s.avgL.toFixed(2),gruen:s.green,rot:s.red,maxDD:+s.maxDD.toFixed(2),regeltreue:+s.rulesOk.toFixed(2)},
-   setups:S.playbooks.map(p=>({id:p.id,name:p.name,markt:p.market,session:p.session,entry:p.entry,exit:p.exit,ungueltig:p.invalidation,risiko:p.riskPerTrade,net:+sum(bs[p.id]||[]).toFixed(2),trades:(bs[p.id]||[]).length})),
-   ohneSetup:{net:+sum(bs._||[]).toFixed(2),trades:(bs._||[]).length},
-   checkins14Tage:S.checkins.filter(x=>x.id>=addDays(TODAY(),-14)).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({datum:x.id,score:x.score,ampel:x.level,schlaf:x.sleep,stimmung:x.mood,stress:x.stress,fokus:x.focus,gefuehle:x.emotions,gestern:x.yesterday,gelddruck:x.pressure,privat:x.life,absicht:x.intention,pnlTag:+sum(S.trades.filter(t=>t.date===x.id)).toFixed(2)})),
-   tagesplaene:S.dayplans.filter(x=>x.id>=addDays(TODAY(),-7)).sort((a,b)=>a.id.localeCompare(b.id)).slice(0,20).map(x=>({datum:x.id,pause:!!x.off,notiz:x.note||'',konten:Object.entries(x.items||{}).map(([id,it])=>({konto:AC(id)?.name||id,risiko:it.risk,ziel:it.target}))})),
-   persoenlicheRegeln:PR(),
-   riskEngineHeute:ENGINE().units.map(u=>({einheit:u.name,status:u.r.status,gruende:u.r.reasons,hinweise:u.r.notices.map(x=>x.text),risikoProTrade:u.r.riskPerTrade,phase:u.r.riskPhase,bisTagesStop:u.r.remainingToStop,bisFtmoLimit:u.r.firmRemaining,tradesUebrig:u.r.tradesLeft,pnlHeute:u.r.dayPnl})),
-   propKonten:S.accounts.map(EA).map(a=>{const m=acctM(a);return {name:a.name,regelsatz:a.ruleName||null,stufe:a.stage||null,copyGruppe:a.copy_group||null,firma:a.firm,phase:a.phase,status:a.status,groesse:a.size,profitziel:a.profitTarget,maxTagesverlust:a.maxDailyLoss,maxDrawdown:a.maxDrawdown,ddArt:a.ddType,minTage:a.minDays,konsistenzMaxProzent:a.consistencyPct,frist:a.endDate,gewinn:+m.profit.toFixed(2),ddFrei:m.ddLeft,tageHandel:m.tradingDays,konsistenz:m.cons,zielErwartet:m.passDate,payoutErwartet:m.payoutDate,payoutBetrag:m.payoutAmt,regelnText:a.notes}}),
+  const from=addDays(TODAY(),-90),trs=S.trades.filter(t=>t.date>=from).sort(byDT),s=stats(trs);
+  const accs=S.accounts.map(EA).filter(RS.isActive).map(a=>{const m=acctM(a);return {name:a.name,stage:a.stage||a.phase,ddLeft:m.ddLeft,profit:+m.profit.toFixed(2),profitTarget:a.profitTarget,qualDays:m.qualDays,qualNeeded:a.payoutMinDays,payoutDate:m.payoutDate}});
+  const core=RS.buildCoachContext({today:TODAY(),profile:PROFILE(),psychCfg:PSYC(),pr:PR(),engine:ENGINE().units,tradingDays:S.trading_days.map(d=>({...d,date:d.id})),trades:S.trades,accounts:accs});
+  return JSON.stringify({...core,
+   statistik90Tage:{trades:s.n,net:+s.net.toFixed(2),winRate:+s.wr.toFixed(3),profitFactor:isFinite(s.pf)?+s.pf.toFixed(2):'inf',avgWin:+s.avgW.toFixed(2),avgLoss:+s.avgL.toFixed(2),maxDD:+s.maxDD.toFixed(2)},
+   checkinHeute:(()=>{const c=CI(TODAY());return c?{score:c.score,ampel:c.level,gefuehle:c.emotions,absicht:c.intention}:'noch kein Check-in'})(),
+   tagesplanHeute:(()=>{const dp=DP(TODAY());return dp?{pause:!!dp.off,notiz:dp.note||'',konten:Object.entries(dp.items||{}).map(([id,it])=>({konto:AC(id)?.name||id,risiko:it.risk,ziel:it.target}))}:null})(),
+   tiltChecksHeute:S.tilt_checks.filter(c=>c.date===TODAY()).map(c=>({drang:c.urge,aSetup:c.a_setup,ampel:c.level})),
    erkannteMuster:patterns(trs).map(p=>p.k+': '+p.tx.replace(/<[^>]+>/g,'')),
-   agentenHinweiseHeute:alerts().map(x=>x.tx),
-   journalLetzte10:S.journal.filter(j=>j.id>=addDays(TODAY(),-21)).sort((a,b)=>a.id.localeCompare(b.id)).slice(-10).map(j=>({datum:j.id,stimmung:j.mood,planBefolgt:j.followedPlan,plan:(j.premarket||'').slice(0,300),review:(j.review||'').slice(0,300),lektion:(j.lessons||'').slice(0,200)})),
-   trades:trs.slice(-150).map(t=>[t.date,t.time||'',t.symbol||'',t.side||'',t.contracts||'',+num(t.pnl).toFixed(2),t.setup||PB(t.setupId)?.name||'-',(t.account_ids&&t.account_ids.length?t.account_ids:[t.accountId]).map(i=>AC(i)?.name).filter(Boolean).join('+')||'-',t.emotion_before?t.emotion_before.emotion+' '+t.emotion_before.intensity:(t.emotion||''),(t.ruleBreaks||[]).join('|'),t.r??'']),
-   tradeSpalten:['datum','zeit','symbol','seite','kontrakte','netPnl','setup','konto','emotion','regelbrueche','R']});
+   trades:trs.slice(-60).map(t=>[t.date,t.time||'',t.instrument||t.symbol||'',t.direction||t.side||'',t.contracts??'',+num(t.pnl).toFixed(2),t.setup||PB(t.setupId)?.name||'-',RS.emotionBefore(t)||'',t.followed_plan===false?'nein':'ja',RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2)]),
+   tradeSpalten:['datum','zeit','instrument','richtung','kontrakte','pnl','setup','gefuehlVorher','planBefolgt','R']});
 }
-const COACH_RULES=`Du bist der "Strategix Coach", der interne Trading-Coach der Firma Ranca Strategix (Futures-Daytrading, Prop-Firm-Challenges). Antworte auf Deutsch, direkt, konkret, mit Zahlen aus den Daten unten. Keine generischen Lehrbuch-Ratschläge. Maximal ca. 180 Wörter, kurze Absätze oder knappe Aufzählungen, kein Markdown-Fettdruck.
-Ziel des Traders: ein profitabler Dezember ohne emotionale Ausbrüche und ohne große Drawdowns, und bestandene Challenges / sichere Payouts.
-Wenn Daten fehlen, sag genau, welche Felder er erfassen soll. Erfinde keine Zahlen.
-Der Trader ist Christ, und Jesus ähnlicher zu werden ist seine höchste Priorität. Wenn du Gier, Zorn/Revenge, Ungeduld, Übermut oder Angst in seinen Daten siehst, weise ihn wie ein Bruder im Glauben kurz und liebevoll darauf hin, mit einem passenden Bibelvers (z. B. Spr 16,32; Jak 1,19-20; Spr 21,5; Spr 13,11; Phil 4,6-7; Gal 5,22-23). Nicht predigen, ein Satz reicht.
-DATEN (JSON):
-`;
+const coachPrompt=()=>(CC().system_prompt||'')+`\n\nNutze nur die Daten unten und erfinde keine Zahlen. Wenn Daten fehlen, sag genau, welche er erfassen soll. Maximal etwa 180 Wörter, kein Markdown-Fettdruck.\nDATEN (JSON):\n`;
 
 /* ============ VIEW: agents ============ */
 function vAgents(){
@@ -1496,6 +1494,66 @@ async function ptNext(){const C=PSYC(),pt=UI.pt,n=C.dimensions.length;
   const doc={created_at:new Date().toISOString(),created_date:TODAY(),answers:{...pt.a},scores:r.scores,levels:r.levels,top_risks:RS.topRisks(r.scores,r.levels,3),triggers:{...pt.trig},tilt_map:{...pt.tm}};
   UI.pt=null;await put('psych_profile',doc);toast('Profil gespeichert');render();window.scrollTo(0,0)}
 
+/* ============ Phase 5: Coach-Konfiguration ============ */
+const CC=()=>({...(SEED.coach_config||{}),...(S.app_config.find(x=>x.id==='coach')||{})});
+
+/* ============ Phase 5: Dezember-Cockpit ============ */
+const CP=()=>({...(SEED.cockpit_config||{}),...(S.app_config.find(x=>x.id==='cockpit')||{})});
+const eur=(n,d=2)=>{n=num(n);return (n<0?'-':'')+Math.abs(n).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d})+' €'};
+function reminders(){return RS.renewalReminders(S.accounts.map(EA),TODAY(),CP().reminder_days_before??3)}
+function reminderHTML(){return reminders().map(r=>`<a href="#cockpit" class="alert stop" style="text-decoration:none;color:inherit;margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>FTMO-Abo kündigen, falls die Eval nicht bestanden ist.</b><div class="small">${esc(r.name)}: Verlängerung am ${dLabel(r.renewal_date)} (${r.daysLeft===0?'heute':'in '+r.daysLeft+' Tag'+(r.daysLeft===1?'':'en')}).</div></div></a>`).join('')}
+function cockpitData(){const c=CP();const payouts=S.accounts.flatMap(a=>(a.payouts||[]).map(p=>({date:p.date,amount:p.amount,account:a.name})));
+  const sum=RS.cockpitSummary({costs:S.cost_history,payoutsUsd:payouts,budgetEur:c.budget_eur,fxUsdPerEur:c.fx_usd_per_eur,split:(RULES()[0]?.profit_split)??0.9,from:c.period_from,to:c.period_to});
+  return {c,payouts,sum}}
+function vCockpit(){const {c,payouts,sum}=cockpitData(),today=TODAY();
+  if(!c.period_from||!c.period_to)return `<div class="head"><div><h1>Dezember-Cockpit</h1><div class="sub">Konfiguration wird geladen…</div></div></div>`;
+  const inP=d=>(!c.period_from||d>=c.period_from)&&(!c.period_to||d<=c.period_to);
+  const costs=S.cost_history.filter(x=>inP(x.date)).sort((a,b)=>a.date.localeCompare(b.date)),pIn=payouts.filter(p=>inP(p.date));
+  const used=c.budget_eur?clamp(sum.feesEur/c.budget_eur*100):0;
+  const year=String(today).slice(0,4),hist=S.cost_history.filter(x=>x.date.startsWith(year)).sort((a,b)=>a.date.localeCompare(b.date));
+  const byFirm={};hist.forEach(x=>{const f=x.firm||'–';const o=byFirm[f]||(byFirm[f]={n:0,spend:0,payout:0});o.n++;o.spend+=num(x.total_spend);o.payout+=num(x.payout)});
+  const ht={spend:hist.reduce((s,x)=>s+num(x.total_spend),0),payout:hist.reduce((s,x)=>s+num(x.payout),0)};
+  const ms=(c.milestones||[]).slice().sort((a,b)=>(a.from||a.to).localeCompare(b.from||b.to));
+  const msC={done:'var(--faint)',now:'var(--accent)',next:'var(--line)'};
+  return `<div class="head"><div><h1>Dezember-Cockpit</h1><div class="sub">Budget, Fahrplan und Payouts · ${dLabel(c.period_from)} bis ${dLabel(c.period_to)}</div></div><button class="btn" data-act="cp-settings">Budget & Kurs</button></div>
+  ${reminderHTML()}
+  <div class="grid g-kpi" style="margin-bottom:16px">
+   <div class="card kpi"><div class="lbl">Budget</div><div class="v">${eur(c.budget_eur,0)}</div><div class="bar ${used>85?'loss':used>60?'warn':'win'}" style="margin-top:8px"><i style="width:${used}%"></i></div><div class="s">${Math.round(used)} % verbraucht</div></div>
+   <div class="card kpi"><div class="lbl">Ausgegebene Fees</div><div class="v neg">${eur(sum.feesEur)}</div><div class="s">${costs.length} Ausgaben im Zeitraum</div></div>
+   <div class="card kpi"><div class="lbl">Reserve</div><div class="v ${sum.reserveEur<0?'neg':''}">${eur(sum.reserveEur)}</div><div class="s">${sum.reserveEur<0?'Budget überschritten':'noch verfügbar'}</div></div>
+   <div class="card kpi"><div class="lbl">Payouts</div><div class="v pos pnlv">${money(sum.payoutNetUsd,0)}</div><div class="s pnlv">netto (90 %) · brutto ${money(sum.payoutGrossUsd,0)} · ≈ ${eur(sum.payoutNetEur,0)}</div></div>
+   <div class="card kpi"><div class="lbl">ROI</div><div class="v ${sum.roiPct==null?'':cls(sum.roiPct)} pnlv">${sum.roiPct==null?'–':(sum.roiPct>0?'+':'')+fmtN(sum.roiPct,1)+' %'}</div><div class="s">(Payouts netto − Fees) / Fees</div></div>
+  </div>
+  <div class="grid g-side" style="margin-bottom:16px;align-items:start">
+   <div class="card"><h2>Fahrplan</h2><div class="tl">${ms.map(m=>{const st=RS.milestoneState(m,today);return `<div class="tl-i ${st}"><span class="tl-d" style="background:${msC[st]}"></span><div><b>${esc(m.label)}</b> <span class="small muted">${esc(m.hint||'')}</span>${st==='now'?' <span class="chip gold">jetzt</span>':st==='done'?' <span class="chip">erledigt</span>':''}</div></div>`}).join('')}</div></div>
+   <div class="stack">
+    <div class="card" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Break-even</div><div style="font-size:28px;font-weight:800;margin:4px 0">${eur(sum.breakEvenEur||0)} <span style="font-size:16px;opacity:.75">= ${money(sum.breakEvenUsd||0,0)}</span></div><div class="small" style="opacity:.85">Bruttogewinn, den du auszahlen musst, damit die Fees gedeckt sind (Fees ÷ 0,9). Kurs: 1 € = ${fmtN(c.fx_usd_per_eur,2)} $.</div>${sum.breakEvenLeftEur?`<div style="margin-top:8px"><b>Noch offen: ${eur(sum.breakEvenLeftEur)}</b></div>`:sum.feesEur?'<div style="margin-top:8px"><b>Break-even erreicht ✓</b></div>':''}</div>
+    <div class="card"><h2>Payouts im Zeitraum</h2>${pIn.length?`<div class="stack small">${pIn.map(p=>`<div class="row" style="justify-content:space-between"><span>${dLabel(p.date)} · ${esc(p.account)}</span><b class="mono pos pnlv">${money(p.amount,0)}</b></div>`).join('')}</div>`:'<div class="small muted">Noch kein Payout. Erfasse ihn im Prop-Kalender beim Konto über „Payout erfassen“.</div>'}</div>
+   </div>
+  </div>
+  <div class="card" style="margin-bottom:16px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Ausgaben im Zeitraum</h2><button class="btn pri sm" data-act="cp-add">Ausgabe erfassen</button></div>
+   ${costs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Konto</th><th>Firma</th><th class="num">Eval</th><th class="num">Reset</th><th class="num">Aktivierung</th><th class="num">Gesamt</th><th></th></tr></thead><tbody>${costs.map(x=>`<tr><td>${dLabel(x.date)}</td><td>${esc(x.account)}</td><td>${esc(x.firm)}</td><td class="num">${eur(x.eval_fee)}</td><td class="num">${eur(x.reset)}</td><td class="num">${eur(x.activation_fee)}</td><td class="num"><b>${eur(x.total_spend)}</b></td><td><button class="btn sm ghost" data-act="cp-del" data-id="${x.id}">Löschen</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="small muted">Noch keine Ausgabe im Dezember-Zeitraum. Erfasse jeden Eval-Kauf, Reset und jede Aktivierung.</div>'}</div>
+  <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Historie ${year}</h2><button class="btn sm" data-act="cp-import">CSV importieren</button></div>
+   ${hist.length?`<div class="grid g-kpi" style="margin-bottom:12px"><div><div class="lbl">Ausgaben</div><div class="mono neg" style="font-size:20px;font-weight:700">${eur(ht.spend)}</div></div><div><div class="lbl">Payouts</div><div class="mono pos" style="font-size:20px;font-weight:700">${eur(ht.payout)}</div></div><div><div class="lbl">Netto ${year}</div><div class="mono ${cls(ht.payout-ht.spend)}" style="font-size:20px;font-weight:700">${eur(ht.payout-ht.spend)}</div></div></div>
+    <div class="tbl-wrap"><table><thead><tr><th>Firma</th><th class="num">Einträge</th><th class="num">Ausgaben</th><th class="num">Payouts</th><th class="num">Netto</th></tr></thead><tbody>${Object.entries(byFirm).map(([f,o])=>`<tr><td>${esc(f)}</td><td class="num">${o.n}</td><td class="num">${eur(o.spend)}</td><td class="num">${eur(o.payout)}</td><td class="num ${cls(o.payout-o.spend)}"><b>${eur(o.payout-o.spend)}</b></td></tr>`).join('')}</tbody></table></div>
+    <details class="more"><summary>Alle ${hist.length} Einträge</summary><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Datum</th><th>Konto</th><th>Firma</th><th>Eval-Status</th><th class="num">Ausgaben</th><th class="num">Payout</th><th class="num">Netto</th><th>Status</th><th>Notiz</th></tr></thead><tbody>${hist.map(x=>`<tr><td>${dLabel(x.date)}</td><td>${esc(x.account)}</td><td>${esc(x.firm)}</td><td>${esc(x.eval_status)}</td><td class="num">${eur(x.total_spend)}</td><td class="num">${eur(x.payout)}</td><td class="num ${cls(x.net)}">${eur(x.net)}</td><td>${esc(x.status)}</td><td class="small">${esc(x.notes)}</td></tr>`).join('')}</tbody></table></div></details>`
+   :'<div class="small muted">Importiere deine bisherige 2026-Historie als CSV (Trennzeichen „;“, Zahlen wie „1.234,56 €“). Spalten: Account; Firm; Date; Eval Fee; Reset; Eval Status; Activation Fee; Total Spend; Payout; Net; Status; Notes.</div>'}</div>`;
+}
+const COST_FIELDS=[{k:'date',l:'Datum',t:'date',req:1},{k:'account',l:'Konto',t:'text',ph:'z. B. FTMO Pro 50K #1'},{k:'firm',l:'Firma',t:'text',def:'FTMO Futures'},
+ {k:'eval_fee',l:'Eval-Gebühr / Abo (€)',t:'number'},{k:'reset',l:'Reset (€)',t:'number'},{k:'activation_fee',l:'Aktivierung (€)',t:'number'},{k:'eval_status',l:'Eval-Status',t:'text',ph:'läuft / bestanden / nicht bestanden'},{k:'notes',l:'Notiz',t:'text'}];
+function costAdd(){openModal('Ausgabe erfassen',`<div class="form">${formFields(COST_FIELDS,{date:TODAY(),firm:'FTMO Futures'})}</div>`,async()=>{const v=readFields(COST_FIELDS);const tot=num(v.eval_fee)+num(v.reset)+num(v.activation_fee);if(!v.date||!tot){toast('Bitte Datum und mindestens einen Betrag eingeben.');return false}
+  await put('cost_history',{...v,eval_fee:num(v.eval_fee),reset:num(v.reset),activation_fee:num(v.activation_fee),total_spend:Math.round(tot*100)/100,payout:0,net:-Math.round(tot*100)/100,status:'',source:'manuell'});toast('Ausgabe gespeichert')})}
+function cpSettings(){const F=[{k:'budget_eur',l:'Budget gesamt (€)',t:'number'},{k:'fx_usd_per_eur',l:'Wechselkurs: 1 € = … $',t:'number',h:'manuell, z. B. 1,08'},{k:'period_from',l:'Zeitraum von',t:'date'},{k:'period_to',l:'Zeitraum bis',t:'date'},{k:'reminder_days_before',l:'Abo-Erinnerung … Tage vorher',t:'number'}];
+  openModal('Budget & Wechselkurs',`<div class="form">${formFields(F,CP())}</div>`,async()=>{const v=readFields(F);if(!(v.fx_usd_per_eur>0)){toast('Bitte einen Wechselkurs größer 0 eingeben.');return false}await put('app_config',{...CP(),...v,id:'cockpit'});toast('Gespeichert')})}
+function costImport(){openModal('Historie als CSV importieren',`<p class="small muted" style="margin-top:0">Trennzeichen „;“, deutsche Zahlen („1.234,56 €“), Datum als TT.MM.JJJJ. Die erste Zeile sind die Spaltennamen.</p>
+  <div class="form"><div class="field full"><label for="cpCsv">CSV-Inhalt</label><textarea id="cpCsv" rows="8" placeholder="Account;Firm;Date;Eval Fee;Reset;Eval Status;Activation Fee;Total Spend;Payout;Net;Status;Notes"></textarea></div><div class="field"><label for="cpFile">oder Datei wählen</label><input type="file" id="cpFile" accept=".csv,text/csv"></div></div><div id="cpPrev" class="small" style="margin-top:8px"></div>`,async()=>{
+  const r=RS.parseCostCsv($('#cpCsv').value);if(!r.rows.length){toast('Keine gültigen Zeilen erkannt.');return false}
+  const key=x=>[x.date,x.account,x.total_spend,x.payout].join('|');const have=new Set(S.cost_history.map(key));let n=0;
+  for(const row of r.rows){if(have.has(key(row)))continue;await put('cost_history',{...row,source:'csv'});n++}
+  toast(`${n} Einträge importiert${r.rows.length-n?', '+(r.rows.length-n)+' schon vorhanden':''}`)});
+  const prev=()=>{const r=RS.parseCostCsv($('#cpCsv').value);$('#cpPrev').innerHTML=r.rows.length?`<b>${r.rows.length} Zeilen erkannt</b> · Ausgaben ${eur(r.rows.reduce((s,x)=>s+x.total_spend,0))} · Payouts ${eur(r.rows.reduce((s,x)=>s+x.payout,0))}${r.errors.length?`<div style="color:var(--loss);margin-top:4px">${r.errors.map(esc).join('<br>')}</div>`:''}`:(r.errors.length&&$('#cpCsv').value.trim()?`<span style="color:var(--loss)">${esc(r.errors[0])}</span>`:'')};
+  $('#cpCsv').addEventListener('input',prev);$('#cpFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$('#cpCsv').value=rd.result;prev()};rd.readAsText(f,'utf-8')}}
+
 /* ============ CSV import ============ */
 function importModal(){
   openModal('Trades aus CSV importieren',`<p class="small muted" style="margin-top:0">Exportiere deine Trades (z. B. Tradovate „Performance“, Topstep, NinjaTrader, Rithmic) als CSV und füge den Inhalt hier ein. Erkannt werden Spalten wie Datum/Zeit (bzw. Bought/Sold Timestamp), Symbol, Seite, Menge, Entry/Exit und P&amp;L.</p>
@@ -1556,7 +1614,7 @@ async function ask(q){
   UI.chat.push({role:'user',content:q.trim()});
   if(!sample){UI.chat.push({role:'assistant',content:'Der Coach ist in dieser Ansicht nicht verfügbar. Öffne Ranca Strategix in claude.ai, um mit deinen Daten zu sprechen. Die Mustererkennung rechts funktioniert trotzdem.'});render();return}
   UI.chatBusy=true;render();chatCtl=new AbortController();
-  const turns=[{role:'user',content:COACH_RULES+coachContext()},{role:'assistant',content:'Verstanden. Ich habe deine Daten und antworte konkret.'},...UI.chat.slice(-8)];
+  const turns=[{role:'user',content:coachPrompt()+coachContext()},{role:'assistant',content:'Verstanden. Ich habe deine Daten und antworte konkret.'},...UI.chat.slice(-8)];
   try{const{text}=await sample(turns,{cache:false,signal:chatCtl.signal,onText:({text})=>{const m=$('#liveMsg');if(m)m.textContent=text;const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}});UI.chat.push({role:'assistant',content:text})}
   catch(e){const msg={not_granted:'Du hast dem Coach den Zugriff auf Claude nicht erlaubt.',rate_limited:'Zu viele Anfragen gerade. Versuch es gleich noch einmal.',sampling_disabled:'Claude ist für dieses Konto hier nicht verfügbar.'}[e.code];
     if(e.code==='cancelled'){if(e.text)UI.chat.push({role:'assistant',content:e.text+' …'});else UI.chat.pop()}else UI.chat.push({role:'assistant',content:(e.text?e.text+'\n\n':'')+(msg||'Die Antwort wurde unterbrochen. Bitte noch einmal fragen.')})}
@@ -1569,6 +1627,10 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'cp-add':costAdd();break;
+   case 'cp-settings':cpSettings();break;
+   case 'cp-import':costImport();break;
+   case 'cp-del':if(b.dataset.confirm){await del('cost_history',id);toast('Ausgabe gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich?'}break;
    case 'pt-start':ptStart();break;
    case 'pt-cancel':UI.pt=null;render();break;
    case 'pt-back':ptReadTm();UI.pt.step--;render();window.scrollTo(0,0);break;

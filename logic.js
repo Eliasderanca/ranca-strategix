@@ -575,5 +575,127 @@
     return `https://www.bibleserver.com/LUT/${encodeURIComponent(clean)}`;
   };
 
+  /* ---------- Phase 5: Coach-Kontext ---------- */
+
+  /**
+   * Kontext, der vor jeder Coach-Antwort mitgeschickt wird.
+   * o: { profile, psychCfg, pr, engine: [{name, r}], tradingDays, trades, accounts: [{name, stage, ddLeft, qualDays, qualNeeded, profit, profitTarget, payoutDate}], today }
+   */
+  RS.buildCoachContext = (o) => {
+    const p = o.profile, cfg = o.psychCfg || { dimensions: [], tilt_map: [] };
+    const dimName = (k) => (cfg.dimensions.find((d) => d.key === k) || {}).name || k;
+    const days = (o.tradingDays || []).filter((d) => d.date <= o.today).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10);
+    const emoOf = (date) => (o.trades || []).filter((t) => t.date === date).map((t) => { const e = RS.emotionBefore(t); return e ? (t.emotion_before && t.emotion_before.intensity ? `${e} ${t.emotion_before.intensity}` : e) : null; }).filter(Boolean);
+    return {
+      heute: o.today,
+      traderProfil: p ? {
+        testVom: p.created_date || String(p.created_at || '').slice(0, 10),
+        scores: Object.fromEntries(Object.entries(p.scores || {}).map(([k, v]) => [dimName(k), { score: v, ampel: (p.levels || {})[k] }])),
+        top3Risiken: (p.top_risks || []).map(dimName),
+        trigger: p.triggers || {},
+        tiltMap: Object.fromEntries((cfg.tilt_map || []).filter((q) => p.tilt_map && p.tilt_map[q.key]).map((q) => [q.label, p.tilt_map[q.key]])),
+      } : 'noch kein Profil-Test gemacht',
+      persoenlicheRegeln: o.pr || {},
+      riskEngineHeute: (o.engine || []).map((u) => ({
+        einheit: u.name, status: u.r.status, gruende: u.r.reasons, hinweise: (u.r.notices || []).map((n) => n.text),
+        erlaubtesRisikoProTrade: u.r.riskPerTrade, risikoPhase: u.r.riskPhase, pnlHeute: u.r.dayPnl,
+        bisTagesStop: u.r.remainingToStop, bisFtmoTageslimit: u.r.firmRemaining, tradesUebrig: u.r.tradesLeft,
+      })),
+      gesamtStatusHeute: RS.worstStatus((o.engine || []).map((u) => u.r)),
+      letzte10Handelstage: days.map((d) => ({ datum: d.date, pnl: d.pnl_total, tagestyp: d.day_type, trades: d.trades_count, regelbrueche: d.rule_breaks, readiness: d.readiness_score, stimmungAbend: d.mood_evening, gefuehle: emoOf(d.date) })),
+      konten: (o.accounts || []).map((a) => ({ name: a.name, phase: a.stage || a.phase, abstandDrawdown: a.ddLeft, gewinn: a.profit, profitZiel: a.profitTarget || null, payoutTage: a.qualNeeded ? `${a.qualDays}/${a.qualNeeded}` : null, naechsterPayout: a.payoutDate || null })),
+    };
+  };
+
+  /* ---------- Phase 5: Dezember-Cockpit ---------- */
+
+  /** Deutsche Zahl „1.234,56 €“ / „-50“ / „“ -> Zahl oder null */
+  RS.parseDeNumber = (s) => {
+    if (s == null) return null;
+    let x = String(s).replace(/[€$\s ]/g, '');
+    if (!x) return null;
+    const neg = /^\(.*\)$/.test(x) || /^-/.test(x);
+    x = x.replace(/[()\-+]/g, '');
+    if (x.includes(',')) x = x.replace(/\./g, '').replace(',', '.');
+    else if (/^\d{1,3}(\.\d{3})+$/.test(x)) x = x.replace(/\./g, '');
+    const n = Number(x);
+    return Number.isFinite(n) ? (neg ? -n : n) : null;
+  };
+
+  /** Datum „24.11.2026“, „24.11.26“ oder „2026-11-24“ -> 'YYYY-MM-DD' oder null */
+  RS.parseDeDate = (s) => {
+    const t = String(s || '').trim();
+    let m = t.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})$/);
+    if (m) return `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+    return null;
+  };
+
+  /**
+   * CSV der Kosten-Historie (Trennzeichen „;“). Spalten: Account, Firm, Date, Eval Fee, Reset, Eval Status,
+   * Activation Fee, Total Spend, Payout, Net, Status, Notes. Fehlt Total Spend, wird es aus den Gebühren summiert;
+   * fehlt Net, ist es Payout − Total Spend. Rückgabe: { rows, errors }
+   */
+  RS.parseCostCsv = (text) => {
+    const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) return { rows: [], errors: ['Keine Datenzeilen gefunden.'] };
+    const split = (l) => { const out = []; let cur = '', q = false; for (const ch of l) { if (ch === '"') { q = !q; continue; } if (ch === ';' && !q) { out.push(cur.trim()); cur = ''; continue; } cur += ch; } out.push(cur.trim()); return out; };
+    const norm = (h) => h.toLowerCase().replace(/[^a-z]/g, '');
+    const head = split(lines[0]).map(norm);
+    const col = { account: 'account', firm: 'firm', date: 'date', eval_fee: 'evalfee', reset: 'reset', eval_status: 'evalstatus', activation_fee: 'activationfee', total_spend: 'totalspend', payout: 'payout', net: 'net', status: 'status', notes: 'notes' };
+    const idx = Object.fromEntries(Object.entries(col).map(([k, h]) => [k, head.indexOf(h)]));
+    const errors = [];
+    if (idx.account < 0 || idx.date < 0) return { rows: [], errors: ['Kopfzeile nicht erkannt. Erwartet u. a. „Account;Firm;Date;…“ mit Semikolon.'] };
+    const rows = [];
+    lines.slice(1).forEach((l, i) => {
+      const c = split(l); const get = (k) => (idx[k] >= 0 ? c[idx[k]] : '');
+      const date = RS.parseDeDate(get('date'));
+      if (!date) { errors.push(`Zeile ${i + 2}: Datum „${get('date')}“ nicht erkannt.`); return; }
+      const fee = RS.parseDeNumber(get('eval_fee')) || 0, reset = RS.parseDeNumber(get('reset')) || 0, act = RS.parseDeNumber(get('activation_fee')) || 0;
+      const total = RS.parseDeNumber(get('total_spend')); const payout = RS.parseDeNumber(get('payout')) || 0;
+      const totalSpend = total != null ? total : Math.round((fee + reset + act) * 100) / 100;
+      const net = RS.parseDeNumber(get('net'));
+      rows.push({ account: get('account'), firm: get('firm'), date, eval_fee: fee, reset, eval_status: get('eval_status'), activation_fee: act,
+        total_spend: totalSpend, payout, net: net != null ? net : Math.round((payout - totalSpend) * 100) / 100, status: get('status'), notes: get('notes') });
+    });
+    return { rows, errors };
+  };
+
+  /**
+   * Budget-Übersicht. Kosten in €, Payouts der Konten in $ (brutto, vor Split).
+   * o: { costs: [{date,total_spend}], payoutsUsd: [{date,amount}], budgetEur, fxUsdPerEur, split, from, to }
+   */
+  RS.cockpitSummary = (o) => {
+    const inP = (d) => (!o.from || d >= o.from) && (!o.to || d <= o.to);
+    const fx = num(o.fxUsdPerEur) || 1, split = o.split != null ? num(o.split) : 0.9;
+    const feesEur = Math.round((o.costs || []).filter((c) => inP(c.date)).reduce((s, c) => s + num(c.total_spend), 0) * 100) / 100;
+    const grossUsd = Math.round((o.payoutsUsd || []).filter((p) => inP(p.date)).reduce((s, p) => s + num(p.amount), 0) * 100) / 100;
+    const netUsd = Math.round(grossUsd * split * 100) / 100;
+    const netEur = Math.round((netUsd / fx) * 100) / 100;
+    const breakEvenEur = split ? Math.round((feesEur / split) * 100) / 100 : null;
+    return {
+      budgetEur: num(o.budgetEur), feesEur, reserveEur: Math.round((num(o.budgetEur) - feesEur) * 100) / 100,
+      payoutGrossUsd: grossUsd, payoutNetUsd: netUsd, payoutNetEur: netEur,
+      roiPct: feesEur > 0 ? Math.round(((netEur - feesEur) / feesEur) * 1000) / 10 : null,
+      breakEvenEur, breakEvenUsd: breakEvenEur != null ? Math.round(breakEvenEur * fx * 100) / 100 : null,
+      breakEvenLeftEur: breakEvenEur != null ? Math.max(0, Math.round((breakEvenEur - grossUsd / fx) * 100) / 100) : null,
+    };
+  };
+
+  /** Kündigungs-Erinnerung: Eval-Konten mit Verlängerungsdatum, `daysBefore` Tage vorher bis zum Tag selbst */
+  RS.renewalReminders = (accounts, today, daysBefore = 3) => (accounts || [])
+    .filter((a) => a.renewal_date && (a.stage || 'EVAL') === 'EVAL' && RS.isActive(a))
+    .filter((a) => today >= RS.addDaysStr(a.renewal_date, -daysBefore) && today <= a.renewal_date)
+    .map((a) => ({ id: a.id, name: a.name, renewal_date: a.renewal_date, daysLeft: Math.round((Date.parse(a.renewal_date) - Date.parse(today)) / 86400000) }));
+
+  /** Meilenstein-Status relativ zu heute: 'done' | 'now' | 'next' */
+  RS.milestoneState = (m, today) => {
+    const from = m.from || m.date || null, to = m.to || m.date;
+    if (to < today) return 'done';
+    if ((!from || from <= today) && today <= to) return 'now'; // reine Frist („bis …“) läuft bis zum Stichtag
+    return 'next';
+  };
+
   return RS;
 });
