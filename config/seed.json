@@ -81,5 +81,55 @@
       "usd_per_point": 20,
       "type": "mini"
     }
-  ]
+  ],
+  "journal_config": {
+    "setups": [
+      "VAL-Long",
+      "VAH-Short",
+      "POC-Reversion",
+      "VWAP-Reclaim",
+      "VWAP-Rejection",
+      "Sonstiges"
+    ],
+    "emotions": [
+      "ruhig",
+      "fokussiert",
+      "ungeduldig",
+      "gierig",
+      "ängstlich",
+      "frustriert",
+      "wütend",
+      "euphorisch",
+      "gelangweilt",
+      "unter Druck"
+    ],
+    "negative_emotions": [
+      "ungeduldig",
+      "gierig",
+      "ängstlich",
+      "frustriert",
+      "wütend",
+      "euphorisch",
+      "gelangweilt",
+      "unter Druck"
+    ],
+    "planned_rr_options": [
+      2,
+      3,
+      4
+    ],
+    "tilt": {
+      "red_urge": 7,
+      "yellow_urge": 5,
+      "pause_minutes": 5
+    },
+    "overconfidence": {
+      "emotions": [
+        "euphorisch",
+        "gierig"
+      ],
+      "min_intensity": 7,
+      "text": "Overconfidence-Warnung: Der Markt schuldet dir nichts. Gleiche Größe, gleiche Kriterien."
+    }
+  }
 }

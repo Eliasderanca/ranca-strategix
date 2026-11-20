@@ -293,5 +293,137 @@
     return instrument.type === 'micro' ? minis * (rule.micros_per_mini || 10) : minis;
   };
 
+  /* ---------- Phase 3: Journal, Trading-Tage, Tilt, Statistik ---------- */
+
+  /** R eines Trades: eingetragenes result_r, sonst altes Feld r, sonst aus P&L / (Stop × $/Punkt × Kontrakte) */
+  RS.tradeR = (t, usdPerPoint) => {
+    if (t.result_r != null && t.result_r !== '') return num(t.result_r);
+    if (t.r != null && t.r !== '') return num(t.r);
+    const risk = num(t.stop_points) * num(usdPerPoint) * num(t.contracts);
+    return risk > 0 ? Math.round((num(t.pnl) / risk) * 100) / 100 : null;
+  };
+
+  /** Anzahl Regelbrüche eines Trades: „Plan nicht befolgt“ zählt mindestens 1, dazu markierte Regelbrüche */
+  RS.ruleBreakCount = (t) => Math.max((t.ruleBreaks || []).length, t.followed_plan === false ? 1 : 0);
+
+  /** Emotion vor dem Trade (neu: {emotion,intensity}; alt: Text in t.emotion) */
+  RS.emotionBefore = (t) => (t.emotion_before && t.emotion_before.emotion) || (t.emotion ? String(t.emotion).toLowerCase() : null);
+
+  /**
+   * Tagesdatensatz für `trading_days`. Copy-Gruppen-Trades zählen einmal.
+   * extra: { readiness_score, mood_evening, reflection_text, day_type }
+   */
+  RS.buildTradingDay = (date, trades, extra = {}) => {
+    const t = (trades || []).filter((x) => x.date === date);
+    return {
+      date,
+      pnl_total: Math.round(t.reduce((s, x) => s + num(x.pnl), 0) * 100) / 100,
+      trades_count: t.length,
+      wins: t.filter((x) => num(x.pnl) > 0).length,
+      losses: t.filter((x) => num(x.pnl) < 0).length,
+      rule_breaks: t.reduce((s, x) => s + RS.ruleBreakCount(x), 0),
+      day_type: extra.day_type != null ? extra.day_type : null,
+      readiness_score: extra.readiness_score != null ? extra.readiness_score : null,
+      mood_evening: extra.mood_evening != null ? extra.mood_evening : null,
+      reflection_text: extra.reflection_text || '',
+    };
+  };
+
+  /** Tilt-Frühwarnung: Antworten -> Ampel. cfg: {red_urge:7, yellow_urge:5} */
+  RS.tiltResult = (ans, cfg = {}) => {
+    const redAt = cfg.red_urge != null ? cfg.red_urge : 7;
+    const yellowAt = cfg.yellow_urge != null ? cfg.yellow_urge : 5;
+    const urge = num(ans.urge);
+    if (ans.a_setup === false) return { level: 'RED', reason: 'Der nächste Trade wäre kein A-Setup. Tilt-Sperre.' };
+    if (urge >= redAt) return { level: 'RED', reason: `Drang zum Zurückholen ${urge}/10. Tilt-Sperre.` };
+    if (urge >= yellowAt) return { level: 'YELLOW', reason: `Drang zum Zurückholen ${urge}/10: nur noch halbe Größe.` };
+    return { level: 'GREEN', reason: '' };
+  };
+
+  /** Wirksamer Tilt-Status einer Einheit an einem Tag: ein ROT bleibt, sonst zählt der letzte Check */
+  RS.tiltFor = (checks, date, unitIds) => {
+    const mine = (checks || []).filter((c) => c.date === date && (!unitIds || !unitIds.length || !(c.account_ids || []).length || (c.account_ids || []).some((id) => unitIds.includes(id))))
+      .sort((a, b) => num(a.created_ms) - num(b.created_ms));
+    const red = mine.find((c) => c.level === 'RED');
+    if (red) return { level: 'RED', reason: red.reason };
+    const last = mine[mine.length - 1];
+    return last && last.level === 'YELLOW' ? { level: 'YELLOW', reason: last.reason } : null;
+  };
+
+  /** Läuft gerade eine Pflicht-Pause? Gibt den Check zurück oder null */
+  RS.tiltPending = (checks, nowMs) => (checks || []).find((c) => num(c.pause_until_ms) > nowMs) || null;
+
+  /** Overconfidence-Hinweis bei euphorisch/gierig ab Intensität 7 */
+  RS.overconfidence = (eb, cfg = {}) => {
+    if (!eb || !eb.emotion) return false;
+    const list = cfg.emotions || ['euphorisch', 'gierig'];
+    return list.includes(eb.emotion) && num(eb.intensity) >= (cfg.min_intensity != null ? cfg.min_intensity : 7);
+  };
+
+  /** Kalenderwoche nach ISO 8601 als 'YYYY-Www' */
+  RS.isoWeek = (dateStr) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    const day = dt.getUTCDay() || 7;
+    dt.setUTCDate(dt.getUTCDate() + 4 - day);
+    const yStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+    const wk = Math.ceil(((dt - yStart) / 86400000 + 1) / 7);
+    return `${dt.getUTCFullYear()}-W${String(wk).padStart(2, '0')}`;
+  };
+
+  /** Kennzahlen einer Trade-Gruppe: Anzahl, Winrate, Ø R (nur Trades mit R), Ø $ */
+  RS.groupStats = (trades, rOf) => {
+    const n = trades.length;
+    const wins = trades.filter((t) => num(t.pnl) > 0).length;
+    const rs = trades.map(rOf).filter((r) => r != null);
+    return {
+      n,
+      winrate: n ? wins / n : null,
+      avgR: rs.length ? Math.round((rs.reduce((s, r) => s + r, 0) / rs.length) * 100) / 100 : null,
+      avgPnl: n ? Math.round((trades.reduce((s, t) => s + num(t.pnl), 0) / n) * 100) / 100 : null,
+      nR: rs.length,
+    };
+  };
+  const groupBy = (arr, keyFn) => { const m = new Map(); for (const x of arr) { const k = keyFn(x); if (k == null) continue; if (!m.has(k)) m.set(k, []); m.get(k).push(x); } return m; };
+  const sortedTrades = (trades) => (trades || []).slice().sort(byTime);
+
+  /** Winrate und Ø R nach Emotion vor dem Trade */
+  RS.statsByEmotion = (trades, rOf) => [...groupBy(trades || [], RS.emotionBefore)].map(([k, v]) => ({ key: k, ...RS.groupStats(v, rOf) })).sort((a, b) => b.n - a.n);
+
+  /** Trade direkt nach einem Verlust (am selben Tag) gegenüber allen anderen */
+  RS.afterLossStats = (trades, rOf) => {
+    const after = [], other = [];
+    for (const [, day] of groupBy(sortedTrades(trades), (t) => t.date)) {
+      day.forEach((t, i) => ((i > 0 && num(day[i - 1].pnl) < 0) ? after : other).push(t));
+    }
+    return { afterLoss: RS.groupStats(after, rOf), others: RS.groupStats(other, rOf) };
+  };
+
+  /** Ergebnis von Trade 1, 2, 3, 4 (und mehr) des Tages */
+  RS.statsByTradeIndex = (trades, rOf, max = 4) => {
+    const buckets = Array.from({ length: max }, () => []);
+    for (const [, day] of groupBy(sortedTrades(trades), (t) => t.date)) day.forEach((t, i) => buckets[Math.min(i, max - 1)].push(t));
+    return buckets.map((b, i) => ({ index: i + 1, label: i === max - 1 ? `${max}+` : String(i + 1), ...RS.groupStats(b, rOf) }));
+  };
+
+  /** Regelbrüche pro Kalenderwoche (lückenlos, die letzten `weeks` Wochen bis `untilDate`) */
+  RS.ruleBreaksByWeek = (trades, untilDate, weeks = 8) => {
+    const counts = {};
+    for (const t of trades || []) { const w = RS.isoWeek(t.date); counts[w] = (counts[w] || 0) + RS.ruleBreakCount(t); }
+    const out = [];
+    const [y, m, d] = untilDate.split('-').map(Number);
+    for (let i = weeks - 1; i >= 0; i--) {
+      const dt = new Date(Date.UTC(y, m - 1, d - i * 7));
+      const ds = dt.toISOString().slice(0, 10);
+      const w = RS.isoWeek(ds);
+      out.push({ week: w, breaks: counts[w] || 0 });
+    }
+    return out;
+  };
+
+  /** Ø R je Setup (neues Feld setup, sonst Name aus dem Playbook über setupName) */
+  RS.statsBySetup = (trades, rOf, setupName) => [...groupBy(trades || [], (t) => t.setup || (setupName && setupName(t)) || 'Ohne Setup')]
+    .map(([k, v]) => ({ key: k, ...RS.groupStats(v, rOf) })).sort((a, b) => (b.avgR ?? -99) - (a.avgR ?? -99));
+
   return RS;
 });

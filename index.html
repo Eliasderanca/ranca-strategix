@@ -206,6 +206,29 @@ details.more>summary::-webkit-details-marker{display:none}
 .seg button{border:0;background:transparent;border-radius:9px;padding:8px 14px;font-weight:600;cursor:pointer;color:var(--fg)}
 .seg button.on{background:var(--elev);box-shadow:0 1px 3px rgba(6,50,58,.15)}
 .seg button .small{font-size:11px;font-weight:500}
+/* quick trade entry */
+.qt{display:flex;flex-direction:column;gap:16px}
+.qt-sec .lbl{margin-bottom:7px}
+.qt-two{display:grid;grid-template-columns:1fr auto;gap:14px}
+.qt-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+.qt-nums input{width:100%}
+.qt-pnl input{font-size:20px;font-weight:700}
+.qt .ci-chip{padding:7px 13px;font-size:14px;background:var(--surface)}
+.qt .ci-chip.on{background:var(--brand);color:#fff}
+.qt input[type=range]{accent-color:var(--brand)}
+@media (max-width:820px){.qt-nums{grid-template-columns:repeat(2,minmax(0,1fr))}.qt-two{grid-template-columns:1fr}}
+/* tilt early warning */
+#tilt{position:fixed;inset:0;z-index:85;background:rgba(6,30,34,.96);color:#fff;display:grid;place-items:center;overflow:auto;padding:max(24px,env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) max(24px,env(safe-area-inset-bottom,0px)) max(18px,env(safe-area-inset-left,0px));animation:fade .2s ease}
+.tilt-in{width:min(520px,100%)}
+#tilt h2{color:#fff;font-size:22px;line-height:1.25;margin:8px 0 14px}
+.tilt-scale{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-bottom:6px}
+.tilt-scale button,.tilt-yn{border:0;border-radius:12px;background:rgba(255,255,255,.12);color:#fff;font-weight:700;font-size:16px;padding:12px 0;cursor:pointer}
+.tilt-yn{flex:1;padding:14px 0}
+.tilt-scale button.on,.tilt-yn.on{background:#fff;color:var(--brand)}
+.breath{position:relative;width:180px;height:180px;margin:18px auto 10px;display:grid;place-items:center}
+.breath-ring{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),rgba(255,255,255,.06));animation:breath 10s ease-in-out infinite}
+.breath-t{position:relative;font-weight:600;font-size:18px}
+@keyframes breath{0%{transform:scale(.55)}40%{transform:scale(1)}100%{transform:scale(.55)}}
 /* daily check-in */
 .ci-card{max-width:640px}
 .ci-dot{flex:1;aspect-ratio:1;max-width:72px;border-radius:50%;border:0;background:var(--elev);font-size:20px;font-weight:700;color:var(--fg);cursor:pointer;transition:transform .12s}
@@ -309,6 +332,7 @@ const ICON={
  journal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 2.5h10v15H5z"/><path d="M8 6h4M8 9h4M8 12h2"/></svg>',
  rules:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M4 10h12M4 15h12"/><circle cx="7" cy="5" r="1.6" fill="currentColor"/><circle cx="13" cy="10" r="1.6" fill="currentColor"/><circle cx="9" cy="15" r="1.6" fill="currentColor"/></svg>',
  market:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15"/><path d="M3.5 13l4-4.5 3 2.5 5.5-6.5"/><path d="M13 4.5h3v3"/></svg>',
+ chart:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h14"/><rect x="4.5" y="10" width="2.6" height="5" rx=".8"/><rect x="8.7" y="6" width="2.6" height="9" rx=".8"/><rect x="12.9" y="3" width="2.6" height="12" rx=".8"/></svg>',
  gauge:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 14a7 7 0 1 1 14 0"/><path d="M10 14l3.5-4.5"/><circle cx="10" cy="14" r="1.3" fill="currentColor"/></svg>',
  heart:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M10 16.5s-6.5-3.9-6.5-8.6A3.4 3.4 0 0 1 10 6a3.4 3.4 0 0 1 6.5 1.9c0 4.7-6.5 8.6-6.5 8.6z"/><path d="M5.5 10h2.2l1.2-2 1.8 4 1.2-2h2.6"/></svg>',
  more:'<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>',
@@ -317,7 +341,7 @@ const ICON={
  shield:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2.5l6 2.5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/></svg>',
  smile:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7.5"/><path d="M7 12c1.6 1.6 4.4 1.6 6 0"/><circle cx="7.5" cy="8" r=".6" fill="currentColor"/><circle cx="12.5" cy="8" r=".6" fill="currentColor"/></svg>'
 };
-const VIEWS=[['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
+const VIEWS=[['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
 
 const TABS=[['markt','Markt','market'],['checkin','Check-in','heart'],['risiko','Risiko','gauge'],['prop','Prop','prop']];
 const VERSES=[
@@ -342,8 +366,8 @@ const DEF_SET={maxDailyLoss:500,maxTrades:4,maxConsec:2,revengeMin:10,cooldownMi
  rules:'Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet'};
 
 /* ============ store ============ */
-const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments'];
-const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[]};
+const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config'];
+const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[]};
 /* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
 let SEED={account_rules:[],personal_rules:null};
 fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
@@ -351,6 +375,8 @@ const RULES=()=>S.account_rules.length?S.account_rules:SEED.account_rules;
 const RULE=id=>id?RULES().find(r=>r.id===id):null;
 const PR=()=>({...(SEED.personal_rules||{}),...(S.personal_rules.find(x=>x.id==='main')||{})});
 const EA=a=>a&&a.rule_id?RS.effectiveAccount(a,RULE(a.rule_id)):a;
+const JC=()=>({...(SEED.journal_config||{}),...(S.app_config.find(x=>x.id==='journal')||{})});
+const isNegEmo=e=>!!e&&(NEG_EMO.includes(e)||(JC().negative_emotions||[]).includes(e));
 const INSTR=()=>S.instruments.length?S.instruments:(SEED.instruments||[]);
 /* Handelseinheiten: aktive Einzelkonten und Copy-Gruppen. Ohne Konten: eine Einheit für alle Trades ohne Konto. */
 function UNITS(){const act=S.accounts.map(EA).filter(RS.isActive);const g=RS.groupAccounts(act);
@@ -359,7 +385,7 @@ function UNITS(){const act=S.accounts.map(EA).filter(RS.isActive);const g=RS.gro
   if(!u.length||loose.some(t=>t.date===TODAY()))u.push({key:'none',name:u.length?'Ohne Konto':'Alle Trades',isGroup:false,ids:[],account:null,members:[]});
   return u}
 const unitTradesOf=u=>u.ids.length?RS.unitTrades(S.trades,u.ids):S.trades.filter(t=>!t.accountId&&!(t.account_ids||[]).length);
-const TILT=(u)=>null; /* Phase 3: Tilt-Sperre */
+const TILT=u=>RS.tiltFor(S.tilt_checks,TODAY(),u.ids);
 function ENGINE(){const d=TODAY(),now=new Date();const units=UNITS().map(u=>({...u,r:RS.riskEngine({date:d,trades:unitTradesOf(u),pr:PR(),account:u.account,tilt:TILT(u),now})}));
   const status=RS.worstStatus(units.map(u=>u.r));return {units,status,red:units.filter(u=>u.r.status==='RED')}}
 const CI=d=>S.checkins.find(x=>x.id===d);
@@ -420,7 +446,7 @@ function scoreParts(s){
   return [['Win %',clamp(s.wr/.6*100)],['Profit Factor',clamp(pf/2.5*100)],['Ø Gew./Verl.',clamp(rr/2*100)],['Drawdown',s.gw>0?clamp(100-s.maxDD/s.gw*200):0],['Konstanz',cons],['Regeltreue',s.rulesOk*100]];
 }
 function inMonth(trs,ym){return trs.filter(t=>(t.date||'').startsWith(ym))}
-function filtAcct(trs,f){if(!f||f==='all')return trs;if(f==='none')return trs.filter(t=>!t.accountId);return trs.filter(t=>t.accountId===f)}
+function filtAcct(trs,f){if(!f||f==='all')return trs;if(f==='none')return trs.filter(t=>!t.accountId&&!(t.account_ids||[]).length);return trs.filter(t=>RS.tradeHasAccount(t,f))}
 function revengeIds(trs,minsLim){
   const ids=new Set();const byD={};trs.forEach(t=>(byD[t.date]=byD[t.date]||[]).push(t));
   Object.values(byD).forEach(a=>{a.sort(byDT);for(let i=1;i<a.length;i++){const p=a[i-1],t=a[i];const dm=mins(t.time)-mins(p.time);if(num(p.pnl)<0&&p.time&&t.time&&dm>=0&&dm<=minsLim)ids.add(t.id)}});
@@ -434,7 +460,7 @@ function futureDays(a,fromDate,count){
   let d=fromDate,c=0;for(let i=0;i<400;i++){const v=plan[d];const ok=hasPlan?v==='trade':(isWeekday(d)&&v!=='off');if(ok){c++;if(c>=count)return d}d=addDays(d,1)}return null;
 }
 function acctM(a){a=EA(a);
-  const trs=S.trades.filter(t=>t.accountId===a.id).sort(byDT),days=byDay(trs),dates=Object.keys(days).sort(),today=TODAY(),m0={};
+  const trs=S.trades.filter(t=>RS.tradeHasAccount(t,a.id)).sort(byDT),days=byDay(trs),dates=Object.keys(days).sort(),today=TODAY(),m0={};
   let bal=0,peak=0;dates.forEach(d=>{bal+=days[d].pnl;peak=Math.max(peak,bal)});
   let ddUsed=a.ddType==='static'?Math.max(0,-bal):peak-bal;
   if(a.ddType!=='static'&&a.ddLock&&a.maxDrawdown){const level=Math.min(peak-a.maxDrawdown,0);ddUsed=a.maxDrawdown-(bal-level)}
@@ -480,9 +506,9 @@ function alerts(){
   S.accounts.map(EA).filter(RS.isActive).forEach(a=>{const m=acctM(a);
     if(m.dailyLeft!=null&&a.maxDailyLoss&&m.dailyLeft<.35*a.maxDailyLoss)out.push({a:'risk',lv:m.dailyLeft<=0?'stop':'warn',tx:`${a.name}: nur noch ${money(m.dailyLeft)} Tagesverlust-Puffer.`});
     if(m.ddLeft!=null&&a.maxDrawdown&&m.ddLeft<.3*a.maxDrawdown)out.push({a:'risk',lv:m.ddLeft<=0?'stop':'warn',tx:`${a.name}: Drawdown-Puffer bei ${money(m.ddLeft)} von ${money(a.maxDrawdown,0)}. Size reduzieren.`});
-    if(a.maxContracts&&tt.some(x=>x.accountId===a.id&&num(x.contracts)>a.maxContracts))out.push({a:'risk',lv:'stop',tx:`${a.name}: Kontraktlimit (${a.maxContracts}) heute überschritten.`});
+    if(a.maxContracts&&tt.some(x=>RS.tradeHasAccount(x,a.id)&&num(x.contracts)>a.maxContracts))out.push({a:'risk',lv:'stop',tx:`${a.name}: Kontraktlimit (${a.maxContracts}) heute überschritten.`});
   });
-  const dpT=DP(t);if(dpT&&dpT.items)Object.entries(dpT.items).forEach(([id,it])=>{const a=EA(AC(id));if(!a)return;const p=sum(tt.filter(x=>x.accountId===id));
+  const dpT=DP(t);if(dpT&&dpT.items)Object.entries(dpT.items).forEach(([id,it])=>{const a=EA(AC(id));if(!a)return;const p=sum(tt.filter(x=>RS.tradeHasAccount(x,id)));
     if(it.risk&&-p>=it.risk)out.push({a:'risk',lv:'stop',tx:`${a.name}: Tagesrisiko von ${money(it.risk,0)} erreicht (${money(p)}). Für dieses Konto ist heute Schluss.`});
     else if(it.risk&&-p>=.6*it.risk)out.push({a:'risk',lv:'warn',tx:`${a.name}: ${money(p)} von ${money(-it.risk,0)} Tagesrisiko genutzt.`});
     if(it.target&&p>=it.target)out.push({a:'mind',lv:'warn',tx:`${a.name}: Tagesziel ${money(it.target,0)} erreicht (${money(p)}). Aufhören ist heute der Sieg.`});});
@@ -500,7 +526,7 @@ function alerts(){
   if(tdays.length&&noReview>=2)out.push({a:'habit',lv:'warn',tx:`${noReview} Handelstage ohne Abend-Review. Lernen passiert im Review.`});
   const rev=revengeIds(tt,st.revengeMin);
   if(rev.size)out.push({a:'mind',lv:'stop',tx:`${rev.size} Trade(s) heute innerhalb von ${st.revengeMin} Min nach einem Verlust. Das sieht nach Revenge aus. ${st.cooldownMin} Min Pause empfohlen.`});
-  const neg=tt.filter(x=>NEG_EMO.includes(x.emotion));
+  const neg=tt.filter(x=>isNegEmo(x.emotion));
   if(neg.length)out.push({a:'mind',lv:neg.length>=2?'stop':'warn',tx:`Heute ${neg.length} Trade(s) mit ${[...new Set(neg.map(x=>x.emotion))].join(', ')} markiert. Atme durch, bevor du weitermachst.`});
   if(j&&num(j.mood)&&num(j.mood)<=2)out.push({a:'mind',lv:'warn',tx:'Deine Stimmung heute ist niedrig (≤ 2/5). Heute nur mit halber Size oder gar nicht.'});
   const recentJ=S.journal.filter(x=>x.id<=t).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,3);
@@ -551,11 +577,11 @@ function render(){
   const v=(location.hash||'').slice(1);UI.view=VIEWS.some(x=>x[0]===v)?v:'markt';
   $('#tabbar').innerHTML=TABS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('')+`<a role="button" tabindex="0" data-act="more" class="${TABS.some(t=>t[0]===UI.view)?'':'on'}">${ICON.more}<span>Mehr</span></a>`;
   $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('');
-  const f={risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
+  const f={statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
   $('#main').innerHTML=f();setSync();
   if(UI.view==='coach'){const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}
   if(UI.view==='agents')tickCooldown();
-  renderLock();
+  renderLock();renderTilt();
 }
 window.addEventListener('hashchange',render);
 
@@ -740,7 +766,7 @@ function ciNext(){const q=CI_Q[UI.ci.step];if(q.type==='text'){const el=$('#ciTe
   if((q.type==='scale'||q.type==='pick')&&UI.ci.a[q.k]==null){toast('Bitte eine Antwort wählen.');return}
   UI.ci.step++;render()}
 async function ciSave(){const a=UI.ci.a,r=ciEval(a);const doc={id:TODAY(),sleep:a.sleep,mood:a.mood,stress:a.stress,focus:a.focus,emotions:a.emotions||[],yesterday:a.yesterday,pressure:a.pressure,life:a.life,heart:a.heart,commit:a.commit||[],intention:a.intention||'',score:r.score,level:r.level,flags:r.flags,at:RS.berlinTime()};
-  UI.ci={step:0,a:{},redo:false};await put('checkins',doc);toast('Check-in gespeichert');render()}
+  UI.ci={step:0,a:{},redo:false};await put('checkins',doc);await syncDay(doc.id);toast('Check-in gespeichert');render()}
 function vCheckin(){
   const today=TODAY(),c=CI(today);
   if(!UI.ci||UI.ci.day!==today){UI.ci={step:0,a:{},redo:false,day:today}}UI.ci.day=today;
@@ -836,8 +862,8 @@ function vTrades(){
    <select id="tfSetup"><option value="all">Alle Setups</option><option value="none" ${f.setup==='none'?'selected':''}>Ohne Setup</option>${S.playbooks.map(p=>`<option value="${p.id}" ${f.setup===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
   </div>
   <div class="card" style="padding:4px 4px">${trs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Symbol</th><th>Seite</th><th class="num">Kontr.</th><th>Setup</th><th>Konto</th><th>Emotion</th><th class="num">R</th><th class="num">Net P&amp;L</th><th>Flags</th></tr></thead><tbody>
-   ${trs.map(t=>{const p=PB(t.setupId),a=AC(t.accountId);const flags=[...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
-   return `<tr class="click" data-act="edit-trade" data-id="${t.id}"><td>${dLabel(t.date)}</td><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b></td><td>${t.side==='Short'?'<span class="chip loss">Short</span>':'<span class="chip win">Long</span>'}</td><td class="num">${t.contracts??''}</td><td>${p?`<span class="setup-dot" style="background:${p.color||COLORS[0]}"></span> ${esc(p.name)}`:'<span class="muted">–</span>'}</td><td>${a?esc(a.name):'<span class="muted">–</span>'}</td><td>${t.emotion?`<span class="chip ${NEG_EMO.includes(t.emotion)?'warn':''}">${esc(t.emotion)}</span>`:''}</td><td class="num">${t.r!=null&&t.r!==''?num(t.r).toFixed(1):''}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${flags}</td></tr>`}).join('')}
+   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
+   return `<tr class="click" data-act="edit-trade" data-id="${t.id}"><td>${dLabel(t.date)}</td><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b></td><td>${t.side==='Short'?'<span class="chip loss">Short</span>':'<span class="chip win">Long</span>'}</td><td class="num">${t.contracts??''}</td><td>${t.setup?esc(t.setup):p?`<span class="setup-dot" style="background:${p.color||COLORS[0]}"></span> ${esc(p.name)}`:'<span class="muted">–</span>'}</td><td>${an?esc(an):'<span class="muted">–</span>'}</td><td>${t.emotion?`<span class="chip ${isNegEmo(t.emotion)?'warn':''}">${esc(t.emotion)}${eb&&eb.intensity?' '+eb.intensity:''}</span>`:''}</td><td class="num ${rv==null?'':cls(rv)}">${rv!=null?fmtN(rv,1):''}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${flags}</td></tr>`}).join('')}
    </tbody></table></div>`:emptyBox('Keine Trades in dieser Auswahl','Erfasse einen Trade oder importiere eine CSV-Datei aus deiner Plattform (z. B. Tradovate, Topstep, Rithmic).','<button class="btn pri" data-act="add-trade">Trade erfassen</button>')}</div>`;
 }
 
@@ -964,7 +990,7 @@ function coachContext(){
    erkannteMuster:patterns(trs).map(p=>p.k+': '+p.tx.replace(/<[^>]+>/g,'')),
    agentenHinweiseHeute:alerts().map(x=>x.tx),
    journalLetzte10:S.journal.filter(j=>j.id>=addDays(TODAY(),-21)).sort((a,b)=>a.id.localeCompare(b.id)).slice(-10).map(j=>({datum:j.id,stimmung:j.mood,planBefolgt:j.followedPlan,plan:(j.premarket||'').slice(0,300),review:(j.review||'').slice(0,300),lektion:(j.lessons||'').slice(0,200)})),
-   trades:trs.slice(-150).map(t=>[t.date,t.time||'',t.symbol||'',t.side||'',t.contracts||'',+num(t.pnl).toFixed(2),PB(t.setupId)?.name||'-',AC(t.accountId)?.name||'-',t.emotion||'',(t.ruleBreaks||[]).join('|'),t.r??'']),
+   trades:trs.slice(-150).map(t=>[t.date,t.time||'',t.symbol||'',t.side||'',t.contracts||'',+num(t.pnl).toFixed(2),t.setup||PB(t.setupId)?.name||'-',(t.account_ids&&t.account_ids.length?t.account_ids:[t.accountId]).map(i=>AC(i)?.name).filter(Boolean).join('+')||'-',t.emotion_before?t.emotion_before.emotion+' '+t.emotion_before.intensity:(t.emotion||''),(t.ruleBreaks||[]).join('|'),t.r??'']),
    tradeSpalten:['datum','zeit','symbol','seite','kontrakte','netPnl','setup','konto','emotion','regelbrueche','R']});
 }
 const COACH_RULES=`Du bist der "Strategix Coach", der interne Trading-Coach der Firma Ranca Strategix (Futures-Daytrading, Prop-Firm-Challenges). Antworte auf Deutsch, direkt, konkret, mit Zahlen aus den Daten unten. Keine generischen Lehrbuch-Ratschläge. Maximal ca. 180 Wörter, kurze Absätze oder knappe Aufzählungen, kein Markdown-Fettdruck.
@@ -1019,6 +1045,7 @@ function vJournal(){
      <div class="field full"><label for="j_premarket">Pre-Market-Plan (Bias, Levels, News, welche Setups, max. Risiko)</label><textarea id="j_premarket" rows="4">${esc(j.premarket||'')}</textarea></div>
      <div class="field"><label for="j_mood">Stimmung vor dem Handel</label><select id="j_mood">${['','1 · gestresst','2 · angespannt','3 · neutral','4 · ruhig','5 · klar & fokussiert'].map((l,i)=>`<option value="${i||''}" ${num(j.mood)===i&&i?'selected':''}>${l||'–'}</option>`).join('')}</select></div>
      <div class="field"><label for="j_sleep">Schlaf (Stunden)</label><input type="number" id="j_sleep" step="0.5" value="${j.sleep??''}"></div>
+     <div class="field"><label for="j_mood_evening">Stimmung am Abend</label><select id="j_mood_evening">${['','1 · schlecht','2 · gedrückt','3 · neutral','4 · zufrieden','5 · dankbar & ruhig'].map((l,i)=>`<option value="${i||''}" ${num(j.mood_evening)===i&&i?'selected':''}>${l||'–'}</option>`).join('')}</select></div>
      <div class="field full"><label for="j_review">Abend-Review (was lief, was nicht, warum)</label><textarea id="j_review" rows="4">${esc(j.review||'')}</textarea></div>
      <div class="field full"><label for="j_lessons">Eine Lektion für morgen</label><input type="text" id="j_lessons" value="${esc(j.lessons||'')}"></div>
      <div class="field full"><label for="j_heart">Herz-Check (Gebet, Dankbarkeit, was mich heute antreibt)</label><textarea id="j_heart" rows="2">${esc(j.heart||'')}</textarea></div>
@@ -1119,21 +1146,6 @@ function openModal(title,inner,onSubmit,extra=''){
 function closeModal(){$('#modalRoot').innerHTML=''}
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if($('#ctx'))closeCtx();else if($('#ov'))closeModal()}if(e.key==='Enter'&&$('#ctx')&&$('#ctx').contains(e.target)&&e.target.tagName==='INPUT'&&e.target.type!=='checkbox'){e.preventDefault();saveDayPlan(false)}});
 
-function tradeFields(){return [
- {k:'date',l:'Datum',t:'date',def:TODAY(),req:1},{k:'time',l:'Uhrzeit (Entry)',t:'time'},
- {k:'accountId',l:'Konto',t:'select',o:[['','Kein Prop-Konto'],...S.accounts.map(a=>[a.id,a.name])]},
- {k:'symbol',l:'Symbol',t:'text',ph:'NQ, MNQ, ES, GC…'},
- {k:'side',l:'Richtung',t:'select',o:[['Long','Long'],['Short','Short']]},{k:'contracts',l:'Kontrakte',t:'number'},
- {k:'entry',l:'Entry-Preis',t:'number'},{k:'exit',l:'Exit-Preis',t:'number'},
- {k:'pnl',l:'Net P&L ($, nach Gebühren)',t:'number',req:1},{k:'r',l:'R-Multiple',t:'number',h:'z. B. 2 oder -1'},
- {k:'setupId',l:'Setup (Playbook)',t:'select',o:[['','Ohne Setup'],...S.playbooks.map(p=>[p.id,p.name])]},
- {k:'emotion',l:'Gefühl beim Entry',t:'select',o:[['','–'],...EMOTIONS.map(e=>[e,e])]},
- {k:'ruleBreaks',l:'Regelbrüche',t:'multi',o:STD_BREAKS,full:1},
- {k:'notes',l:'Notizen',t:'textarea',rows:2}]}
-function editTrade(t){
-  const F=tradeFields(),o=t||{date:UI.view==='journal'?UI.jDate:TODAY(),side:'Long'};
-  openModal(t?'Trade bearbeiten':'Trade erfassen',`${t?'':riskBar(true)}<div class="form">${formFields(F,o)}</div>`,async()=>{const v=readFields(F);if(!v.date||v.pnl==null){toast('Datum und Net P&L sind Pflicht.');return false}await put('trades',{...(t||{}),...v});toast(t?'Trade aktualisiert':'Trade gespeichert')},t?`<button class="btn danger" type="button" data-act="del-trade" data-id="${t.id}">Löschen</button>`:'');
-}
 const PB_FIELDS=[
  {k:'name',l:'Name des Setups',t:'text',req:1,ph:'z. B. Opening-Range-Breakout'},{k:'market',l:'Markt',t:'text',ph:'NQ / MNQ'},
  {k:'session',l:'Zeitfenster',t:'text',ph:'15:30–16:30 MEZ'},{k:'timeframe',l:'Chart-Zeiteinheit',t:'text',ph:'5-Min + 1-Min Entry'},
@@ -1239,6 +1251,142 @@ document.addEventListener('contextmenu',e=>{const c=e.target.closest('.pcell');i
 document.addEventListener('mousedown',e=>{const c=$('#ctx');if(c&&!c.contains(e.target)&&!(c.classList.contains('sheet')&&e.target.closest('.ctx')))closeCtx()},true);
 window.addEventListener('hashchange',closeCtx);
 
+/* ============ Phase 3: Schnelleingabe Trade ============ */
+const QT_PREF_KEY='rs-qt';
+const qtPrefs=()=>{try{return JSON.parse(localStorage.getItem(QT_PREF_KEY)||'{}')}catch(e){return {}}};
+const unitLabel=u=>u.isGroup?`${u.name} (${u.members.length} Konten)`:u.name;
+function qtUnits(t){const us=UNITS().filter(u=>u.key!=='none'||!S.accounts.some(RS.isActive));
+  if(!us.some(u=>u.key==='none'))us.push({key:'none',name:'Ohne Konto',ids:[],members:[],isGroup:false});
+  const ids=t?(t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[])):null;
+  if(ids&&ids.length&&!us.some(u=>u.ids.join()===ids.join()))us.unshift({key:'cur',name:ids.map(i=>AC(i)?.name||'Gelöschtes Konto').join(' + '),ids,members:[],isGroup:ids.length>1});
+  return us}
+let QT=null;
+function editTrade(t){
+  if(!t){const E=ENGINE();if(E.status==='RED'){renderLock(true);return}const pend=RS.tiltPending(S.tilt_checks,Date.now());if(pend||tiltOpenFor()){renderTilt(true);return}}
+  const jc=JC(),pf=qtPrefs(),us=qtUnits(t),ins=INSTR();
+  const ids=t?(t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[])):null;
+  const unitKey=t?(us.find(u=>u.ids.join()===ids.join())||us.find(u=>u.key==='none')).key:(us.some(u=>u.key===pf.unit)?pf.unit:us[0].key);
+  const calcU=UI.calc&&UI.calc.stop?UI.calc:null;
+  QT={id:t?.id,unit:unitKey,instrument:t?.instrument||t?.symbol||pf.instrument||ins[0]?.id||'MNQ',direction:t?.direction||t?.side||pf.direction||'Long',setup:t?.setup||'',
+    planned_rr:t?.planned_rr??pf.planned_rr??(jc.planned_rr_options||[2])[0],followed_plan:t?t.followed_plan!==false:true,
+    eb:t?.emotion_before?{...t.emotion_before}:{emotion:'',intensity:5},ea:t?.emotion_after?{...t.emotion_after}:{emotion:'',intensity:5},ruleBreaks:[...(t?.ruleBreaks||[])]};
+  const contracts=t?.contracts??(calcU?RS.positionSize({risk:ENGINE().units[0]?.r.riskPerTrade||0,stopPoints:+calcU.stop,usdPerPoint:(ins.find(i=>i.id===calcU.instr)||{}).usd_per_point||2}).contracts||'':pf.contracts??'');
+  const stop=t?.stop_points??(calcU?calcU.stop:pf.stop_points??'');
+  const chips=(k,opts,cur)=>`<div class="row qt-chips" data-k="${k}" style="gap:6px">${opts.map(([v,l])=>`<button type="button" class="ci-chip ${String(cur)===String(v)?'on':''}" data-act="qt" data-k="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
+  const emo=(k,o)=>`${chips(k,(jc.emotions||[]).map(e=>[e,e]),o.emotion)}<div class="row" style="gap:10px;margin-top:8px;flex-wrap:nowrap"><span class="small muted" style="flex:none">Stärke</span><input type="range" min="1" max="10" step="1" id="qt_${k}_int" value="${o.intensity||5}" style="flex:1" aria-label="Stärke 1 bis 10"><b class="mono" id="qt_${k}_intv" style="width:22px;text-align:right">${o.intensity||5}</b></div>`;
+  const html=`${t?'':riskBar(true)}
+   <div class="qt">
+    ${us.length>1?`<div class="qt-sec"><div class="lbl">Konto</div>${chips('unit',us.map(u=>[u.key,unitLabel(u)]),QT.unit)}</div>`:''}
+    <div class="qt-sec qt-two"><div><div class="lbl">Instrument</div>${chips('instrument',ins.map(i=>[i.id,i.id]),QT.instrument)}</div><div><div class="lbl">Richtung</div>${chips('direction',[['Long','Long'],['Short','Short']],QT.direction)}</div></div>
+    <div class="qt-sec"><div class="lbl">Setup</div>${chips('setup',(jc.setups||[]).map(x=>[x,x]),QT.setup)}</div>
+    <div class="qt-sec qt-nums">
+     <div class="field"><label for="qt_contracts">Kontrakte</label><input type="number" inputmode="numeric" min="0" step="1" id="qt_contracts" value="${esc(contracts)}"></div>
+     <div class="field"><label for="qt_stop">Stop (Punkte)</label><input type="number" inputmode="decimal" min="0" step="any" id="qt_stop" value="${esc(stop)}"></div>
+     <div class="field"><label>Geplantes R</label>${chips('planned_rr',(jc.planned_rr_options||[2,3,4]).map(r=>[r,'1:'+r]),QT.planned_rr)}</div>
+     <div class="field qt-pnl"><label for="qt_pnl">Ergebnis in $</label><input type="number" inputmode="decimal" step="any" id="qt_pnl" value="${t?esc(t.pnl):''}" placeholder="-150 / 300" required><span class="small muted" id="qt_r"></span></div>
+    </div>
+    <div class="qt-sec"><div class="lbl">Plan befolgt?</div>${chips('followed_plan',[['true','Ja'],['false','Nein']],String(QT.followed_plan))}</div>
+    <div class="qt-sec"><div class="lbl">Gefühl vor dem Trade</div>${emo('eb',QT.eb)}<div id="qt_oc"></div></div>
+    <div class="qt-sec"><div class="lbl">Gefühl nach dem Trade</div>${emo('ea',QT.ea)}</div>
+    <details class="more"><summary>Datum, Uhrzeit, Notiz, Regelbrüche</summary>
+     <div class="form" style="margin-top:10px"><div class="field"><label for="qt_date">Datum</label><input type="date" id="qt_date" value="${esc(t?.date||(UI.view==='journal'?UI.jDate:TODAY()))}"></div><div class="field"><label for="qt_time">Uhrzeit (Berlin)</label><input type="time" id="qt_time" value="${esc(t?.time||RS.berlinTime())}"></div>
+     <div class="field full"><label for="qt_notes">Notiz</label><textarea id="qt_notes" rows="2">${esc(t?.notes||'')}</textarea></div>
+     <div class="field full"><label>Regelbrüche</label><div class="row" style="gap:6px">${STD_BREAKS.map(x=>`<button type="button" class="ci-chip ${QT.ruleBreaks.includes(x)?'on':''}" data-act="qt-break" data-v="${esc(x)}">${esc(x)}</button>`).join('')}</div></div></div>
+    </details>
+   </div>`;
+  openModal(t?'Trade bearbeiten':'Trade erfassen',html,qtSave,t?`<button class="btn danger" type="button" data-act="del-trade" data-id="${t.id}">Löschen</button>`:'');
+  qtLive();setTimeout(()=>{const p=$('#qt_pnl');if(p&&!t)p.focus()},60);
+}
+function qtLive(){if(!QT)return;const I=INSTR().find(i=>i.id===QT.instrument)||{usd_per_point:2};
+  const r=RS.tradeR({pnl:$('#qt_pnl')?.value,stop_points:$('#qt_stop')?.value,contracts:$('#qt_contracts')?.value},I.usd_per_point);
+  const rv=$('#qt_r');if(rv)rv.textContent=$('#qt_pnl')?.value!==''&&r!=null?`= ${r>0?'+':''}${fmtN(r,2)} R`:'';
+  ['eb','ea'].forEach(k=>{const el=$('#qt_'+k+'_int');if(el){QT[k].intensity=+el.value;$('#qt_'+k+'_intv').textContent=el.value}});
+  const oc=$('#qt_oc');if(oc)oc.innerHTML=RS.overconfidence(QT.eb,JC().overconfidence)?`<div class="alert warn" style="margin-top:10px"><span class="sq" style="background:var(--warn)"></span><div><b>${esc(JC().overconfidence.text)}</b></div></div>`:''}
+async function qtSave(){
+  const pnlRaw=$('#qt_pnl').value;if(pnlRaw===''||!isFinite(+pnlRaw)){toast('Bitte das Ergebnis in $ eingeben.');$('#qt_pnl').focus();return false}
+  if(!QT.eb.emotion){toast('Bitte das Gefühl vor dem Trade antippen.');return false}
+  const u=qtUnits(QT.id?S.trades.find(x=>x.id===QT.id):null).find(x=>x.key===QT.unit)||{ids:[]};
+  const I=INSTR().find(i=>i.id===QT.instrument)||{usd_per_point:2};
+  const contracts=$('#qt_contracts').value===''?null:+$('#qt_contracts').value,stop=$('#qt_stop').value===''?null:+$('#qt_stop').value,pnl=+pnlRaw;
+  const old=QT.id?S.trades.find(x=>x.id===QT.id):null;
+  const doc={...(old||{}),date:$('#qt_date').value||TODAY(),time:$('#qt_time').value||RS.berlinTime(),account_ids:u.ids,accountId:u.ids[0]||'',instrument:QT.instrument,symbol:QT.instrument,
+    direction:QT.direction,side:QT.direction,setup:QT.setup||'',contracts,stop_points:stop,planned_rr:QT.planned_rr==null?null:+QT.planned_rr,pnl,
+    followed_plan:QT.followed_plan,emotion_before:{...QT.eb},emotion_after:QT.ea.emotion?{...QT.ea}:null,emotion:QT.eb.emotion,notes:$('#qt_notes').value.trim(),ruleBreaks:QT.ruleBreaks};
+  doc.result_r=RS.tradeR({pnl,stop_points:stop,contracts},I.usd_per_point);delete doc.r;
+  const isNew=!old;if(isNew&&pnl<0)doc.tilt_required=true;
+  try{localStorage.setItem(QT_PREF_KEY,JSON.stringify({unit:QT.unit,instrument:QT.instrument,direction:QT.direction,planned_rr:QT.planned_rr,contracts,stop_points:stop}))}catch(e){}
+  const saved=await put('trades',doc);await syncDay(doc.date);if(old&&old.date!==doc.date)await syncDay(old.date);
+  const oc=RS.overconfidence(doc.emotion_before,JC().overconfidence);
+  toast(oc?JC().overconfidence.text:isNew?'Trade gespeichert':'Trade aktualisiert');
+  if(isNew&&pnl<0&&doc.date===TODAY()){setTimeout(()=>renderTilt(true),50)}
+  return true}
+
+/* ============ Phase 3: Trading-Tage ============ */
+async function syncDay(date){const j=S.journal.find(x=>x.id===date)||{},ci=CI(date),cur=S.trading_days.find(x=>x.id===date);
+  const doc=RS.buildTradingDay(date,S.trades,{readiness_score:ci?ci.score:null,mood_evening:j.mood_evening??null,reflection_text:j.review||'',day_type:cur?cur.day_type:null});
+  if(!doc.trades_count&&!cur&&!j.id&&!ci)return;
+  if(cur){const same=Object.keys(doc).every(k=>JSON.stringify(doc[k])===JSON.stringify(cur[k]));if(same)return}
+  try{await put('trading_days',{...doc,id:date})}catch(e){}}
+
+/* ============ Phase 3: Tilt-Frühwarnung ============ */
+let tiltTimer=null,TQ={urge:null,a_setup:null};
+function tiltOpenFor(){const d=TODAY();return S.trades.filter(t=>t.date===d&&t.tilt_required&&!S.tilt_checks.some(c=>c.id===t.id)).sort(byDT)[0]||null}
+function renderTilt(force){let el=$('#tilt');const now=Date.now(),pend=RS.tiltPending(S.tilt_checks,now),open=tiltOpenFor();
+  if(!pend&&!open&&!(el&&el.dataset.done==='0')){if(el)el.remove();clearInterval(tiltTimer);return}
+  if(!el){el=document.createElement('div');el.id='tilt';el.setAttribute('role','alertdialog');el.setAttribute('aria-label','Tilt-Frühwarnung');document.body.appendChild(el)}
+  if(open&&!pend){const t=open;el.dataset.done='0';el.dataset.trade=t.id;
+    el.innerHTML=`<div class="tilt-in"><div class="lbl" style="color:rgba(255,255,255,.7)">Tilt-Frühwarnung · Verlust ${money(t.pnl,0)}</div>
+     <h2>Wie stark ist der Drang, den Verlust zurückzuholen?</h2>
+     <div class="tilt-scale">${[1,2,3,4,5,6,7,8,9,10].map(v=>`<button type="button" class="${TQ.urge===v?'on':''}" data-act="tilt-urge" data-v="${v}">${v}</button>`).join('')}</div>
+     <div class="gauge-l" style="color:rgba(255,255,255,.7)"><span>gar nicht</span><span>sehr stark</span></div>
+     <h2 style="margin-top:22px">Ist der nächste Trade ein A-Setup aus deinem Plan?</h2>
+     <div class="row" style="gap:8px"><button type="button" class="tilt-yn ${TQ.a_setup===true?'on':''}" data-act="tilt-a" data-v="1">Ja</button><button type="button" class="tilt-yn ${TQ.a_setup===false?'on':''}" data-act="tilt-a" data-v="0">Nein</button></div>
+     <button type="button" class="btn" style="background:#fff;color:var(--brand);margin-top:24px;width:100%;justify-content:center;padding:13px" data-act="tilt-submit" ${TQ.urge==null||TQ.a_setup==null?'disabled':''}>Weiter zur Pause</button>
+     <p class="small" style="opacity:.7;margin-top:10px">Danach folgt eine Pause von ${JC().tilt?.pause_minutes||5} Minuten. Sie lässt sich nicht überspringen.</p></div>`;return}
+  const c=pend||S.tilt_checks.slice().sort((a,b)=>num(b.created_ms)-num(a.created_ms))[0];if(!c){el.remove();return}
+  el.dataset.done=pend?'0':'1';
+  const msg={RED:'Session gesperrt. Für heute ist Schluss. Nutze die Pause, um runterzukommen.',YELLOW:'Nach der Pause nur noch halbe Größe.',GREEN:'Okay. Nach der Pause weiter nach Plan.'}[c.level];
+  el.innerHTML=`<div class="tilt-in" style="text-align:center"><div class="lbl" style="color:rgba(255,255,255,.7)">Pflicht-Pause</div>
+    <div class="breath"><div class="breath-ring"></div><div class="breath-t" id="breathT">Einatmen</div></div>
+    <div class="mono" style="font-size:44px;font-weight:300" id="tiltLeft">--:--</div>
+    <p style="margin:10px auto 0;max-width:40ch">${esc(msg)}</p>
+    <p class="small" style="opacity:.7">Drang ${c.urge}/10 · A-Setup: ${c.a_setup?'ja':'nein'}</p>
+    <p class="small" style="opacity:.8;font-style:italic;margin-top:14px">„Seid stille und erkennt, dass ich Gott bin.“ Psalm 46,11</p>
+    <button type="button" class="btn" id="tiltDone" style="background:#fff;color:var(--brand);margin-top:16px" data-act="tilt-close" ${pend?'hidden':''}>Pause beendet</button></div>`;
+  clearInterval(tiltTimer);const end=num(c.pause_until_ms);
+  const tick=()=>{const ms=Math.max(0,end-Date.now()),l=$('#tiltLeft'),b=$('#breathT');if(!l){clearInterval(tiltTimer);return}
+    l.textContent=pad(Math.floor(ms/60000))+':'+pad(Math.floor(ms/1000)%60);const ph=Math.floor((Date.now()/1000)%10);if(b)b.textContent=ph<4?'Einatmen':'Ausatmen';
+    if(!ms){clearInterval(tiltTimer);const d=$('#tiltDone');if(d)d.hidden=false;el.dataset.done='1'}};
+  tick();tiltTimer=setInterval(tick,1000);
+}
+async function tiltSubmit(){const el=$('#tilt');const t=S.trades.find(x=>x.id===el?.dataset.trade);if(!t||TQ.urge==null||TQ.a_setup==null)return;
+  const r=RS.tiltResult({urge:TQ.urge,a_setup:TQ.a_setup},JC().tilt);const now=Date.now();
+  const doc={id:t.id,date:t.date,trade_id:t.id,account_ids:t.account_ids||(t.accountId?[t.accountId]:[]),urge:TQ.urge,a_setup:TQ.a_setup,level:r.level,reason:r.reason,created_ms:now,pause_until_ms:now+(JC().tilt?.pause_minutes||5)*60000};
+  TQ={urge:null,a_setup:null};await put('tilt_checks',doc);renderTilt(true)}
+
+/* ============ Phase 3: Statistik ============ */
+function vStats(){const f=UI.stF||(UI.stF={days:'90',acct:'all'});
+  let trs=filtAcct(S.trades,f.acct);if(f.days!=='all')trs=trs.filter(t=>t.date>=addDays(TODAY(),-+f.days));
+  const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;const rOf=t=>RS.tradeR(t,usd(t));
+  const head=`<div class="head"><div><h1>Statistik</h1><div class="sub">${trs.length} Trades · Muster aus deinem Journal</div></div><div class="row"><div class="seg">${[['30','30 Tage'],['90','90 Tage'],['all','Alle']].map(([v,l])=>`<button type="button" class="${f.days===v?'on':''}" data-act="st-days" data-v="${v}">${l}</button>`).join('')}</div>${acctSelect('stAcct',f.acct)}</div></div>`;
+  if(trs.length<5)return head+`<div class="card">${emptyBox('Noch zu wenig Trades','Ab 5 Trades mit Setup und Gefühl siehst du hier, wann du gut tradest und wann nicht. Erfasse jeden Trade mit der Schnelleingabe.')}</div>`;
+  const wr=x=>x==null?'–':Math.round(x*100)+' %',rr=x=>x==null?'–':(x>0?'+':'')+fmtN(x,2)+' R',rc=x=>x==null?'':x>0?'pos':x<0?'neg':'';
+  const row=(k,x)=>`<tr><td>${esc(k)}</td><td class="num">${x.n}</td><td class="num">${wr(x.winrate)}</td><td class="num ${rc(x.avgR)}"><b>${rr(x.avgR)}</b></td><td class="num ${cls(x.avgPnl)}">${x.avgPnl==null?'–':money(x.avgPnl,0)}</td></tr>`;
+  const table=(title,rows,first)=>`<div class="card"><h2>${title}</h2><div class="tbl-wrap"><table><thead><tr><th>${first}</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">Ø R</th><th class="num">Ø $</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const emo=RS.statsByEmotion(trs,rOf),al=RS.afterLossStats(trs,rOf),idx=RS.statsByTradeIndex(trs,rOf),wk=RS.ruleBreaksByWeek(trs,TODAY(),8),su=RS.statsBySetup(trs,rOf,t=>PB(t.setupId)?.name);
+  const tile=(t,x,hl)=>`<div class="card" style="${hl?'background:var(--warn-soft)':''}"><div class="lbl">${t}</div><div class="mono ${rc(x.avgR)}" style="font-size:28px;font-weight:700">${rr(x.avgR)}</div><div class="small muted">Winrate ${wr(x.winrate)} · Ø ${x.avgPnl==null?'–':money(x.avgPnl,0)} · ${x.n} Trades</div></div>`;
+  const maxB=Math.max(1,...wk.map(w=>w.breaks));
+  const bars=`<svg viewBox="0 0 400 170" width="100%" style="max-width:620px;display:block" role="img" aria-label="Regelbrüche pro Woche">${[0,Math.ceil(maxB/2),maxB].map(v=>`<line x1="34" x2="396" y1="${140-v/maxB*120}" y2="${140-v/maxB*120}" stroke="var(--line)"/><text x="28" y="${144-v/maxB*120}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">${v}</text>`).join('')}
+    ${wk.map((w,i)=>{const x=40+i*45,h=w.breaks/maxB*120;return `<rect x="${x}" y="${140-h}" width="30" height="${Math.max(h,0)}" rx="5" fill="${i===wk.length-1?'var(--loss)':'var(--warn)'}" opacity="${w.breaks?1:.25}"/><text x="${x+15}" y="160" text-anchor="middle" font-size="10.5" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">KW${w.week.slice(-2)}</text>${w.breaks?`<text x="${x+15}" y="${134-h}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${w.breaks}</text>`:''}`}).join('')}</svg>`;
+  const worse=al.afterLoss.avgR!=null&&al.others.avgR!=null&&al.afterLoss.avgR<al.others.avgR;
+  return head+`
+  <h2>Nach einem Verlust</h2><div class="grid g-2" style="margin-bottom:16px">${tile('Trade direkt nach einem Verlust',al.afterLoss,worse)}${tile('Alle anderen Trades',al.others)}</div>
+  ${worse?`<div class="alert warn" style="margin:-6px 0 16px"><span class="sq" style="background:var(--warn)"></span><div>Deine Trades nach einem Verlust sind im Schnitt ${fmtN(al.others.avgR-al.afterLoss.avgR,2)} R schlechter. Die Pflicht-Pause ist für dich besonders wichtig.</div></div>`:''}
+  <h2>Trade 1 bis 4 des Tages</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">${idx.map(x=>tile('Trade '+x.label,x)).join('')}</div>
+  <div class="grid g-2" style="margin-bottom:16px">${table('Nach Gefühl vor dem Trade',emo.map(x=>row(x.key,x)).join(''),'Gefühl')}${table('Ø R je Setup',su.map(x=>row(x.key,x)).join(''),'Setup')}</div>
+  <div class="card"><h2>Regelbrüche pro Woche</h2>${bars}<div class="small muted">Letzte 8 Kalenderwochen. Gezählt werden „Plan nicht befolgt“ und markierte Regelbrüche.</div></div>`;
+}
+
 /* ============ CSV import ============ */
 function importModal(){
   openModal('Trades aus CSV importieren',`<p class="small muted" style="margin-top:0">Exportiere deine Trades (z. B. Tradovate „Performance“, Topstep, NinjaTrader, Rithmic) als CSV und füge den Inhalt hier ein. Erkannt werden Spalten wie Datum/Zeit (bzw. Bought/Sold Timestamp), Symbol, Seite, Menge, Entry/Exit und P&amp;L.</p>
@@ -1312,6 +1460,14 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'qt':{const k=b.dataset.k,v=b.dataset.v;if(!QT)break;if(k==='eb'||k==='ea')QT[k].emotion=QT[k].emotion===v?'':v;else if(k==='followed_plan')QT.followed_plan=v==='true';else if(k==='planned_rr')QT.planned_rr=+v;else if(k==='setup')QT.setup=QT.setup===v?'':v;else QT[k]=v;
+     const box=b.closest('.qt-chips');box.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b&&!((k==='setup'&&!QT.setup)||((k==='eb'||k==='ea')&&!QT[k].emotion))));qtLive()}break;
+   case 'qt-break':{const v=b.dataset.v;QT.ruleBreaks=QT.ruleBreaks.includes(v)?QT.ruleBreaks.filter(x=>x!==v):[...QT.ruleBreaks,v];b.classList.toggle('on')}break;
+   case 'tilt-urge':TQ.urge=+b.dataset.v;renderTilt(true);break;
+   case 'tilt-a':TQ.a_setup=b.dataset.v==='1';renderTilt(true);break;
+   case 'tilt-submit':tiltSubmit();break;
+   case 'tilt-close':{const el=$('#tilt');if(el)el.remove();clearInterval(tiltTimer);render()}break;
+   case 'st-days':UI.stF.days=b.dataset.v;render();break;
    case 'calc-instr':UI.calc.instr=id;try{localStorage.setItem('rs-instr',id)}catch(e){}$('#calcCard').innerHTML='<h2>Positionsgröße</h2>'+calcInner();break;
    case 'add-rule':editRule(null);break;
    case 'edit-rule':editRule(RULE(id));break;
@@ -1327,7 +1483,7 @@ document.addEventListener('click',async e=>{
    case 'more':openModal('Mehr',`<div class="list" style="background:var(--surface)">${VIEWS.filter(v=>!TABS.some(t=>t[0]===v[0])).map(([k,l,i])=>`<a class="li-row" href="#${k}" data-act="close" style="color:var(--fg);text-decoration:none;font-weight:500">${ICON[i]}${l}</a>`).join('')}</div>`,null);break;
    case 'add-trade':if(ENGINE().status==='RED'){UI.lockSeen=false;renderLock(true);break}editTrade(null);break;
    case 'edit-trade':closeModal();editTrade(S.trades.find(t=>t.id===id));break;
-   case 'del-trade':if(b.dataset.confirm){await del('trades',id);closeModal();toast('Trade gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
+   case 'del-trade':if(b.dataset.confirm){const dd=S.trades.find(x=>x.id===id)?.date;await del('trades',id);closeModal();if(dd)await syncDay(dd);toast('Trade gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
    case 'add-pb':editPB(null);break;
    case 'edit-pb':editPB(PB(id));break;
    case 'del-pb':if(b.dataset.confirm){await del('playbooks',id);closeModal();toast('Setup gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
@@ -1354,8 +1510,9 @@ document.addEventListener('click',async e=>{
   }
 });
 document.addEventListener('mousedown',e=>{if(e.target.id==='ov')closeModal()});
-document.addEventListener('input',e=>{if(e.target.id==='calcStop'){UI.calc.stop=e.target.value;const E=ENGINE(),u=E.units.find(x=>x.key===UI.calc.unit)||E.units[0];const I=INSTR().find(x=>x.id===UI.calc.instr)||INSTR()[0];const acc=u&&u.account,rule=acc?RULE(acc.rule_id):null;const lim=rule?RS.contractLimit(rule,acc.stage,acctM(acc).profit,I):null;$('#calcOut').innerHTML=calcOut(e.target.value?RS.positionSize({risk:u.r.riskPerTrade,stopPoints:+String(e.target.value).replace(',','.'),usdPerPoint:I.usd_per_point,limit:lim}):null,I)}});
+document.addEventListener('input',e=>{if(/^qt_/.test(e.target.id||''))qtLive();if(e.target.id==='calcStop'){UI.calc.stop=e.target.value;const E=ENGINE(),u=E.units.find(x=>x.key===UI.calc.unit)||E.units[0];const I=INSTR().find(x=>x.id===UI.calc.instr)||INSTR()[0];const acc=u&&u.account,rule=acc?RULE(acc.rule_id):null;const lim=rule?RS.contractLimit(rule,acc.stage,acctM(acc).profit,I):null;$('#calcOut').innerHTML=calcOut(e.target.value?RS.positionSize({risk:u.r.riskPerTrade,stopPoints:+String(e.target.value).replace(',','.'),usdPerPoint:I.usd_per_point,limit:lim}):null,I)}});
 document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='stAcct'){UI.stF.acct=t.value;render();return}
   if(t.id==='calcUnit'){UI.calc.unit=t.value;$('#calcCard').innerHTML='<h2>Positionsgröße</h2>'+calcInner();return}
   if(t.id==='dashAcct'){UI.acct=t.value;saveUI();render()}
   else if(t.id==='tfYm'){UI.tFilter.ym=t.value;render()}else if(t.id==='tfAcct'){UI.tFilter.acct=t.value;render()}else if(t.id==='tfSetup'){UI.tFilter.setup=t.value;render()}
@@ -1369,8 +1526,8 @@ document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
   else if(f.id==='setForm'){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
   else if(f.id==='jForm'){e.preventDefault();const g=k=>document.getElementById('j_'+k);
-    await put('journal',{id:UI.jDate,premarket:g('premarket').value.trim(),mood:g('mood').value?+g('mood').value:null,sleep:g('sleep').value===''?null:+g('sleep').value,review:g('review').value.trim(),lessons:g('lessons').value.trim(),heart:g('heart').value.trim(),followedPlan:g('followed').checked});
-    pending=false;toast('Journal gespeichert');render()}
+    await put('journal',{id:UI.jDate,premarket:g('premarket').value.trim(),mood:g('mood').value?+g('mood').value:null,sleep:g('sleep').value===''?null:+g('sleep').value,review:g('review').value.trim(),lessons:g('lessons').value.trim(),heart:g('heart').value.trim(),followedPlan:g('followed').checked,mood_evening:g('mood_evening').value?+g('mood_evening').value:null});
+    await syncDay(UI.jDate);pending=false;toast('Journal gespeichert');render()}
 });
 
 render();initStore();
