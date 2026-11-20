@@ -131,5 +131,485 @@
       "min_intensity": 7,
       "text": "Overconfidence-Warnung: Der Markt schuldet dir nichts. Gleiche Größe, gleiche Kriterien."
     }
-  }
+  },
+  "psych_config": {
+    "note": "Selbsteinschätzung zur Reflexion, keine klinische Diagnose. Wiederholen: 1× pro Monat.",
+    "repeat_days": 30,
+    "thresholds": {
+      "green_max": 39,
+      "yellow_max": 64
+    },
+    "fomo_points": 20,
+    "reality_min_trades": 20,
+    "dimensions": [
+      {
+        "key": "loss_tilt",
+        "name": "Verlust-Tilt",
+        "explanation": "Verluste fühlen sich persönlich an und ziehen dich in weitere Trades.",
+        "counter_rule": "Nach jedem Verlust 5 Minuten Pause, Tages-Stop ist heilig.",
+        "items": [
+          {
+            "n": 1,
+            "text": "Nach einem Verlusttrade fühle ich mich, als müsste ich das Geld heute noch zurückholen.",
+            "reverse": false
+          },
+          {
+            "n": 2,
+            "text": "Ein Stop-Loss fühlt sich für mich wie eine persönliche Niederlage an.",
+            "reverse": false
+          },
+          {
+            "n": 3,
+            "text": "Ich verschiebe oder entferne manchmal meinen Stop, weil ich den Verlust nicht realisieren will.",
+            "reverse": false
+          },
+          {
+            "n": 4,
+            "text": "Ich kann einen Verlusttag abhaken und am nächsten Tag neutral starten.",
+            "reverse": true
+          },
+          {
+            "n": 5,
+            "text": "Nach zwei Verlusten in Folge steigen meine Positionsgröße oder meine Tradefrequenz.",
+            "reverse": false
+          }
+        ]
+      },
+      {
+        "key": "revenge",
+        "name": "Revenge- und Ungerechtigkeits-Tilt",
+        "explanation": "Du willst es dem Markt heimzahlen und steigst ohne neues Setup wieder ein.",
+        "counter_rule": "Nach einem Stop-out kein Wiedereinstieg ohne neues, vollständiges A-Setup.",
+        "items": [
+          {
+            "n": 6,
+            "text": "Wenn der Preis mich ausstoppt und dann in meine Richtung läuft, steige ich sofort wieder ein.",
+            "reverse": false
+          },
+          {
+            "n": 7,
+            "text": "Ich habe das Gefühl, dass der Markt gegen mich arbeitet.",
+            "reverse": false
+          },
+          {
+            "n": 8,
+            "text": "Nach einem Verlust nehme ich Setups, die nicht in meinem Plan stehen.",
+            "reverse": false
+          },
+          {
+            "n": 9,
+            "text": "Nach einem Verlust mache ich bewusst eine Pause von mindestens 15 Minuten.",
+            "reverse": true
+          }
+        ]
+      },
+      {
+        "key": "overconfidence",
+        "name": "Overconfidence",
+        "explanation": "Nach Gewinnen überschätzt du deinen Vorteil und lockerst deine Regeln.",
+        "counter_rule": "Nach 2 Gewinnern ist Schluss, keine Größenerhöhung außerhalb des Plans.",
+        "items": [
+          {
+            "n": 10,
+            "text": "Nach mehreren Gewinntagen erhöhe ich das Risiko, ohne dass es im Plan steht.",
+            "reverse": false
+          },
+          {
+            "n": 11,
+            "text": "Nach einem großen Gewinn habe ich das Gefühl, genau zu wissen, wohin der Preis läuft.",
+            "reverse": false
+          },
+          {
+            "n": 12,
+            "text": "An grünen Tagen trade ich weiter, obwohl mein Tagesziel erreicht ist.",
+            "reverse": false
+          },
+          {
+            "n": 13,
+            "text": "Ich glaube, dass ich mir nach guten Tagen einen Verlust leisten kann.",
+            "reverse": false
+          },
+          {
+            "n": 14,
+            "text": "Gewinne schreibe ich eher meinem Können zu, Verluste eher dem Pech.",
+            "reverse": false
+          }
+        ]
+      },
+      {
+        "key": "fomo",
+        "name": "FOMO",
+        "explanation": "Die Angst, etwas zu verpassen, treibt dich in späte Einstiege.",
+        "counter_rule": "Kein Einstieg nach mehr als {fomo_points} Punkten Bewegung ohne Retest.",
+        "items": [
+          {
+            "n": 15,
+            "text": "Wenn ein Move ohne mich startet, steige ich verspätet ein.",
+            "reverse": false
+          },
+          {
+            "n": 16,
+            "text": "Einen Tag ohne Trade empfinde ich als verlorenen Tag.",
+            "reverse": false
+          },
+          {
+            "n": 17,
+            "text": "Ich habe Angst, das eine große Setup des Tages zu verpassen.",
+            "reverse": false
+          },
+          {
+            "n": 18,
+            "text": "Ich kann zusehen, wie der Markt ohne mich läuft, ohne unruhig zu werden.",
+            "reverse": true
+          }
+        ]
+      },
+      {
+        "key": "fear",
+        "name": "Angst und Perfektionismus",
+        "explanation": "Angst vor Fehlern lässt dich zögern oder Gewinne zu früh mitnehmen.",
+        "counter_rule": "Stop und Ziel vor dem Entry festlegen und die Order arbeiten lassen.",
+        "items": [
+          {
+            "n": 19,
+            "text": "Ich nehme Gewinne zu früh mit, weil ich Angst habe, dass sie verschwinden.",
+            "reverse": false
+          },
+          {
+            "n": 20,
+            "text": "Ich zögere bei A-Setups so lange, bis der Einstieg vorbei ist.",
+            "reverse": false
+          },
+          {
+            "n": 21,
+            "text": "Ein Fehler beschäftigt mich noch Stunden oder Tage danach.",
+            "reverse": false
+          },
+          {
+            "n": 22,
+            "text": "Nach einem verpassten Trade bin ich wütend auf mich selbst.",
+            "reverse": false
+          }
+        ]
+      },
+      {
+        "key": "payout",
+        "name": "Finanzieller Druck und Payout-Fixierung",
+        "explanation": "Geld- und Payout-Gedanken sitzen mit am Chart und verändern dein Trading.",
+        "counter_rule": "PnL-Anzeige während der Session ausblenden.",
+        "items": [
+          {
+            "n": 23,
+            "text": "Ich rechne während der Session aus, wie viel mir noch bis zum Payout fehlt.",
+            "reverse": false
+          },
+          {
+            "n": 24,
+            "text": "Ich brauche das Geld aus Payouts für laufende Kosten.",
+            "reverse": false
+          },
+          {
+            "n": 25,
+            "text": "Der Preis der Eval oder des Resets spielt beim Traden in meinem Kopf eine Rolle.",
+            "reverse": false
+          },
+          {
+            "n": 26,
+            "text": "Wenn ein Konto kurz vor dem Ziel ist, trade ich anders als sonst.",
+            "reverse": false
+          },
+          {
+            "n": 27,
+            "text": "Ich trade nur mit Geld, dessen Verlust mich nicht belasten würde.",
+            "reverse": true
+          }
+        ]
+      },
+      {
+        "key": "discipline",
+        "name": "Disziplin und Impulsivität",
+        "explanation": "Impulse schlagen deinen Plan, besonders direkt nach der Eröffnung.",
+        "counter_rule": "Die ersten 5 Minuten nach der Eröffnung nicht handeln, Checkliste vor jedem Entry.",
+        "items": [
+          {
+            "n": 28,
+            "text": "Ich halte mich an meine maximale Anzahl Trades pro Tag.",
+            "reverse": true
+          },
+          {
+            "n": 29,
+            "text": "Ich trade auch, wenn ich müde, gestresst oder abgelenkt bin.",
+            "reverse": false
+          },
+          {
+            "n": 30,
+            "text": "Ich führe mein Journal auch an schlechten Tagen vollständig.",
+            "reverse": true
+          },
+          {
+            "n": 31,
+            "text": "Ich steige ein, bevor alle Kriterien meines Setups erfüllt sind.",
+            "reverse": false
+          },
+          {
+            "n": 32,
+            "text": "In den ersten Minuten nach der Eröffnung handle ich impulsiv.",
+            "reverse": false
+          }
+        ]
+      },
+      {
+        "key": "identity",
+        "name": "Selbstwert und Identität",
+        "explanation": "Dein Wert als Person hängt zu sehr am Tages-PnL.",
+        "counter_rule": "Bewerte den Tag nach Regeltreue, nicht nach Betrag.",
+        "items": [
+          {
+            "n": 33,
+            "text": "Meine Stimmung am Abend hängt stark vom Tages-PnL ab.",
+            "reverse": false
+          },
+          {
+            "n": 34,
+            "text": "Nach Verlusttagen zweifle ich an mir als Person, nicht nur am Trade.",
+            "reverse": false
+          },
+          {
+            "n": 35,
+            "text": "Ich erzähle anderen lieber von Gewinnen als von Verlusten.",
+            "reverse": false
+          },
+          {
+            "n": 36,
+            "text": "Wenn ich meinen Plan befolgt habe, habe ich Frieden, unabhängig vom Ergebnis.",
+            "reverse": true
+          }
+        ]
+      },
+      {
+        "key": "state",
+        "name": "Zustand und Umfeld",
+        "explanation": "Schlaf, Stress und Umfeld wirken stark auf deine Trades.",
+        "counter_rule": "Check-in gelb oder rot heißt: halbe Größe oder Beobachtungstag.",
+        "items": [
+          {
+            "n": 37,
+            "text": "Schlechter Schlaf beeinflusst meine Trades spürbar.",
+            "reverse": false
+          },
+          {
+            "n": 38,
+            "text": "Streit oder Sorgen außerhalb des Tradings nehme ich mit an den Chart.",
+            "reverse": false
+          },
+          {
+            "n": 39,
+            "text": "Ich habe eine feste Routine vor der Session.",
+            "reverse": true
+          },
+          {
+            "n": 40,
+            "text": "Ich bemerke körperliche Signale (Puls, Anspannung), bevor ich Fehler mache.",
+            "reverse": true
+          }
+        ]
+      }
+    ],
+    "triggers": [
+      "nach 1 Verlust",
+      "nach 2+ Verlusten",
+      "nach großem Gewinn",
+      "nach 3+ grünen Tagen",
+      "verpasstes Setup",
+      "Stop knapp gerissen und dann Gegenbewegung",
+      "News-Spike",
+      "Konto nah am Drawdown",
+      "Konto nah am Ziel",
+      "Geldsorgen",
+      "wenig Schlaf",
+      "Streit oder Stress privat",
+      "Langeweile in ruhigen Phasen",
+      "Social Media / andere Trader sehen",
+      "Technikprobleme"
+    ],
+    "tilt_map": [
+      {
+        "key": "early",
+        "label": "Stufe 1–3 (frühe Zeichen): Welche Gedanken, Gefühle und Körpersignale merke ich zuerst?"
+      },
+      {
+        "key": "tipping",
+        "label": "Stufe 4–6 (kippt): Was ändere ich dann an meinem Verhalten (Größe, Frequenz, Stop)?"
+      },
+      {
+        "key": "loss_control",
+        "label": "Stufe 7–10 (Kontrollverlust): Wie sieht ein typischer Tilt-Tag bei mir aus?"
+      },
+      {
+        "key": "helped",
+        "label": "Was hat in der Vergangenheit geholfen, wieder runterzukommen?"
+      },
+      {
+        "key": "self_sentence",
+        "label": "Mein Satz an mich selbst, wenn ich auf Stufe 5 bin:"
+      }
+    ]
+  },
+  "mindset_messages": [
+    {
+      "id": "pre-1",
+      "category": "PRE_SESSION",
+      "text": "Heute ist dein Job nicht, Geld zu verdienen. Dein Job ist, A-Setups sauber auszuführen und Verluste klein zu halten. Das Geld ist die Folge, nicht das Ziel.",
+      "bible_ref": "2. Timotheus 1,7",
+      "tags": []
+    },
+    {
+      "id": "pre-2",
+      "category": "PRE_SESSION",
+      "text": "Du darfst heute 0 Trades machen. Kein Setup = kein Trade = ein erfolgreicher Tag.",
+      "bible_ref": "Psalm 37,7",
+      "tags": []
+    },
+    {
+      "id": "pre-3",
+      "category": "PRE_SESSION",
+      "text": "Der Juli hat funktioniert, weil du lernen wolltest. Geh heute als Lernender in die Session, nicht als jemand, der etwas beweisen muss.",
+      "bible_ref": "Sprüche 21,5",
+      "tags": []
+    },
+    {
+      "id": "pre-4",
+      "category": "PRE_SESSION",
+      "text": "Prüfe vor dem ersten Trade: Schlaf, Kopf, Konto. Wenn eins davon rot ist, ist heute ein Beobachtungstag.",
+      "bible_ref": "Sprüche 25,28",
+      "tags": []
+    },
+    {
+      "id": "win-plan-1",
+      "category": "WIN_PLAN",
+      "text": "Guter Tag. Aber du hast den Preis nicht vorhergesagt. Du hast einen Vorteil sauber ausgeführt, und der Markt hat dieses Mal mitgespielt. Morgen gleiche Größe, gleiche Regeln.",
+      "bible_ref": "Jakobus 4,13–15",
+      "tags": [
+        "overconfidence"
+      ]
+    },
+    {
+      "id": "win-plan-2",
+      "category": "WIN_PLAN",
+      "text": "Gewinntage sind gefährlicher als Verlusttage, weil sie dir einreden, du hättest den Markt verstanden. Bleib demütig: Niemand weiß, was der morgige Tag bringt.",
+      "bible_ref": "Sprüche 27,1",
+      "tags": [
+        "overconfidence"
+      ]
+    },
+    {
+      "id": "win-plan-3",
+      "category": "WIN_PLAN",
+      "text": "Du hast heute aufgehört, als die Regel es sagte. Genau das ist der Gewinn, nicht der Betrag.",
+      "bible_ref": "Sprüche 16,18",
+      "tags": []
+    },
+    {
+      "id": "win-plan-4",
+      "category": "WIN_PLAN",
+      "text": "Notiere jetzt, was du richtig gemacht hast, nicht wie viel du verdient hast. Prozesse kann man wiederholen, Ergebnisse nicht.",
+      "bible_ref": "Sprüche 13,11",
+      "tags": []
+    },
+    {
+      "id": "win-rulebreak-1",
+      "category": "WIN_RULEBREAK",
+      "text": "Grün, aber mit Regelbruch. Das ist kein guter Tag, sondern ein Glückstag, der dich morgen Geld kosten kann. Schreib auf, welche Regel du gebrochen hast und warum.",
+      "bible_ref": "Sprüche 25,28",
+      "tags": []
+    },
+    {
+      "id": "win-rulebreak-2",
+      "category": "WIN_RULEBREAK",
+      "text": "Der Markt hat dich heute für einen Fehler belohnt. Das ist die gefährlichste Lektion überhaupt. Bewerte den Tag als ROT.",
+      "bible_ref": "1. Korinther 10,12",
+      "tags": [
+        "overconfidence"
+      ]
+    },
+    {
+      "id": "loss-controlled-1",
+      "category": "LOSS_CONTROLLED",
+      "text": "Kontrollierter Verlusttag = erfolgreicher Tag. Du hast genau das getan, was Profis von Amateuren unterscheidet: Du hast den Schaden begrenzt.",
+      "bible_ref": "Klagelieder 3,22–23",
+      "tags": []
+    },
+    {
+      "id": "loss-controlled-2",
+      "category": "LOSS_CONTROLLED",
+      "text": "Du musst keinen grünen Tag erzwingen. Gewinntage kommen. Deine einzige Aufgabe ist, dass Verlusttage nicht wehtun. Mission erfüllt.",
+      "bible_ref": "Matthäus 6,34",
+      "tags": []
+    },
+    {
+      "id": "loss-controlled-3",
+      "category": "LOSS_CONTROLLED",
+      "text": "Dieser Verlust ist bereits eingepreist. Er gehört zu den Kosten deines Geschäfts wie Miete für einen Laden. Morgen beginnt neu.",
+      "bible_ref": "Philipper 4,11–12",
+      "tags": []
+    },
+    {
+      "id": "loss-controlled-4",
+      "category": "LOSS_CONTROLLED",
+      "text": "Du hast gestoppt, als es wehtat. Genau dieser Moment baut das Konto, das am Ende ausgezahlt wird.",
+      "bible_ref": "Galater 6,9",
+      "tags": []
+    },
+    {
+      "id": "loss-rulebreak-1",
+      "category": "LOSS_RULEBREAK",
+      "text": "Heute haben die Emotionen gehandelt, nicht der Plan. Das ist kein Weltuntergang, aber es braucht eine ehrliche Notiz: Wann bin ich gekippt, und was war der Auslöser?",
+      "bible_ref": "Sprüche 24,16",
+      "tags": []
+    },
+    {
+      "id": "loss-rulebreak-2",
+      "category": "LOSS_RULEBREAK",
+      "text": "Schuld bringt dich nicht weiter, Klarheit schon. Benenne den Fehler, vergib dir und setz für morgen eine einzige konkrete Regel.",
+      "bible_ref": "1. Johannes 1,9",
+      "tags": []
+    },
+    {
+      "id": "loss-rulebreak-3",
+      "category": "LOSS_RULEBREAK",
+      "text": "Morgen gilt: halbe Größe, maximal 2 Trades. Nicht als Strafe, sondern damit du wieder Stabilität aufbaust.",
+      "bible_ref": "Sprüche 21,5",
+      "tags": []
+    },
+    {
+      "id": "no-trade-1",
+      "category": "NO_TRADE",
+      "text": "Kein Setup, kein Trade. Geduld ist eine Position, und zwar oft die beste.",
+      "bible_ref": "Psalm 37,7",
+      "tags": []
+    },
+    {
+      "id": "no-trade-2",
+      "category": "NO_TRADE",
+      "text": "Ein Tag ohne Trade kostet dich 0 $. Ein FOMO-Trade kostet dich das Konto. Gut gemacht.",
+      "bible_ref": "Prediger 3,1",
+      "tags": []
+    },
+    {
+      "id": "streak-win-1",
+      "category": "STREAK_WIN",
+      "text": "3 grüne Tage in Folge. Jetzt ist die Zeit für Wachsamkeit, nicht für mehr Risiko. Wer meint, er stehe fest, soll zusehen, dass er nicht fällt.",
+      "bible_ref": "1. Korinther 10,12",
+      "tags": [
+        "overconfidence"
+      ]
+    },
+    {
+      "id": "streak-loss-1",
+      "category": "STREAK_LOSS",
+      "text": "2 rote Tage. Morgen 100 $ Risiko, maximal 2 Trades. Du brauchst jetzt keinen großen Tag, sondern einen ruhigen.",
+      "bible_ref": "Galater 6,9",
+      "tags": []
+    }
+  ]
 }

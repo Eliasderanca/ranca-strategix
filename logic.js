@@ -425,5 +425,155 @@
   RS.statsBySetup = (trades, rOf, setupName) => [...groupBy(trades || [], (t) => t.setup || (setupName && setupName(t)) || 'Ohne Setup')]
     .map(([k, v]) => ({ key: k, ...RS.groupStats(v, rOf) })).sort((a, b) => (b.avgR ?? -99) - (a.avgR ?? -99));
 
+  /* ---------- Phase 4: Trader-Profil ---------- */
+
+  /** Datum ± Tage (YYYY-MM-DD, kalendarisch, ohne Zeitzonen-Effekte) */
+  RS.addDaysStr = (dateStr, n) => {
+    const [y, m, d] = dateStr.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + n)).toISOString().slice(0, 10);
+  };
+
+  /** Ampel eines Dimensions-Scores (0–100): bis green_max GRÜN, bis yellow_max GELB, sonst ROT */
+  RS.profileLevel = (score, th = {}) => {
+    const g = th.green_max != null ? th.green_max : 39, y = th.yellow_max != null ? th.yellow_max : 64;
+    return score <= g ? 'GREEN' : score <= y ? 'YELLOW' : 'RED';
+  };
+
+  /**
+   * Teil A auswerten. answers: {1:1..5, ..., 40:1..5}. Umgekehrte Items: 6 − Antwort.
+   * Score = (Mittelwert − 1) / 4 × 100, auf ganze Zahlen gerundet.
+   */
+  RS.scoreProfile = (answers, cfg) => {
+    const scores = {}, levels = {}, missing = [];
+    for (const dim of cfg.dimensions) {
+      const vals = [];
+      for (const it of dim.items) {
+        const a = Number(answers && answers[it.n]);
+        if (!(a >= 1 && a <= 5)) { missing.push(it.n); continue; }
+        vals.push(it.reverse ? 6 - a : a);
+      }
+      if (!vals.length) continue;
+      const mean = vals.reduce((s, v) => s + v, 0) / vals.length;
+      scores[dim.key] = Math.round(((mean - 1) / 4) * 100);
+      levels[dim.key] = RS.profileLevel(scores[dim.key], cfg.thresholds);
+    }
+    return { scores, levels, complete: missing.length === 0, missing };
+  };
+
+  /** Die n größten Risiken (nur GELB/ROT), höchster Score zuerst */
+  RS.topRisks = (scores, levels, n = 3) => Object.keys(scores)
+    .filter((k) => levels[k] !== 'GREEN')
+    .sort((a, b) => scores[b] - scores[a])
+    .slice(0, n);
+
+  /**
+   * Teil D: Selbsteinschätzung gegen echte Daten (ab minTrades Trades).
+   * Liefert je geprüfter Dimension: Datenbefund und ob die Einschätzung zu gut („overrated“) oder zu streng („underrated“) ist.
+   * o: { scores, levels, trades, rOf, dayTargets: {date: $}, winnersStop: true/false, minTrades }
+   */
+  RS.realityCheck = (o) => {
+    const trades = sortedTrades(o.trades);
+    if (trades.length < (o.minTrades || 20)) return { ready: false, need: (o.minTrades || 20) - trades.length, items: [] };
+    const items = [];
+    const verdict = (lvl, bad) => (bad && lvl !== 'RED' ? 'overrated' : !bad && lvl === 'RED' ? 'underrated' : null);
+    // Verlust-Tilt: R nach Verlust und Größenänderung nach Verlust
+    if (o.scores.loss_tilt != null) {
+      const al = RS.afterLossStats(trades, o.rOf);
+      const after = [], other = [];
+      for (const [, day] of groupBy(trades, (t) => t.date)) day.forEach((t, i) => ((i > 0 && num(day[i - 1].pnl) < 0) ? after : other).push(t));
+      const avgC = (a) => { const c = a.map((t) => num(t.contracts)).filter((x) => x > 0); return c.length ? c.reduce((s, x) => s + x, 0) / c.length : null; };
+      const ca = avgC(after), co = avgC(other);
+      const sizeUp = ca != null && co != null && co > 0 ? ca / co : null;
+      const rDiff = al.afterLoss.avgR != null && al.others.avgR != null ? al.afterLoss.avgR - al.others.avgR : null;
+      const bad = (rDiff != null && rDiff <= -0.3) || (sizeUp != null && sizeUp >= 1.2);
+      items.push({ key: 'loss_tilt', score: o.scores.loss_tilt, level: o.levels.loss_tilt, bad, verdict: verdict(o.levels.loss_tilt, bad),
+        facts: { afterLossR: al.afterLoss.avgR, othersR: al.others.avgR, afterLossN: al.afterLoss.n, sizeRatio: sizeUp != null ? Math.round(sizeUp * 100) / 100 : null } });
+    }
+    // Overconfidence: Trades nach Erreichen des Tagesziels (oder nach 2 Gewinnern)
+    if (o.scores.overconfidence != null) {
+      let afterTarget = 0, daysReached = 0;
+      for (const [date, day] of groupBy(trades, (t) => t.date)) {
+        const target = o.dayTargets && o.dayTargets[date];
+        let pnl = 0, wins = 0, reachedAt = -1;
+        day.forEach((t, i) => { pnl += num(t.pnl); if (num(t.pnl) > 0) wins++; if (reachedAt < 0 && ((target && pnl >= target) || (o.winnersStop && wins >= 2))) reachedAt = i; });
+        if (reachedAt >= 0) { daysReached++; afterTarget += day.length - 1 - reachedAt; }
+      }
+      const bad = afterTarget >= 2;
+      items.push({ key: 'overconfidence', score: o.scores.overconfidence, level: o.levels.overconfidence, bad, verdict: verdict(o.levels.overconfidence, bad), facts: { tradesAfterTarget: afterTarget, daysReached } });
+    }
+    // Disziplin: Regelbrüche pro Woche
+    if (o.scores.discipline != null) {
+      const weeks = groupBy(trades, (t) => RS.isoWeek(t.date));
+      const total = trades.reduce((s, t) => s + RS.ruleBreakCount(t), 0);
+      const perWeek = weeks.size ? Math.round((total / weeks.size) * 10) / 10 : 0;
+      const bad = perWeek >= 1;
+      items.push({ key: 'discipline', score: o.scores.discipline, level: o.levels.discipline, bad, verdict: verdict(o.levels.discipline, bad), facts: { breaksPerWeek: perWeek, weeks: weeks.size } });
+    }
+    return { ready: true, need: 0, items };
+  };
+
+  /* ---------- Phase 4: Mindset ---------- */
+
+  /**
+   * Tagestyp. day: {trades_count, pnl_total, rule_breaks}; dailyStop: positiver Betrag (z. B. 450).
+   * Ein Tag mit Trades und genau 0 $ zählt wie ein Verlusttag (kontrolliert oder mit Regelbruch).
+   */
+  RS.dayType = (day, dailyStop) => {
+    if (!day || !num(day.trades_count)) return 'NO_TRADE';
+    const pnl = num(day.pnl_total), breaks = num(day.rule_breaks);
+    if (pnl > 0) return breaks > 0 ? 'WIN_RULEBREAK' : 'WIN_PLAN';
+    const overStop = dailyStop ? -pnl > Math.abs(dailyStop) : false;
+    return breaks > 0 || overStop ? 'LOSS_RULEBREAK' : 'LOSS_CONTROLLED';
+  };
+
+  /** Serien-Flags bis einschließlich `date`: STREAK_WIN (3+ grüne Handelstage in Folge), STREAK_LOSS (2+ rote) */
+  RS.dayFlags = (days, date) => {
+    const list = (days || []).filter((d) => d.date <= date && num(d.trades_count) > 0).sort((a, b) => a.date.localeCompare(b.date));
+    if (!list.length || list[list.length - 1].date !== date) return [];
+    let g = 0, r = 0;
+    for (let i = list.length - 1; i >= 0 && num(list[i].pnl_total) > 0; i--) g++;
+    for (let i = list.length - 1; i >= 0 && num(list[i].pnl_total) < 0; i--) r++;
+    const out = [];
+    if (g >= 3) out.push('STREAK_WIN');
+    if (r >= 2) out.push('STREAK_LOSS');
+    return out;
+  };
+
+  /** Deterministischer Zufall aus einem Text (gleiches Datum = gleiche Auswahl) */
+  RS.seededRandom = (seed) => {
+    let h = 2166136261;
+    for (const ch of String(seed)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); }
+    return () => { h += 0x6d2b79f5; let t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  };
+
+  /**
+   * Mindset-Text wählen: zufällig aus der Kategorie, kein Text, der in den letzten `days` Tagen gezeigt wurde.
+   * Sind alle gesperrt, nimmt sie den am längsten nicht gezeigten. forceTag: nur Texte mit diesem Tag
+   * (falls die Kategorie keinen hat: aus allen Kategorien).
+   * history: [{date, message_id}]
+   */
+  RS.pickMessage = (messages, category, history, date, opts = {}) => {
+    const days = opts.days != null ? opts.days : 10;
+    let pool = (messages || []).filter((m) => m.category === category);
+    if (opts.forceTag) {
+      const tagged = pool.filter((m) => (m.tags || []).includes(opts.forceTag));
+      pool = tagged.length ? tagged : (messages || []).filter((m) => (m.tags || []).includes(opts.forceTag));
+    }
+    if (!pool.length) return null;
+    const from = RS.addDaysStr(date, -days);
+    const lastShown = {};
+    for (const h of history || []) if (h.date < date) lastShown[h.message_id] = lastShown[h.message_id] > h.date ? lastShown[h.message_id] : h.date;
+    const free = pool.filter((m) => !(lastShown[m.id] && lastShown[m.id] >= from));
+    const rnd = RS.seededRandom(`${date}|${category}|${opts.slot || ''}`);
+    if (free.length) return free[Math.floor(rnd() * free.length)];
+    return pool.slice().sort((a, b) => (lastShown[a.id] || '').localeCompare(lastShown[b.id] || ''))[0];
+  };
+
+  /** Link zur Bibelstelle bei bibleserver.com (Lutherbibel 2017) */
+  RS.bibleUrl = (ref) => {
+    const clean = String(ref || '').replace(/\s+/g, '').replace(/[–—]/g, '-');
+    return `https://www.bibleserver.com/LUT/${encodeURIComponent(clean)}`;
+  };
+
   return RS;
 });
