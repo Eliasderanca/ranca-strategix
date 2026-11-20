@@ -1,0 +1,8 @@
+{
+  "name": "ranca-strategix",
+  "productName": "Ranca Strategix",
+  "version": "1.0.0",
+  "description": "Ranca Strategix – interne Trading-Software",
+  "main": "main.js",
+  "author": "Ranca"
+}

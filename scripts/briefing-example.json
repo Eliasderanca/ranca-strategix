@@ -1,0 +1,44 @@
+{
+  "date": "2026-11-18",
+  "asOf": "18.11.2026, 22:00 MEZ",
+  "summary": "Zweiter schwacher Tag in Folge für Europa: Der DAX fällt unter 26.000 Punkte und erstmals seit Ende Oktober unter die 21-Tage-Linie. Das Fed-Protokoll signalisiert weitere Zinserhöhungen, der Markt rechnet fast sicher mit +25 Basispunkten im Dezember. Das belastet Aktien und drückt Gold unter 3.800 $. Der Nasdaq hält sich dank starker Nvidia-Zahlen leicht im Plus, obwohl die Nvidia-Aktie selbst im Tagesverlauf drehte.",
+  "sentiment": {
+    "score": -45,
+    "label": "Risk-off",
+    "text": "Zinsangst und Zweifel am KI-Sektor dominieren. Gute Nachrichten (Nvidia) werden verkauft, Abwärtsbewegungen sind breit (DAX: 27 Verlierer, 12 Gewinner; Dow −1,1 %). Erhöhte Volatilität."
+  },
+  "instruments": [
+    {"key": "dax", "name": "DAX", "sub": "Xetra", "last": 25736.24, "prev": 26045.37, "change": -309.13, "changePct": -1.19, "unit": "Punkte", "status": "Schlusskurs", "provisional": false,
+     "note": "Unter 26.000 Punkte und unter der 21-Tage-Linie. SAP mit −3,8 % schwächster Wert, Zalando mit +2,8 % stärkster. Schon am Vortag −2,1 % nach dem Rekord über 27.000 in der Vorwoche."},
+    {"key": "nasdaq", "name": "Nasdaq Composite", "sub": "USA", "last": 24435.4, "prev": 24328.38, "change": 107.0, "changePct": 0.44, "unit": "Punkte", "status": "vorläufiger Schluss", "provisional": true,
+     "note": "Beendet vier Verlusttage in Folge. Nvidia übertraf die Erwartungen (Umsatz 115,8 Mrd. $, Ausblick 130 Mrd. $), die Aktie drehte im Tagesverlauf aber 2–3 % ins Minus. S&P 500 etwa −0,2 %, Dow etwa −1,1 %."},
+    {"key": "gold", "name": "Gold", "sub": "Spot, $ je Unze", "last": 3740.4, "prev": 3848.5, "change": -108.1, "changePct": -2.81, "unit": "$", "status": "Stand 19:33 MEZ", "provisional": true,
+     "note": "Unter 3.800 $, tiefster Stand seit September 2025 und rund 30 % unter dem Rekordhoch vom Januar. Fester Dollar und die erwartete Fed-Zinserhöhung belasten. Silber etwa −3 %."}
+  ],
+  "events": [
+    {"title": "Fed-Protokoll: weitere Zinserhöhungen nötig", "text": "Das Protokoll der Oktober-Sitzung betont Inflationsrisiken. Der Markt preist eine Zinserhöhung um 25 Basispunkte im Dezember zu rund 95 % ein. Höhere Zinsen und ein fester Dollar drücken Aktien und Gold.",
+     "impact": [{"key": "dax", "dir": "down"}, {"key": "gold", "dir": "down"}, {"key": "nasdaq", "dir": "flat"}]},
+    {"title": "Nvidia-Zahlen: stark, aber verkauft", "text": "Umsatz und Ausblick über den Erwartungen. Der Nasdaq profitierte, die Nvidia-Aktie selbst fiel aber im Tagesverlauf. Zweifel am KI-Sektor bleiben, in Europa traf das vor allem SAP.",
+     "impact": [{"key": "nasdaq", "dir": "up"}, {"key": "dax", "dir": "down"}]},
+    {"title": "Technischer Bruch im DAX", "text": "Der Index rutschte unter die runde Marke von 26.000 und unter die 21-Tage-Linie. Das kann weitere technische Verkäufe auslösen.",
+     "impact": [{"key": "dax", "dir": "down"}]},
+    {"title": "Erwarteter Anthropic-Börsengang", "text": "Laut US-Berichten stützt die Erwartung des großen KI-Börsengangs die Tech-Werte im Nasdaq.",
+     "impact": [{"key": "nasdaq", "dir": "up"}]}
+  ],
+  "upcoming": [
+    {"when": "Do 19.11. · vor US-Eröffnung", "title": "Walmart-Quartalszahlen (Signal für den US-Konsum)", "importance": "mittel"},
+    {"when": "Do 19.11. · 14:30 MEZ", "title": "USA: Erstanträge auf Arbeitslosenhilfe", "importance": "mittel"},
+    {"when": "Di 24.11. · 10:00 MEZ", "title": "ifo-Geschäftsklima November", "importance": "mittel"},
+    {"when": "Dezember", "title": "Fed-Zinsentscheid (Erhöhung um 25 bp erwartet)", "importance": "hoch"}
+  ],
+  "tradingNote": "Risk-off mit erhöhter Volatilität. Der DAX hat 26.000 und die 21-Tage-Linie verloren, Gold ist im Abwärtstrend, und der Nasdaq hängt am KI-Sentiment. Für dich: kleinere Size, nur A-Setups aus dem Playbook, kein Trade rund um 14:30 MEZ (Erstanträge). Gerade an solchen Tagen schützt dich dein Tageslimit am meisten. Uhrzeiten bitte im Wirtschaftskalender bestätigen.",
+  "sources": [
+    {"title": "ad-hoc-news: DAX fällt um 1,19 % unter 26.000", "url": "https://www.ad-hoc-news.de/boerse/news/marktberichte/dax-faellt-am-mittwoch-um-1-19-prozent-unter-26-000-punkte/70532374"},
+    {"title": "aktiencheck: DAX-Schluss unter 26.000", "url": "https://aktiencheck.de/artikel/dax-schluss-unter-26000-punkte-erstmals-seit-ende-oktober-unter-der-21-tage"},
+    {"title": "ad-hoc-news: Nasdaq Composite +0,44 %", "url": "https://www.ad-hoc-news.de/boerse/news/marktberichte/nasdaq-composite-gains-0-44-prozent-as-nvidia-outlook-steadies-ai-trade/70532369"},
+    {"title": "Yahoo Finance: Börse am 18.11.", "url": "https://finance.yahoo.com/markets/live/stock-market-today-wednesday-november-18-dow-sp-500-nasdaq-nvidia-earnings-anthropic-ipo-143530588.html"},
+    {"title": "Kitco: Goldpreis", "url": "https://www.kitco.com/charts/gold"},
+    {"title": "USAGold: Gold unter 3.800 $", "url": "https://www.usagold.com/daily-precious-metals-market-report-november-18-2026/"},
+    {"title": "FRED: Nasdaq Composite", "url": "https://fred.stlouisfed.org/series/NASDAQCOM"}
+  ]
+}
