@@ -18,6 +18,7 @@
   color-scheme:light;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;letter-spacing:-.005em}
 button,input,select,textarea{font:inherit;color:inherit}
@@ -254,6 +255,7 @@ details.more>summary::-webkit-details-marker{display:none}
 <nav class="tabbar" id="tabbar" aria-label="Hauptnavigation"></nav>
 <div id="modalRoot"></div>
 
+<script src="logic.js"></script>
 <script>
 /* ============ helpers ============ */
 const $=s=>document.querySelector(s);
@@ -263,7 +265,7 @@ const pad=n=>String(n).padStart(2,'0');
 const iso=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
 const parseD=s=>{const[y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d)};
 const addDays=(s,n)=>{const d=parseD(s);d.setDate(d.getDate()+n);return iso(d)};
-const TODAY=()=>iso(new Date());
+const TODAY=()=>RS.berlinDate();
 const ymNow=()=>TODAY().slice(0,7);
 const ymShift=(ym,n)=>{const[y,m]=ym.split('-').map(Number);const d=new Date(y,m-1+n,1);return d.getFullYear()+'-'+pad(d.getMonth()+1)};
 const MONTHS=['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
@@ -323,8 +325,15 @@ const DEF_SET={maxDailyLoss:500,maxTrades:4,maxConsec:2,revengeMin:10,cooldownMi
  rules:'Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet'};
 
 /* ============ store ============ */
-const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins'];
-const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[]};
+const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules'];
+const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[]};
+/* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
+let SEED={account_rules:[],personal_rules:null};
+fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
+const RULES=()=>S.account_rules.length?S.account_rules:SEED.account_rules;
+const RULE=id=>id?RULES().find(r=>r.id===id):null;
+const PR=()=>({...(SEED.personal_rules||{}),...(S.personal_rules.find(x=>x.id==='main')||{})});
+const EA=a=>a&&a.rule_id?RS.effectiveAccount(a,RULE(a.rule_id)):a;
 const CI=d=>S.checkins.find(x=>x.id===d);
 const DP=d=>S.dayplans.find(x=>x.id===d);
 let DB=null, MODE='loading', loaded={};
@@ -360,7 +369,7 @@ async function del(col,id){
   if(MODE==='cloud'){try{await DB.collection(col).doc(id).delete()}catch(e){toast('Löschen fehlgeschlagen.')}} else saveLocal();
   scheduleRender();
 }
-const SET=()=>({...DEF_SET,...(S.settings.find(x=>x.id==='main')||{})});
+const SET=()=>({...DEF_SET,...(S.settings.find(x=>x.id==='main')||{}),...RS.legacySettings(PR())});
 const PB=id=>S.playbooks.find(p=>p.id===id);
 const AC=id=>S.accounts.find(a=>a.id===id);
 
@@ -396,7 +405,7 @@ function futureDays(a,fromDate,count){
   const plan=a.plan||{};const hasPlan=Object.entries(plan).some(([d,v])=>d>=fromDate&&v==='trade');
   let d=fromDate,c=0;for(let i=0;i<400;i++){const v=plan[d];const ok=hasPlan?v==='trade':(isWeekday(d)&&v!=='off');if(ok){c++;if(c>=count)return d}d=addDays(d,1)}return null;
 }
-function acctM(a){
+function acctM(a){a=EA(a);
   const trs=S.trades.filter(t=>t.accountId===a.id).sort(byDT),days=byDay(trs),dates=Object.keys(days).sort(),today=TODAY(),m0={};
   let bal=0,peak=0;dates.forEach(d=>{bal+=days[d].pnl;peak=Math.max(peak,bal)});
   let ddUsed=a.ddType==='static'?Math.max(0,-bal):peak-bal;
@@ -443,12 +452,12 @@ function alerts(){
   if(st.maxConsec&&consec>=st.maxConsec)out.push({a:'risk',lv:'stop',tx:`${consec} Verluste in Folge. Deine Regel sagt: Tag beenden.`});
   if(st.maxTrades&&tt.length>=st.maxTrades)out.push({a:'risk',lv:'stop',tx:`${tt.length} von ${st.maxTrades} Trades genutzt. Kein weiterer Trade heute.`});
   else if(st.maxTrades&&tt.length===st.maxTrades-1)out.push({a:'risk',lv:'warn',tx:`Noch 1 Trade übrig für heute. Nur ein A-Setup.`});
-  S.accounts.filter(a=>a.status!=='beendet'&&a.status!=='verloren').forEach(a=>{const m=acctM(a);
+  S.accounts.map(EA).filter(RS.isActive).forEach(a=>{const m=acctM(a);
     if(m.dailyLeft!=null&&a.maxDailyLoss&&m.dailyLeft<.35*a.maxDailyLoss)out.push({a:'risk',lv:m.dailyLeft<=0?'stop':'warn',tx:`${a.name}: nur noch ${money(m.dailyLeft)} Tagesverlust-Puffer.`});
     if(m.ddLeft!=null&&a.maxDrawdown&&m.ddLeft<.3*a.maxDrawdown)out.push({a:'risk',lv:m.ddLeft<=0?'stop':'warn',tx:`${a.name}: Drawdown-Puffer bei ${money(m.ddLeft)} von ${money(a.maxDrawdown,0)}. Size reduzieren.`});
     if(a.maxContracts&&tt.some(x=>x.accountId===a.id&&num(x.contracts)>a.maxContracts))out.push({a:'risk',lv:'stop',tx:`${a.name}: Kontraktlimit (${a.maxContracts}) heute überschritten.`});
   });
-  const dpT=DP(t);if(dpT&&dpT.items)Object.entries(dpT.items).forEach(([id,it])=>{const a=AC(id);if(!a)return;const p=sum(tt.filter(x=>x.accountId===id));
+  const dpT=DP(t);if(dpT&&dpT.items)Object.entries(dpT.items).forEach(([id,it])=>{const a=EA(AC(id));if(!a)return;const p=sum(tt.filter(x=>x.accountId===id));
     if(it.risk&&-p>=it.risk)out.push({a:'risk',lv:'stop',tx:`${a.name}: Tagesrisiko von ${money(it.risk,0)} erreicht (${money(p)}). Für dieses Konto ist heute Schluss.`});
     else if(it.risk&&-p>=.6*it.risk)out.push({a:'risk',lv:'warn',tx:`${a.name}: ${money(p)} von ${money(-it.risk,0)} Tagesrisiko genutzt.`});
     if(it.target&&p>=it.target)out.push({a:'mind',lv:'warn',tx:`${a.name}: Tagesziel ${money(it.target,0)} erreicht (${money(p)}). Aufhören ist heute der Sieg.`});});
@@ -636,7 +645,7 @@ function ciBanner(){const c=CI(TODAY());if(c){const L=LEVEL[c.level];return `<a 
 function ciNext(){const q=CI_Q[UI.ci.step];if(q.type==='text'){const el=$('#ciText');UI.ci.a.intention=el?el.value.trim():'';ciSave();return}
   if((q.type==='scale'||q.type==='pick')&&UI.ci.a[q.k]==null){toast('Bitte eine Antwort wählen.');return}
   UI.ci.step++;render()}
-async function ciSave(){const a=UI.ci.a,r=ciEval(a);const doc={id:TODAY(),sleep:a.sleep,mood:a.mood,stress:a.stress,focus:a.focus,emotions:a.emotions||[],yesterday:a.yesterday,pressure:a.pressure,life:a.life,heart:a.heart,commit:a.commit||[],intention:a.intention||'',score:r.score,level:r.level,flags:r.flags,at:new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})};
+async function ciSave(){const a=UI.ci.a,r=ciEval(a);const doc={id:TODAY(),sleep:a.sleep,mood:a.mood,stress:a.stress,focus:a.focus,emotions:a.emotions||[],yesterday:a.yesterday,pressure:a.pressure,life:a.life,heart:a.heart,commit:a.commit||[],intention:a.intention||'',score:r.score,level:r.level,flags:r.flags,at:RS.berlinTime()};
   UI.ci={step:0,a:{},redo:false};await put('checkins',doc);toast('Check-in gespeichert');render()}
 function vCheckin(){
   const today=TODAY(),c=CI(today);
@@ -756,8 +765,8 @@ function vPlaybook(){
 
 /* ============ VIEW: prop ============ */
 function vProp(){
-  const acts=S.accounts;if(UI.propAcct&&!AC(UI.propAcct))UI.propAcct='';
-  const sel=UI.propAcct?AC(UI.propAcct):null;const shown=sel?[sel]:acts;
+  const acts=S.accounts.map(EA);if(UI.propAcct&&!AC(UI.propAcct))UI.propAcct='';
+  const sel=UI.propAcct?EA(AC(UI.propAcct)):null;const shown=sel?[sel]:acts;
   const M={};acts.forEach(a=>M[a.id]=acctM(a));
   const today=TODAY();
   const keyDates=[];acts.forEach(a=>{const m=M[a.id];if(m.passDate)keyDates.push([m.passDate,a,'pass']);if(m.payoutDate&&!m.payoutCleared)keyDates.push([m.payoutDate,a,'payout']);if(a.endDate)keyDates.push([a.endDate,a,'end'])});
@@ -776,7 +785,7 @@ function vProp(){
     {const dp=DP(d);if(dp&&dp.note)h+=`<span class="pchip" style="color:var(--muted);white-space:normal" title="${esc(dp.note)}">${esc(dp.note.length>28?dp.note.slice(0,27)+'…':dp.note)}</span>`}
     return `<button type="button" class="cal-cell pcell ${d===today?'today':''}" data-act="pday" data-d="${d}">${h}</button>`};
   return `<div class="head"><div><h1>Prop-Firm-Kalender</h1><div class="sub">Challenge- und Funded-Tage, Regeln und dein erwarteter Payout-Tag.</div></div><button class="btn pri" data-act="add-acct">Konto anlegen</button></div>
-  ${acts.length?`<div class="grid g-2" style="margin-bottom:14px">${acts.map(a=>acctCard(a,M[a.id])).join('')}</div>`:`<div class="card" style="margin-bottom:14px">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`}
+  ${acts.length?acctGroupsHTML(acts,M):`<div class="card" style="margin-bottom:14px">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`}
   <div class="grid g-side">
    <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px">${monthNav('prop-month',UI.propYm)}
      <div class="row"><select id="propAcct"><option value="">Alle Konten</option>${acts.map(a=>`<option value="${a.id}" ${UI.propAcct===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div></div>
@@ -789,12 +798,18 @@ function vProp(){
    </div>
   </div>`;
 }
-function acctCard(a,m){
+function acctGroupsHTML(acts,M){const g=RS.groupAccounts(acts);let h='';
+  g.groups.forEach(gr=>{const ms=gr.members.map(a=>M[a.id]);const tp=ms.reduce((x,m)=>x+m.todayP,0),pr=ms.reduce((x,m)=>x+m.profit,0);
+    h+=`<div class="card" style="margin-bottom:14px;background:var(--accent-soft)"><div class="row" style="justify-content:space-between;margin-bottom:12px"><div><div class="lbl">Copy-Gruppe</div><h2 style="margin:0">${esc(gr.name)} · ${gr.members.length} Konten</h2></div><div class="row"><span class="chip">Heute <b class="mono ${cls(tp)}">&nbsp;${money(tp,0)}</b></span><span class="chip">Gesamt <b class="mono ${cls(pr)}">&nbsp;${money(pr,0)}</b></span></div></div>
+    <div class="grid g-2">${gr.members.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`});
+  if(g.singles.length)h+=`<div class="grid g-2" style="margin-bottom:14px">${g.singles.map(a=>acctCard(a,M[a.id])).join('')}</div>`;
+  return h}
+function acctCard(a,m){a=EA(a);
   const c=a.color||COLORS[0],fund=a.phase==='funded';
   const ddP=a.maxDrawdown?clamp(m.ddUsed/a.maxDrawdown*100):0,dlP=a.maxDailyLoss?clamp(-Math.min(0,m.todayP)/a.maxDailyLoss*100):0;
-  const stChip={aktiv:'gold',bestanden:'win',verloren:'loss',ausbezahlt:'info',beendet:''}[a.status||'aktiv'];
+  const stChip={aktiv:'gold',bestanden:'win',verloren:'loss',ausbezahlt:'info',beendet:''}[a.status||'aktiv'];const stLabel=a.stage?RS.STAGE_LABEL[a.stage]:(a.status||'aktiv');
   return `<div class="card" style="border-top:3px solid ${c}">
-   <div class="row" style="justify-content:space-between"><div><div class="row"><h2 style="margin:0">${esc(a.name)}</h2><span class="chip ${fund?'win':'info'}">${fund?'Funded':'Challenge'}</span><span class="chip ${stChip}">${esc(a.status||'aktiv')}</span>${a.demo?'<span class="chip">Demo</span>':''}</div><div class="small muted">${esc(a.firm||'')} · ${money(a.size||0,0)} · Start ${a.startDate?dLabel(a.startDate):'–'}${a.endDate?' · Frist '+dLabel(a.endDate):''}</div></div>
+   <div class="row" style="justify-content:space-between"><div><div class="row"><h2 style="margin:0">${esc(a.name)}</h2>${a.stage?'':`<span class="chip ${fund?'win':'info'}">${fund?'Funded':'Challenge'}</span>`}<span class="chip ${a.stage==='FUNDED'?'win':a.stage==='EVAL'?'info':stChip}">${esc(stLabel)}</span>${a.demo?'<span class="chip">Demo</span>':''}${a.copy_group?`<span class="chip info">Copy: ${esc(a.copy_group)}</span>`:''}</div><div class="small muted">${a.ruleName?esc(a.ruleName)+' · ':''}${esc(a.firm||'')} · ${money(a.size||0,0)} · Start ${a.startDate?dLabel(a.startDate):'–'}${a.endDate?' · Frist '+dLabel(a.endDate):''}</div></div>
    <div class="row"><button class="btn sm" data-act="edit-acct" data-id="${a.id}">Regeln</button>${fund?`<button class="btn sm" data-act="payout" data-id="${a.id}">Payout erfassen</button>`:''}</div></div>
    <div class="stack" style="margin-top:12px">
     ${!fund&&a.profitTarget?`<div class="meter-row"><span>Profitziel</span><span class="mono"><b class="${cls(m.profit)}">${money(m.profit,0)}</b> / ${money(a.profitTarget,0)}</span><div class="bar win"><i style="width:${clamp((m.progress||0)*100)}%"></i></div></div>`:''}
@@ -806,6 +821,8 @@ function acctCard(a,m){
     ${m.ddLocked?'<span class="chip win">Drawdown gelockt</span>':''}<span class="chip">Handelstage ${m.tradingDays}${a.minDays?' / '+a.minDays:''}</span>
     ${a.consistencyPct?`<span class="chip ${m.consOk?'win':'loss'}">Konsistenz ${m.cons!=null?pct(m.cons):'–'} / max ${a.consistencyPct}%</span>`:''}
     ${a.maxContracts?`<span class="chip">Max. ${a.maxContracts} Kontrakte</span>`:''}
+    ${(()=>{const r=RULE(a.rule_id);if(!r||a.stage!=='FUNDED')return '';const sc=RS.scalingFor(r,m.profit);return sc?`<span class="chip gold">Scaling: ${sc.minis} Minis / ${sc.micros} Micros</span>`:''})()}
+    ${a.monthlyFee?`<span class="chip">Abo ${money(a.monthlyFee,0)}/Monat${a.renewal_date?' · Verlängerung '+dLabel(a.renewal_date):''}</span>`:''}
     ${fund&&a.payoutMinDays?`<span class="chip">Qual. Tage ${m.qualDays} / ${a.payoutMinDays}${a.minDayProfit?' (≥ '+money(a.minDayProfit,0)+')':''}</span>`:''}
     ${fund&&a.profitSplit?`<span class="chip">Split ${a.profitSplit}%</span>`:''}
    </div>
@@ -843,7 +860,8 @@ function coachContext(){
    ohneSetup:{net:+sum(bs._||[]).toFixed(2),trades:(bs._||[]).length},
    checkins14Tage:S.checkins.filter(x=>x.id>=addDays(TODAY(),-14)).sort((a,b)=>a.id.localeCompare(b.id)).map(x=>({datum:x.id,score:x.score,ampel:x.level,schlaf:x.sleep,stimmung:x.mood,stress:x.stress,fokus:x.focus,gefuehle:x.emotions,gestern:x.yesterday,gelddruck:x.pressure,privat:x.life,absicht:x.intention,pnlTag:+sum(S.trades.filter(t=>t.date===x.id)).toFixed(2)})),
    tagesplaene:S.dayplans.filter(x=>x.id>=addDays(TODAY(),-7)).sort((a,b)=>a.id.localeCompare(b.id)).slice(0,20).map(x=>({datum:x.id,pause:!!x.off,notiz:x.note||'',konten:Object.entries(x.items||{}).map(([id,it])=>({konto:AC(id)?.name||id,risiko:it.risk,ziel:it.target}))})),
-   propKonten:S.accounts.map(a=>{const m=acctM(a);return {name:a.name,firma:a.firm,phase:a.phase,status:a.status,groesse:a.size,profitziel:a.profitTarget,maxTagesverlust:a.maxDailyLoss,maxDrawdown:a.maxDrawdown,ddArt:a.ddType,minTage:a.minDays,konsistenzMaxProzent:a.consistencyPct,frist:a.endDate,gewinn:+m.profit.toFixed(2),ddFrei:m.ddLeft,tageHandel:m.tradingDays,konsistenz:m.cons,zielErwartet:m.passDate,payoutErwartet:m.payoutDate,payoutBetrag:m.payoutAmt,regelnText:a.notes}}),
+   persoenlicheRegeln:PR(),
+   propKonten:S.accounts.map(EA).map(a=>{const m=acctM(a);return {name:a.name,regelsatz:a.ruleName||null,stufe:a.stage||null,copyGruppe:a.copy_group||null,firma:a.firm,phase:a.phase,status:a.status,groesse:a.size,profitziel:a.profitTarget,maxTagesverlust:a.maxDailyLoss,maxDrawdown:a.maxDrawdown,ddArt:a.ddType,minTage:a.minDays,konsistenzMaxProzent:a.consistencyPct,frist:a.endDate,gewinn:+m.profit.toFixed(2),ddFrei:m.ddLeft,tageHandel:m.tradingDays,konsistenz:m.cons,zielErwartet:m.passDate,payoutErwartet:m.payoutDate,payoutBetrag:m.payoutAmt,regelnText:a.notes}}),
    erkannteMuster:patterns(trs).map(p=>p.k+': '+p.tx.replace(/<[^>]+>/g,'')),
    agentenHinweiseHeute:alerts().map(x=>x.tx),
    journalLetzte10:S.journal.filter(j=>j.id>=addDays(TODAY(),-21)).sort((a,b)=>a.id.localeCompare(b.id)).slice(-10).map(j=>({datum:j.id,stimmung:j.mood,planBefolgt:j.followedPlan,plan:(j.premarket||'').slice(0,300),review:(j.review||'').slice(0,300),lektion:(j.lessons||'').slice(0,200)})),
@@ -916,24 +934,63 @@ function vJournal(){
 function tradeMini(dt){return `<div class="tbl-wrap"><table><tbody>${dt.map(t=>`<tr class="click" data-act="edit-trade" data-id="${t.id}"><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b> ${esc(t.side||'')}</td><td>${esc(PB(t.setupId)?.name||'–')}</td><td>${esc(t.emotion||'')}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td></tr>`).join('')}</tbody></table></div>`}
 
 /* ============ VIEW: rules ============ */
-const SET_FIELDS=[
- {k:'maxDailyLoss',l:'Max. Tagesverlust ($)',t:'number',h:'Persönliches Limit, unabhängig vom Prop-Konto'},
- {k:'maxTrades',l:'Max. Trades pro Tag',t:'number'},
- {k:'maxConsec',l:'Stopp nach X Verlusten in Folge',t:'number'},
+const PR_FIELDS=[
+ {k:'risk_per_trade_phase1',l:'Risiko pro Trade, Phase 1 ($)',t:'number',h:'gilt, bis das Konto die Phase-2-Schwelle erreicht'},
+ {k:'risk_per_trade_phase2',l:'Risiko pro Trade, Phase 2 ($)',t:'number'},
+ {k:'phase2_from_profit',l:'Phase 2 ab Kontogewinn ($)',t:'number'},
+ {k:'daily_stop_phase1',l:'Tages-Stop Phase 1 ($)',t:'number',h:'als negative Zahl, z. B. -450'},
+ {k:'daily_stop_phase2',l:'Tages-Stop Phase 2 ($)',t:'number'},
+ {k:'max_losing_trades_per_day',l:'Max. Verlusttrades pro Tag',t:'number'},
+ {k:'max_trades_per_day',l:'Max. Trades pro Tag',t:'number'},
+ {k:'fourth_trade_requires_green',l:'Letzter erlaubter Trade nur bei Tages-PnL über 0',t:'checkbox'},
+ {k:'after_two_red_days_risk',l:'Risiko nach 2 roten Tagen ($)',t:'number',h:'gilt nur für den nächsten Tag'},
+ {k:'stop_after_two_winners',l:'Nach 2 Gewinnern ist Schluss',t:'checkbox'},
+ {k:'eval_daily_profit_soft_cap',l:'Eval: Hinweis „Feierabend“ ab Tagesgewinn ($)',t:'number',h:'wegen der Konsistenzregel'},
+ {k:'eval_daily_profit_hard_warning',l:'Eval: deutliche Warnung ab Tagesgewinn ($)',t:'number'},
+ {k:'max_active_accounts',l:'Max. aktive Konten gleichzeitig',t:'number'},
+ {k:'max_consecutive_losses',l:'Agenten-Hinweis nach X Verlusten in Folge',t:'number'},
  {k:'revengeMin',l:'Revenge-Fenster (Minuten nach Verlust)',t:'number'},
  {k:'cooldownMin',l:'Cool-down-Dauer (Minuten)',t:'number'},
- {k:'sessionStart',l:'Handelsfenster von (Ortszeit)',t:'time'},
- {k:'sessionEnd',l:'Handelsfenster bis',t:'time'},
+ {k:'sessionStart',l:'Handelsfenster von (Berlin)',t:'time'},
+ {k:'sessionEnd',l:'Handelsfenster bis (Berlin)',t:'time'},
  {k:'goalMonth',l:'Ziel-Monat (JJJJ-MM)',t:'text'},
  {k:'monthGoal',l:'Monatsziel Net P&L ($)',t:'number'},
  {k:'maxRedDays',l:'Max. rote Tage im Monat',t:'number'},
  {k:'rules',l:'Meine Handelsregeln (eine pro Zeile, erscheinen im Pre-Trade-Check)',t:'textarea',full:1}
 ];
+const RULE_FIELDS=[
+ {k:'name',l:'Name',t:'text',req:1},{k:'firm',l:'Prop Firm',t:'text'},
+ {k:'start_balance',l:'Startkapital ($)',t:'number'},{k:'profit_target_eval',l:'Profitziel Eval ($)',t:'number'},
+ {k:'max_drawdown',l:'Max. Drawdown ($)',t:'number'},
+ {k:'drawdown_type',l:'Drawdown-Art',t:'select',o:[['EOD_TRAILING','Trailing am Tagesschluss (EOD)'],['INTRADAY_TRAILING','Trailing intraday'],['STATIC','Statisch']]},
+ {k:'drawdown_lock',l:'Drawdown lockt bei',t:'select',o:[['start_balance','Startkapital'],['','nie']]},
+ {k:'daily_loss_limit',l:'Tagesverlust-Limit ($)',t:'number'},
+ {k:'daily_loss_type',l:'Tagesverlust-Art',t:'select',o:[['HARD','Hart: Konto verloren'],['SOFT','Weich: nur der Tag endet']]},
+ {k:'eval_consistency_max_pct',l:'Eval-Konsistenz: bester Tag max. (%)',t:'number'},
+ {k:'scaling_text',l:'Funded-Scaling (Gewinn:Minis)',t:'text',h:'z. B. 0:2, 1000:3, 2000:5'},
+ {k:'micros_per_mini',l:'Micros pro Mini',t:'number'},
+ {k:'payout_qualifying_day_min',l:'Payout: Mindestgewinn pro Tag ($)',t:'number'},
+ {k:'payout_qualifying_days_required',l:'Payout: benötigte Tage',t:'number'},
+ {k:'payout_cap',l:'Payout-Obergrenze ($)',t:'number'},
+ {k:'profit_split',l:'Profit-Split (0–1)',t:'number',h:'z. B. 0.9 für 90 %'},
+ {k:'monthly_fee',l:'Abo-Gebühr pro Monat ($)',t:'number',h:'endet nach Bestehen der Eval'}
+];
+function editRule(r){const v={...(r||{name:'Neuer Regelsatz',micros_per_mini:10,drawdown_type:'EOD_TRAILING',drawdown_lock:'start_balance',daily_loss_type:'HARD'})};v.scaling_text=RS.formatScaling(v.funded_contract_scaling||[]);
+  openModal(r?'Regelsatz bearbeiten':'Regelsatz anlegen',`<div class="form">${formFields(RULE_FIELDS,v)}</div>`,async()=>{const x=readFields(RULE_FIELDS);if(!x.name){toast('Bitte einen Namen eingeben.');return false}
+    let sc;try{sc=RS.parseScaling(x.scaling_text)}catch(e){toast(e.message);return false}delete x.scaling_text;
+    if(x.profit_split!=null&&(x.profit_split<=0||x.profit_split>1)){toast('Profit-Split bitte als Anteil zwischen 0 und 1 eingeben, z. B. 0.9.');return false}
+    const id=r?.id||x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||uid();
+    await put('account_rules',{...(r||{}),...x,funded_contract_scaling:sc,id});toast('Regelsatz gespeichert')},
+    r&&S.account_rules.some(q=>q.id===r.id)&&!S.accounts.some(a=>a.rule_id===r.id)?`<button class="btn danger" type="button" data-act="del-rule" data-id="${r.id}">Löschen</button>`:'')}
 function vRules(){
-  const st=SET(),demo=S.trades.filter(t=>t.demo).length+S.playbooks.filter(t=>t.demo).length+S.accounts.filter(t=>t.demo).length;
+  const st=PR(),demo=S.trades.filter(t=>t.demo).length+S.playbooks.filter(t=>t.demo).length+S.accounts.filter(t=>t.demo).length;
   return `<div class="head"><div><h1>Regeln &amp; Ziele</h1><div class="sub">Deine Leitplanken für den Dezember. Die Agenten prüfen dagegen.</div></div></div>
   <div class="grid g-side">
-   <div class="card"><form id="setForm" class="form">${formFields(SET_FIELDS,st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>
+   <div class="stack">
+    <div class="card"><h2>Meine Regeln</h2><p class="small muted" style="margin-top:-6px">Strenger als die Firma. Die Risk-Engine und die Agenten rechnen mit diesen Werten.</p><form id="setForm" class="form">${formFields(PR_FIELDS,st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Firmen-Regelsätze</h2><button class="btn sm" data-act="add-rule">Regelsatz anlegen</button></div>
+     <div class="list" style="margin-top:12px;background:var(--elev)">${RULES().map(r=>`<div class="li-row" style="align-items:flex-start"><div style="flex:1;min-width:0" class="small">${ruleSummary(r).replace(/<div class="muted"[\s\S]*$/,'')}<div class="muted" style="margin-top:4px">${S.accounts.filter(a=>a.rule_id===r.id).length} Konten nutzen diesen Regelsatz${S.account_rules.some(q=>q.id===r.id)?'':' · Startwert, noch nicht gespeichert'}</div></div><button class="btn sm" data-act="edit-rule" data-id="${r.id}">Bearbeiten</button></div>`).join('')||'<div class="li-row muted">Noch kein Regelsatz.</div>'}</div></div>
+   </div>
    <div class="stack">
     <div class="card"><h2>Dezember-Plan</h2><ul class="clean small"><li>Ein Monat mit vielen kleinen grünen Tagen schlägt einen mit zwei großen.</li><li>Tageslimit ist heilig: erreicht heißt Plattform zu, nicht „noch einer“.</li><li>Nur Setups aus dem Playbook. Alles andere ist Glücksspiel.</li><li>Jeden Abend Review, jeden Freitag Wochen-Auswertung mit dem Coach.</li></ul>
      <p class="verse" style="margin-top:10px"><b>Sprüche 13,11</b> · „Schnell erworbener Reichtum zerrinnt; wer aber Stück für Stück sammelt, vermehrt ihn.“</p></div>
@@ -946,7 +1003,7 @@ function vRules(){
 /* ============ forms ============ */
 function formFields(F,o){return F.map(f=>{const v=o[f.k]??f.def??'',id='f_'+f.k,full=f.full||f.t==='textarea'?' full':'';
   let inp;
-  if(f.t==='select')inp=`<select id="${id}">${f.o.map(([val,lab])=>`<option value="${esc(val)}" ${String(v)===String(val)?'selected':''}>${esc(lab)}</option>`).join('')}</select>`;
+  if(f.t==='select')inp=`<select id="${id}">${(typeof f.o==='function'?f.o():f.o).map(([val,lab])=>`<option value="${esc(val)}" ${String(v)===String(val)?'selected':''}>${esc(lab)}</option>`).join('')}</select>`;
   else if(f.t==='textarea')inp=`<textarea id="${id}" rows="${f.rows||3}">${esc(v)}</textarea>`;
   else if(f.t==='checkbox')return `<div class="field${full}"><div class="checks"><label><input type="checkbox" id="${id}" ${v!==false&&v!==''?'checked':''}> ${f.l}</label></div></div>`;
   else if(f.t==='multi')inp=`<div class="checks" id="${id}">${f.o.map(x=>`<label><input type="checkbox" value="${esc(x)}" ${(v||[]).includes(x)?'checked':''}> ${esc(x)}</label>`).join('')}</div>`;
@@ -990,7 +1047,12 @@ const PB_FIELDS=[
  {k:'active',l:'Aktiv (wird gehandelt)',t:'checkbox',def:true}];
 function editPB(p){openModal(p?'Setup bearbeiten':'Setup anlegen',`<div class="form">${formFields(PB_FIELDS,p||{color:COLORS[S.playbooks.length%COLORS.length]})}</div>`,async()=>{const v=readFields(PB_FIELDS);if(!v.name){toast('Bitte einen Namen eingeben.');return false}await put('playbooks',{...(p||{}),...v});toast('Setup gespeichert')},p?`<button class="btn danger" type="button" data-act="del-pb" data-id="${p.id}">Löschen</button>`:'')}
 const AC_FIELDS=[
- {k:'name',l:'Kontoname',t:'text',req:1,ph:'z. B. Topstep 50K #1'},{k:'firm',l:'Prop Firm',t:'text',ph:'Topstep, Apex, Tradeify…'},
+ {k:'name',l:'Kontoname',t:'text',req:1,ph:'z. B. FTMO Pro 50K #1'},
+ {k:'rule_id',l:'Regelsatz',t:'select',o:()=>[['','Eigene Regeln (ohne Regelsatz)'],...RULES().map(r=>[r.id,r.name])]},
+ {k:'stage',l:'Phase',t:'select',o:RS.STAGES.map(x=>[x,{EVAL:'EVAL · Evaluation',FUNDED:'FUNDED · finanziert',BREACHED:'BREACHED · verloren',PAYOUT:'PAYOUT · ausgezahlt'}[x]])},
+ {k:'copy_group',l:'Copy-Gruppe',t:'text',ph:'z. B. Gruppe A',h:'Konten mit gleichem Namen werden zusammen angezeigt und gemeinsam gehandelt'},
+ {k:'renewal_date',l:'Abo-Verlängerung am',t:'date',h:'für die Kündigungs-Erinnerung'},
+ {k:'firm',l:'Prop Firm',t:'text',ph:'Topstep, Apex, Tradeify…'},
  {k:'phase',l:'Phase',t:'select',o:[['challenge','Challenge / Evaluation'],['funded','Funded']]},
  {k:'status',l:'Status',t:'select',o:[['aktiv','aktiv'],['bestanden','bestanden'],['verloren','verloren'],['ausbezahlt','ausbezahlt'],['beendet','beendet']]},
  {k:'size',l:'Kontogröße ($)',t:'number'},{k:'startDate',l:'Startdatum',t:'date'},{k:'endDate',l:'Frist / Ablaufdatum',t:'date',h:'leer lassen, wenn es keine Frist gibt'},
@@ -1025,7 +1087,13 @@ function ftmoTpl(key){const[plan,size,phase]=key.split('-');const r=FTMO[plan][s
 }
 const TPL_OPTS=[['','Eigene Regeln (leer)'],...['pro','growth'].flatMap(pl=>[50,100,150].flatMap(sz=>['challenge','funded'].map(ph=>[`${pl}-${sz}-${ph}`,`FTMO Futures ${pl==='pro'?'Pro':'Growth'} ${sz}K · ${ph==='funded'?'Funded':'Challenge'}`])))];
 function applyTpl(key){if(!key)return;const v=ftmoTpl(key);AC_FIELDS.forEach(f=>{if(!(f.k in v))return;const el=document.getElementById('f_'+f.k);if(!el)return;const x=v[f.k];if(f.t==='checkbox')el.checked=!!x;else el.value=x==null?'':x})}
-function editAcct(a){openModal(a?'Konto & Regeln bearbeiten':'Prop-Konto anlegen',`${a?'':`<div class="field" style="margin-bottom:16px;padding:14px;border-radius:16px;background:var(--accent-soft)"><label for="tplSel" style="color:var(--accent);font-weight:600">Vorlage wählen</label><select id="tplSel">${TPL_OPTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><span class="hint">Füllt alle Regeln aus. Danach kannst du Name, Startdatum und Details anpassen.</span></div>`}<div class="form">${formFields(AC_FIELDS,a||{phase:'challenge',status:'aktiv',ddType:'trailing-eod',startDate:TODAY(),color:COLORS[(S.accounts.length+1)%COLORS.length]})}</div>`,async()=>{const v=readFields(AC_FIELDS);if(!v.name){toast('Bitte einen Kontonamen eingeben.');return false}const saved=await put('accounts',{plan:{},payouts:[],...(a||{}),...v});if(!a){UI.propAcct=saved.id;saveUI()}toast('Konto gespeichert')},a?`<button class="btn danger" type="button" data-act="del-acct" data-id="${a.id}">Löschen</button>`:'')}
+function editAcct(a){openModal(a?'Konto & Regeln bearbeiten':'Prop-Konto anlegen',`<div id="ruleInfo" class="small" style="margin-bottom:14px;padding:12px 14px;border-radius:14px;background:var(--surface)"></div>${a?'':`<div class="field" id="tplBox" style="margin-bottom:16px;padding:14px;border-radius:16px;background:var(--accent-soft)"><label for="tplSel" style="color:var(--accent);font-weight:600">Vorlage wählen</label><select id="tplSel">${TPL_OPTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}</select><span class="hint">Füllt alle Regeln aus. Danach kannst du Name, Startdatum und Details anpassen.</span></div>`}<div class="form">${formFields(AC_FIELDS,a||{rule_id:RULES()[0]?.id||'',stage:'EVAL',phase:'challenge',status:'aktiv',ddType:'trailing-eod',startDate:TODAY(),color:COLORS[(S.accounts.length+1)%COLORS.length]})}</div>`,async()=>{const v=readFields(AC_FIELDS);v.copy_group=(v.copy_group||'').trim();if(v.rule_id){Object.assign(v,RS.stageToLegacy(v.stage||'EVAL'))}else{v.stage=''}
+  const err=RS.validateAccount({...(a||{}),...v},S.accounts,PR().max_active_accounts);if(err){toast(err);return false}
+  const saved=await put('accounts',{plan:{},payouts:[],...(a||{}),...v});if(!a){UI.propAcct=saved.id;saveUI()}toast('Konto gespeichert')},a?`<button class="btn danger" type="button" data-act="del-acct" data-id="${a.id}">Löschen</button>`:'');syncAcctForm()}
+const RULE_KEYS=['firm','phase','status','size','profitTarget','maxDailyLoss','maxDrawdown','ddType','minDays','consistencyPct','maxContracts','payoutMinDays','minDayProfit','payoutCycleDays','processingDays','profitSplit','payoutBuffer','maxPayout','payoutShare','ddLock','dllSoft'];
+function ruleSummary(r){const sc=RS.parseScaling(r.funded_contract_scaling||[]);return `<b>${esc(r.name)}</b> · Start ${money(r.start_balance,0)} · Eval-Ziel ${money(r.profit_target_eval,0)} · Tagesverlust ${money(r.daily_loss_limit,0)} (${r.daily_loss_type==='HARD'?'hart':'weich'}) · Drawdown ${money(r.max_drawdown,0)} (${r.drawdown_type==='EOD_TRAILING'?'Tagesschluss-Trailing':r.drawdown_type}${r.drawdown_lock==='start_balance'?', Lock beim Start':''}) · Konsistenz ≤ ${r.eval_consistency_max_pct} % · Payout ${r.payout_qualifying_days_required} Tage ≥ ${money(r.payout_qualifying_day_min,0)}, max. ${money(r.payout_cap,0)}, Split ${Math.round(r.profit_split*100)} % · Funded-Scaling ${sc.map(x=>x.minis).join(' / ')} Minis · Abo ${money(r.monthly_fee,0)}/Monat<div class="muted" style="margin-top:4px">Ändern unter Regeln &amp; Ziele → Firmen-Regelsätze.</div>`}
+function syncAcctForm(){const sel=$('#f_rule_id');if(!sel)return;const r=RULE(sel.value);const show=(k,on)=>{const el=document.getElementById('f_'+k);const w=el&&el.closest('.field');if(w)w.hidden=!on};
+  RULE_KEYS.forEach(k=>show(k,!r));show('stage',!!r);const tb=$('#tplBox');if(tb)tb.hidden=!!r;const ri=$('#ruleInfo');if(ri){ri.hidden=!r;ri.innerHTML=r?ruleSummary(r):''}}
 function payoutModal(a){const F=[{k:'date',l:'Datum',t:'date',def:TODAY()},{k:'amount',l:'Ausgezahlter Betrag ($)',t:'number',req:1}];
   openModal('Payout erfassen · '+a.name,`<div class="form">${formFields(F,{})}</div>${(a.payouts||[]).length?`<div class="sep"></div><div class="small muted">Bisher: ${(a.payouts||[]).map(p=>dLabel(p.date)+' '+money(p.amount,0)).join(' · ')}</div>`:''}`,async()=>{const v=readFields(F);if(!v.amount){toast('Betrag eingeben.');return false}await put('accounts',{...a,payouts:[...(a.payouts||[]),v],lastPayoutDate:v.date,payoutOverride:''});toast('Payout erfasst. Glückwunsch, und denk an den Zehnten.')})}
 function dayModal(d){const dt=S.trades.filter(t=>t.date===d).sort(byDT),j=S.journal.find(x=>x.id===d),s=stats(dt);
@@ -1036,7 +1104,7 @@ function dayModal(d){const dt=S.trades.filter(t=>t.date===d).sort(byDT),j=S.jour
 /* ============ day planner (right-click) ============ */
 function closeCtx(){const c=$('#ctx');if(c)c.remove()}
 function openDayPlan(d,ev){
-  closeCtx();const acts=S.accounts.filter(a=>!['verloren','beendet','ausbezahlt'].includes(a.status||'aktiv'));const dp=DP(d)||{};const items=dp.items||{};
+  closeCtx();const acts=S.accounts.map(EA).filter(RS.isActive);const dp=DP(d)||{};const items=dp.items||{};
   const rows=acts.length?acts.map(a=>{const it=items[a.id],on=!!it||(!DP(d)&&(a.plan||{})[d]==='trade');const fund=a.phase==='funded';
     return `<div class="dp-row"><label class="row" style="gap:8px;flex-wrap:nowrap;cursor:pointer"><input type="checkbox" class="dp-on" data-id="${a.id}" ${on?'checked':''}><span class="setup-dot" style="background:${a.color||COLORS[0]}"></span><span style="flex:1;min-width:0;font-weight:600">${esc(a.name)}</span><span class="chip ${fund?'win':'info'}">${fund?'Funded':'Challenge'}</span></label>
     <div class="dp-in"><label class="field"><span class="small muted">Max. Risiko heute ($)</span><input type="number" step="any" min="0" class="dp-risk" data-id="${a.id}" value="${it?.risk??''}" placeholder="${a.maxDailyLoss?'Limit '+a.maxDailyLoss:'z. B. 300'}"></label><label class="field"><span class="small muted">Tagesziel ($)</span><input type="number" step="any" min="0" class="dp-target" data-id="${a.id}" value="${it?.target??''}" placeholder="${a.dailyTarget||(a.minDayProfit?a.minDayProfit:'z. B. 400')}"></label></div></div>`}).join(''):'<div class="small muted">Lege zuerst ein Prop-Konto an.</div>';
@@ -1056,7 +1124,7 @@ function openDayPlan(d,ev){
 }
 async function saveDayPlan(clear){
   const el=$('#ctx');if(!el)return;const d=el.dataset.d,off=$('#dpOff').checked,note=$('#dpNote').value.trim(),items={},st=SET();let err='';
-  if(!clear&&!off)el.querySelectorAll('.dp-on:checked').forEach(c=>{const id=c.dataset.id,a=AC(id);const r=el.querySelector(`.dp-risk[data-id="${id}"]`).value,t=el.querySelector(`.dp-target[data-id="${id}"]`).value;
+  if(!clear&&!off)el.querySelectorAll('.dp-on:checked').forEach(c=>{const id=c.dataset.id,a=EA(AC(id));const r=el.querySelector(`.dp-risk[data-id="${id}"]`).value,t=el.querySelector(`.dp-target[data-id="${id}"]`).value;
     const risk=r===''?null:+r,target=t===''?null:+t;if(a&&a.maxDailyLoss&&risk>a.maxDailyLoss)err=`${a.name}: Risiko ${money(risk,0)} liegt über dem Tageslimit des Kontos (${money(a.maxDailyLoss,0)}).`;items[id]={risk,target}});
   if(err){$('#dpErr').textContent=err;return}
   const totalRisk=Object.values(items).reduce((x,i)=>x+num(i.risk),0);
@@ -1144,6 +1212,9 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'add-rule':editRule(null);break;
+   case 'edit-rule':editRule(RULE(id));break;
+   case 'del-rule':if(b.dataset.confirm){await del('account_rules',id);closeModal();toast('Regelsatz gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
    case 'ci-pick':{const q=CI_Q[UI.ci.step];if(q.type==='multi'){const arr=UI.ci.a[q.k]||[];const v=b.dataset.v;UI.ci.a[q.k]=arr.includes(v)?arr.filter(x=>x!==v):[...arr,v];render()}else{UI.ci.a[q.k]=q.type==='scale'?+b.dataset.v:b.dataset.v;ciNext()}}break;
    case 'ci-next':ciNext();break;
    case 'ci-back':if(UI.ci.step>0){UI.ci.step--;render()}break;
@@ -1188,11 +1259,12 @@ document.addEventListener('change',e=>{const t=e.target;
   else if(t.id==='propAcct'){UI.propAcct=t.value;saveUI();render()}
   else if(t.id==='jDate'&&t.value){UI.jDate=t.value;pending=false;render()}
   else if(t.id==='tplSel')applyTpl(t.value);
+  else if(t.id==='f_rule_id')syncAcctForm();
   else if(t.id==='ptcSetup')renderPTC();else if(t.classList.contains('ptc'))updPTC();
 });
 document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
-  else if(f.id==='setForm'){e.preventDefault();const v=readFields(SET_FIELDS);await put('settings',{...(S.settings.find(x=>x.id==='main')||{}),...v,id:'main'});toast('Regeln gespeichert')}
+  else if(f.id==='setForm'){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
   else if(f.id==='jForm'){e.preventDefault();const g=k=>document.getElementById('j_'+k);
     await put('journal',{id:UI.jDate,premarket:g('premarket').value.trim(),mood:g('mood').value?+g('mood').value:null,sleep:g('sleep').value===''?null:+g('sleep').value,review:g('review').value.trim(),lessons:g('lessons').value.trim(),heart:g('heart').value.trim(),followedPlan:g('followed').checked});
     pending=false;toast('Journal gespeichert');render()}

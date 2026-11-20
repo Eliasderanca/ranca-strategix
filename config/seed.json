@@ -1,0 +1,64 @@
+{
+  "_hinweis": "Startwerte. Die App liest zuerst die Datenbank (Sammlungen account_rules, personal_rules); diese Datei gilt nur, solange dort noch nichts steht.",
+  "account_rules": [
+    {
+      "id": "ftmo-futures-pro-50k",
+      "name": "FTMO Futures Pro 50K",
+      "firm": "FTMO Futures",
+      "start_balance": 50000,
+      "profit_target_eval": 3000,
+      "max_drawdown": 3000,
+      "drawdown_type": "EOD_TRAILING",
+      "drawdown_lock": "start_balance",
+      "daily_loss_limit": 1000,
+      "daily_loss_type": "HARD",
+      "eval_consistency_max_pct": 50,
+      "funded_contract_scaling": [
+        {
+          "min_profit": 0,
+          "minis": 2
+        },
+        {
+          "min_profit": 1000,
+          "minis": 3
+        },
+        {
+          "min_profit": 2000,
+          "minis": 5
+        }
+      ],
+      "micros_per_mini": 10,
+      "payout_qualifying_day_min": 200,
+      "payout_qualifying_days_required": 5,
+      "payout_cap": 5000,
+      "profit_split": 0.9,
+      "monthly_fee": 139,
+      "fee_currency": "USD"
+    }
+  ],
+  "personal_rules": {
+    "id": "main",
+    "risk_per_trade_phase1": 150,
+    "risk_per_trade_phase2": 200,
+    "phase2_from_profit": 600,
+    "daily_stop_phase1": -450,
+    "daily_stop_phase2": -600,
+    "max_losing_trades_per_day": 3,
+    "max_trades_per_day": 4,
+    "fourth_trade_requires_green": true,
+    "after_two_red_days_risk": 100,
+    "stop_after_two_winners": true,
+    "eval_daily_profit_soft_cap": 1200,
+    "eval_daily_profit_hard_warning": 1500,
+    "max_active_accounts": 4,
+    "revengeMin": 10,
+    "cooldownMin": 15,
+    "monthGoal": 3000,
+    "goalMonth": "2026-12",
+    "maxRedDays": 4,
+    "sessionStart": "15:30",
+    "sessionEnd": "17:30",
+    "rules": "Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet",
+    "max_consecutive_losses": 2
+  }
+}

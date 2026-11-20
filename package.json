@@ -1,0 +1,6 @@
+{
+  "name": "ranca-strategix",
+  "private": true,
+  "description": "Ranca Strategix – interne Trading-Software",
+  "scripts": { "test": "node --test tests/*.test.js" }
+}
