@@ -149,5 +149,149 @@
     return out;
   };
 
+  /* ---------- Phase 2: Risk-Engine ---------- */
+  const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
+  const byTime = (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+
+  /** Gehört ein Trade zu einem Konto? (alt: accountId, neu: account_ids als Liste) */
+  RS.tradeHasAccount = (t, id) => t.accountId === id || (Array.isArray(t.account_ids) && t.account_ids.includes(id));
+
+  /**
+   * Trades einer Handelseinheit (Einzelkonto oder Copy-Gruppe).
+   * Eine Copy-Gruppe wird identisch gehandelt; gezählt wird über das erste Konto der Gruppe,
+   * damit ein Trade nicht doppelt zählt.
+   */
+  RS.unitTrades = (trades, unitIds) => {
+    const lead = unitIds[0];
+    return (trades || []).filter((t) => RS.tradeHasAccount(t, lead));
+  };
+
+  /** Tages-P&L je Datum, sortiert */
+  RS.dailyPnl = (trades) => {
+    const m = {};
+    for (const t of trades || []) m[t.date] = (m[t.date] || 0) + num(t.pnl);
+    return Object.keys(m).sort().map((d) => ({ date: d, pnl: m[d] }));
+  };
+
+  /** Die letzten n Handelstage vor einem Datum waren alle rot? */
+  RS.redStreakBefore = (trades, date, n = 2) => {
+    const days = RS.dailyPnl(trades).filter((d) => d.date < date);
+    if (days.length < n) return false;
+    return days.slice(-n).every((d) => d.pnl < 0);
+  };
+
+  /**
+   * Zentrale Risk-Engine für einen Tag und eine Handelseinheit.
+   * @param {object} o
+   *   date: 'YYYY-MM-DD' (Berlin), trades: alle Trades der Einheit,
+   *   pr: personal_rules, account: wirksames Konto (effectiveAccount) oder null,
+   *   tilt: {level:'RED'|'YELLOW', reason} aus Phase 3 oder null, now: Date (für die Sperrzeit)
+   */
+  RS.riskEngine = (o) => {
+    const pr = o.pr || {};
+    const date = o.date;
+    const all = (o.trades || []).slice().sort(byTime);
+    const today = all.filter((t) => t.date === date);
+    const before = all.filter((t) => t.date < date);
+    const dayPnl = today.reduce((s, t) => s + num(t.pnl), 0);
+    const wins = today.filter((t) => num(t.pnl) > 0).length;
+    const losses = today.filter((t) => num(t.pnl) < 0).length;
+    const taken = today.length;
+    const profitAtOpen = before.reduce((s, t) => s + num(t.pnl), 0);
+
+    // Risiko-Phase: Phase 2 ab Kontogewinn X (Stand Tagesbeginn, damit sie sich nicht mitten im Tag ändert)
+    const phase2 = pr.phase2_from_profit != null && profitAtOpen >= num(pr.phase2_from_profit);
+    const redDays = RS.redStreakBefore(all, date, 2);
+    let baseRisk = phase2 ? num(pr.risk_per_trade_phase2) : num(pr.risk_per_trade_phase1);
+    let riskPhase = phase2 ? 'P2' : 'P1';
+    if (redDays && pr.after_two_red_days_risk != null) { baseRisk = num(pr.after_two_red_days_risk); riskPhase = 'RED_DAYS'; }
+    const dailyStop = Math.abs(num(phase2 ? pr.daily_stop_phase2 : pr.daily_stop_phase1));
+
+    const remainingToStop = Math.max(0, dailyStop + dayPnl);
+    const firmLimit = o.account && o.account.maxDailyLoss ? num(o.account.maxDailyLoss) : null;
+    const firmRemaining = firmLimit != null ? Math.max(0, firmLimit + dayPnl) : null;
+
+    // Trades
+    const maxTrades = num(pr.max_trades_per_day) || Infinity;
+    let tradesLeft = Math.max(0, maxTrades - taken);
+    const lastNeedsGreen = !!pr.fourth_trade_requires_green && Number.isFinite(maxTrades) && taken === maxTrades - 1 && dayPnl <= 0;
+    if (lastNeedsGreen) tradesLeft = 0;
+    const maxLosers = num(pr.max_losing_trades_per_day) || Infinity;
+
+    // Ampel
+    const reasons = [];
+    const notices = [];
+    let status = 'GREEN';
+    const red = (r) => { status = 'RED'; reasons.push(r); };
+    if (dailyStop && dayPnl <= -dailyStop) red(`Tages-Stop von −${dailyStop} $ erreicht (${dayPnl.toFixed(0)} $).`);
+    if (firmLimit != null && dayPnl <= -firmLimit) red(`FTMO-Tageslimit von −${firmLimit} $ erreicht. Konto prüfen.`);
+    if (losses >= maxLosers) red(`${losses} Verlusttrades heute. Maximum ist ${maxLosers}.`);
+    if (pr.stop_after_two_winners && wins >= 2) red('2 Gewinner heute. Deine Regel: dann ist Schluss.');
+    if (Number.isFinite(maxTrades) && taken >= maxTrades) red(`${taken} von ${maxTrades} Trades genutzt.`);
+    else if (lastNeedsGreen) red(`Trade ${maxTrades} ist nur erlaubt, wenn der Tag im Plus ist (${dayPnl.toFixed(0)} $).`);
+    if (o.tilt && o.tilt.level === 'RED') red(o.tilt.reason || 'Tilt-Sperre nach Verlusttrade.');
+    if (status !== 'RED') {
+      if (losses >= 1) { status = 'YELLOW'; reasons.push(`${losses} Verlusttrade heute. Ruhig bleiben, nur A-Setups.`); }
+      if (dailyStop && -dayPnl >= dailyStop * 0.5) { status = 'YELLOW'; reasons.push(`Schon ${Math.round(-dayPnl / dailyStop * 100)} % deines Tages-Stops verbraucht.`); }
+      if (o.tilt && o.tilt.level === 'YELLOW') { status = 'YELLOW'; reasons.push(o.tilt.reason || 'Nur noch halbe Größe.'); }
+    }
+    if (status === 'RED') tradesLeft = 0;
+
+    // Erlaubtes Risiko: Basis, halbiert bei Tilt-Gelb, nie mehr als bis zum Tages-Stop übrig ist
+    const halfSize = !!(o.tilt && o.tilt.level === 'YELLOW');
+    let riskPerTrade = halfSize ? baseRisk / 2 : baseRisk;
+    if (dailyStop) riskPerTrade = Math.min(riskPerTrade, remainingToStop);
+    if (firmRemaining != null) riskPerTrade = Math.min(riskPerTrade, firmRemaining);
+    if (status === 'RED') riskPerTrade = 0;
+    riskPerTrade = Math.floor(riskPerTrade);
+
+    // Eval-Hinweise wegen Konsistenzregel
+    if (o.account && o.account.stage === 'EVAL') {
+      if (pr.eval_daily_profit_hard_warning != null && dayPnl >= num(pr.eval_daily_profit_hard_warning)) notices.push({ level: 'warn', text: `Tagesgewinn ${dayPnl.toFixed(0)} $: Die Konsistenzregel wird gefährlich. Jetzt aufhören.` });
+      else if (pr.eval_daily_profit_soft_cap != null && dayPnl >= num(pr.eval_daily_profit_soft_cap)) notices.push({ level: 'info', text: `Tagesgewinn ${dayPnl.toFixed(0)} $: Feierabend. Ein zu großer Tag schadet der Konsistenzregel.` });
+    }
+    if (riskPhase === 'RED_DAYS') notices.push({ level: 'info', text: `Nach 2 roten Tagen gilt heute ${baseRisk} $ Risiko pro Trade.` });
+
+    return {
+      date, status, reasons, notices,
+      riskPerTrade, baseRisk, riskPhase, halfSize,
+      dailyStop, dayPnl, remainingToStop, firmLimit, firmRemaining,
+      tradesTaken: taken, tradesLeft, maxTrades: Number.isFinite(maxTrades) ? maxTrades : null,
+      wins, losses, profitAtOpen,
+      lockedUntilMs: status === 'RED' && o.now ? o.now.getTime() + RS.msUntilBerlinMidnight(o.now) : null,
+    };
+  };
+
+  const ORDER = { GREEN: 0, YELLOW: 1, RED: 2 };
+  /** Gesamtstatus über mehrere Einheiten: der schlechteste zählt (Sperre gilt für die ganze Session) */
+  RS.worstStatus = (results) => (results || []).reduce((w, r) => (ORDER[r.status] > ORDER[w] ? r.status : w), 'GREEN');
+
+  /* ---------- Phase 2: Positionsgröße ---------- */
+  /**
+   * @param {object} o risk ($), stopPoints, usdPerPoint, limit (max. Kontrakte dieses Instruments oder null)
+   */
+  RS.positionSize = (o) => {
+    const risk = num(o.risk), stop = num(o.stopPoints), ppp = num(o.usdPerPoint);
+    if (!(stop > 0) || !(ppp > 0)) return { contracts: 0, actualRisk: 0, perContract: 0, targets: [], error: 'Bitte Stopweite in Punkten eingeben.' };
+    const perContract = stop * ppp;
+    const contracts = Math.max(0, Math.floor((risk + 1e-9) / perContract));
+    const actualRisk = contracts * perContract;
+    const targets = [2, 3, 4].map((rr) => ({ rr, points: stop * rr, usd: actualRisk * rr }));
+    const out = { contracts, actualRisk, perContract, targets, warning: null, error: null };
+    if (contracts === 0) out.error = risk > 0 ? `Stop zu weit: 1 Kontrakt riskiert schon ${perContract} $, erlaubt sind ${risk} $.` : 'Heute ist kein Risiko mehr erlaubt.';
+    if (o.limit != null && contracts > o.limit) out.warning = `${contracts} Kontrakte liegen über deinem Scaling-Limit von ${o.limit}. Maximal ${o.limit} handeln.`;
+    return out;
+  };
+
+  /** Scaling-Limit für ein Instrument: Micro-Kontrakte über micros, Mini-Kontrakte über minis */
+  RS.contractLimit = (rule, stage, profit, instrument) => {
+    if (!rule || !instrument) return null;
+    let minis = null;
+    if (stage === 'FUNDED') { const s = RS.scalingFor(rule, profit); minis = s ? s.minis : null; }
+    else if (stage === 'EVAL' && rule.eval_max_minis) minis = num(rule.eval_max_minis);
+    if (minis == null) return null;
+    return instrument.type === 'micro' ? minis * (rule.micros_per_mini || 10) : minis;
+  };
+
   return RS;
 });

@@ -33,7 +33,8 @@
       "payout_cap": 5000,
       "profit_split": 0.9,
       "monthly_fee": 139,
-      "fee_currency": "USD"
+      "fee_currency": "USD",
+      "eval_max_minis": null
     }
   ],
   "personal_rules": {
@@ -60,5 +61,25 @@
     "sessionEnd": "17:30",
     "rules": "Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet",
     "max_consecutive_losses": 2
-  }
+  },
+  "instruments": [
+    {
+      "id": "MNQ",
+      "name": "Micro E-mini Nasdaq-100",
+      "usd_per_point": 2,
+      "type": "micro"
+    },
+    {
+      "id": "MES",
+      "name": "Micro E-mini S&P 500",
+      "usd_per_point": 5,
+      "type": "micro"
+    },
+    {
+      "id": "NQ",
+      "name": "E-mini Nasdaq-100",
+      "usd_per_point": 20,
+      "type": "mini"
+    }
+  ]
 }
