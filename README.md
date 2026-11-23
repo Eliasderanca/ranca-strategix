@@ -33,6 +33,15 @@ Daten liegen in der Datenbank des Artifacts. Außerhalb von claude.ai speichert 
 | `app_config` | `journal`, `psych`, `coach`, `cockpit`: Listen, Grenzwerte, Coach-Prompt, Budget |
 | `checkins`, `journal`, `dayplans`, `briefings`, `playbooks` | Check-in, Abend-Log, Tagespläne, Markt-Briefing, Playbook |
 
+## Täglicher Ablauf
+
+- **Heute** (Startseite): Check-in → Briefing → Tagesplan → News-Zeiten → Session → Tradovate-Import → Abend-Log (freitags Wochen-Review). Abgehakte Schritte stehen in `day_status`.
+- **News-Sperre:** ±`news_block_minutes` (Standard 5) um Termine mit Wichtigkeit „hoch“ aus dem Morgen-Briefing und um eigene Termine im Tagesplan. Pre-Trade-Check gesperrt; Trades in diesem Fenster bekommen automatisch den Regelbruch „News ignoriert“.
+- **Simulator:** Monte-Carlo für Eval und ersten Payout nach `account_rules` und `personal_rules`, mit Risiko-Vergleich.
+- **Wochen-Review** (`weekly_reviews`): Wochenbilanz, Coach-Analyse, Reflexion und ein Fokus für die nächste Woche.
+- **Chart-Screenshots** an Trades (Artifact-Assets), **Backup** aller Sammlungen als JSON (Regeln & Ziele).
+- **Erinnerungen aufs Handy** (geplante Aufgaben): Mo–Fr 07:16 Markt-Briefing, 14:34 Check-in/Tagesplan, 21:33 Import/Abend-Log/Wochen-Review.
+
 ## Trades importieren (Tradovate)
 
 Tradovate → **Account Reports → Performance** → Zeitraum → **Export CSV**. In der App: **Trades → Tradovate importieren**, Konto oder Copy-Gruppe wählen, Datei hineinziehen. Auch über TradingView ausgeführte Trades stehen im Tradovate-Export.

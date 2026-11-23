@@ -821,5 +821,168 @@
     });
   };
 
+  /* ---------- Simulator: Eval und Payout (Monte Carlo) ---------- */
+
+  /**
+   * R-Ziehung. source: {list:[R,...]} (Bootstrap aus echten Trades) oder {winrate:0..1, avgWin:R, avgLoss:R (negativ)}
+   */
+  RS.rSampler = (source) => {
+    if (source && Array.isArray(source.list) && source.list.length) { const l = source.list; return (rnd) => l[Math.floor(rnd() * l.length)]; }
+    const wr = num(source && source.winrate), w = num(source && source.avgWin) || 1, ls = -Math.abs(num(source && source.avgLoss) || 1);
+    return (rnd) => (rnd() < wr ? w : ls);
+  };
+
+  /**
+   * Ein simulierter Handelstag nach deinen persönlichen Regeln.
+   * state: {profit (Kontogewinn zu Tagesbeginn), redDays (rote Tage in Folge)}; rule: Regelsatz; pr: personal_rules
+   * Rückgabe: {pnl, trades, wins, losses, breach, minProfit (tiefster Kontostand im Tag, relativ)}
+   */
+  RS.simDay = (state, pr, rule, stage, sample, rnd, opt = {}) => {
+    const phase2 = pr.phase2_from_profit != null && state.profit >= num(pr.phase2_from_profit);
+    let base = phase2 ? num(pr.risk_per_trade_phase2) : num(pr.risk_per_trade_phase1);
+    if (state.redDays >= 2 && pr.after_two_red_days_risk != null) base = num(pr.after_two_red_days_risk);
+    if (opt.riskOverride) base = opt.riskOverride;
+    const stop = Math.abs(num(phase2 ? pr.daily_stop_phase2 : pr.daily_stop_phase1)) || Infinity;
+    const maxT = num(opt.maxTrades || pr.max_trades_per_day) || 4, maxL = num(pr.max_losing_trades_per_day) || Infinity;
+    const firm = rule && rule.daily_loss_limit ? num(rule.daily_loss_limit) : Infinity;
+    const soft = stage === 'EVAL' && pr.eval_daily_profit_soft_cap != null ? num(pr.eval_daily_profit_soft_cap) : Infinity;
+    let pnl = 0, n = 0, w = 0, l = 0, minP = state.profit, breach = null;
+    while (n < maxT) {
+      if (l >= maxL || (pr.stop_after_two_winners && w >= 2) || pnl <= -stop || pnl >= soft) break;
+      if (pr.fourth_trade_requires_green && n === maxT - 1 && pnl <= 0) break;
+      const risk = Math.min(base, stop - -pnl, firm + pnl);
+      if (!(risk > 0)) break;
+      const res = sample(rnd) * risk;
+      pnl += res; n++; if (res > 0) w++; else if (res < 0) l++;
+      minP = Math.min(minP, state.profit + pnl);
+      if (pnl <= -firm) { breach = 'DAILY'; break; }
+      if (state.ddLevel != null && state.profit + pnl <= state.ddLevel) { breach = 'DRAWDOWN'; break; }
+    }
+    return { pnl: Math.round(pnl * 100) / 100, trades: n, wins: w, losses: l, breach, minProfit: minP };
+  };
+
+  /** Drawdown-Grenze relativ zum Startkapital: EOD-Trailing mit Lock beim Start */
+  RS.ddLevel = (rule, peakEod) => {
+    if (!rule || !rule.max_drawdown) return null;
+    const lvl = num(peakEod) - num(rule.max_drawdown);
+    if (rule.drawdown_type === 'STATIC') return -num(rule.max_drawdown);
+    return rule.drawdown_lock === 'start_balance' ? Math.min(lvl, 0) : lvl;
+  };
+
+  /**
+   * Eval simulieren. o: {pr, rule, sample, days (Handelstage), runs, seed, riskOverride, minDays}
+   * Bestanden: Gewinn ≥ Ziel, bester Tag ≤ Konsistenz-%, mindestens minDays Handelstage.
+   */
+  RS.simulateEval = (o) => {
+    const runs = o.runs || 5000, rnd = RS.seededRandom(o.seed || 'eval'), target = num(o.rule.profit_target_eval), cons = num(o.rule.eval_consistency_max_pct) || 100;
+    let pass = 0, breach = 0, open = 0, consBlocked = 0; const passDays = [], finals = [], paths = [];
+    for (let r = 0; r < runs; r++) {
+      const st = { profit: 0, redDays: 0, peak: 0 }; let best = 0, res = 'OPEN', d = 0, traded = 0, hitTargetEarly = false; const path = [0];
+      for (d = 1; d <= o.days; d++) {
+        st.ddLevel = RS.ddLevel(o.rule, st.peak);
+        const day = RS.simDay(st, o.pr, o.rule, 'EVAL', o.sample, rnd, o);
+        st.profit += day.pnl; if (day.trades) traded++; path.push(Math.round(st.profit));
+        if (day.breach) { res = 'BREACH'; break; }
+        best = Math.max(best, day.pnl); st.peak = Math.max(st.peak, st.profit);
+        st.redDays = day.pnl < 0 ? st.redDays + 1 : day.pnl > 0 ? 0 : st.redDays;
+        if (st.profit >= target) {
+          if (best / st.profit * 100 <= cons && traded >= (o.minDays || 1)) { res = 'PASS'; break; }
+          hitTargetEarly = true;
+        }
+      }
+      if (res === 'PASS') { pass++; passDays.push(d); } else if (res === 'BREACH') breach++; else { open++; if (hitTargetEarly) consBlocked++; }
+      finals.push(st.profit); if (paths.length < 8) paths.push({ res, path });
+    }
+    passDays.sort((a, b) => a - b);
+    const hist = Array.from({ length: o.days }, (_, i) => passDays.filter((x) => x === i + 1).length);
+    return { runs, pPass: pass / runs, pBreach: breach / runs, pOpen: open / runs, pConsistencyBlocked: consBlocked / runs,
+      medianDays: passDays.length ? passDays[Math.floor(passDays.length / 2)] : null, passHist: hist,
+      avgFinal: Math.round(finals.reduce((s, x) => s + x, 0) / runs), paths };
+  };
+
+  /**
+   * Funded-Phase bis zum ersten Payout simulieren. o: {pr, rule, sample, days, runs, seed, riskOverride}
+   * Payout-fähig: payout_qualifying_days_required Tage mit ≥ payout_qualifying_day_min. Auszahlung: min(Gewinn, Cap) × Split.
+   */
+  RS.simulateFunded = (o) => {
+    const runs = o.runs || 5000, rnd = RS.seededRandom(o.seed || 'funded');
+    const need = num(o.rule.payout_qualifying_days_required) || 0, qmin = num(o.rule.payout_qualifying_day_min) || 0;
+    const cap = num(o.rule.payout_cap) || Infinity, split = o.rule.profit_split != null ? num(o.rule.profit_split) : 0.9;
+    let ok = 0, breach = 0; const payouts = [], daysTo = [];
+    for (let r = 0; r < runs; r++) {
+      const st = { profit: 0, redDays: 0, peak: 0 }; let q = 0, res = 'OPEN', d;
+      for (d = 1; d <= o.days; d++) {
+        st.ddLevel = RS.ddLevel(o.rule, st.peak);
+        const day = RS.simDay(st, o.pr, o.rule, 'FUNDED', o.sample, rnd, o);
+        st.profit += day.pnl;
+        if (day.breach) { res = 'BREACH'; break; }
+        st.peak = Math.max(st.peak, st.profit); st.redDays = day.pnl < 0 ? st.redDays + 1 : day.pnl > 0 ? 0 : st.redDays;
+        if (day.pnl >= qmin && day.trades) q++;
+        if (q >= need && st.profit > 0) { res = 'OK'; break; }
+      }
+      if (res === 'OK') { ok++; daysTo.push(d); payouts.push(Math.min(st.profit, cap) * split); } else if (res === 'BREACH') breach++;
+    }
+    payouts.sort((a, b) => a - b); daysTo.sort((a, b) => a - b);
+    const avg = payouts.length ? payouts.reduce((s, x) => s + x, 0) / payouts.length : 0;
+    return { runs, pPayout: ok / runs, pBreach: breach / runs, pOpen: (runs - ok - breach) / runs,
+      avgPayoutNet: Math.round(avg), medianPayoutNet: payouts.length ? Math.round(payouts[Math.floor(payouts.length / 2)]) : 0,
+      expectedNet: Math.round(avg * (ok / runs)), medianDays: daysTo.length ? daysTo[Math.floor(daysTo.length / 2)] : null };
+  };
+
+  /* ---------- News-Sperre ---------- */
+
+  /**
+   * Sperrfenster aus Briefing-Terminen und eigenen Einträgen für ein Datum.
+   * events: [{date?, time?, when?, title, importance}] (when z. B. „Mi 25.11. · 14:30 MEZ“), year für when ohne Jahr.
+   */
+  RS.newsBlocks = (events, date, minutes = 5, importances = ['hoch']) => {
+    const out = [];
+    for (const e of events || []) {
+      let d = e.date, t = e.time;
+      if ((!d || !t) && e.when) {
+        const m = String(e.when).match(/(\d{1,2})\.(\d{1,2})\.(?:(\d{4}))?[^0-9]*?(\d{1,2}):(\d{2})/);
+        if (m) { d = d || `${m[3] || date.slice(0, 4)}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`; t = t || `${m[4].padStart(2, '0')}:${m[5]}`; }
+      }
+      if (d !== date || !/^\d{2}:\d{2}$/.test(t || '')) continue;
+      if (e.importance && importances && importances.length && !importances.includes(e.importance) && !e.manual) continue;
+      const [h, mi] = t.split(':').map(Number), at = h * 60 + mi;
+      const f = (x) => `${String(Math.floor(((x % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((x % 60) + 60) % 60).padStart(2, '0')}`;
+      out.push({ title: e.title || 'News', time: t, start: f(at - minutes), end: f(at + minutes) });
+    }
+    return out.sort((a, b) => a.start.localeCompare(b.start));
+  };
+  /** Aktives Sperrfenster zur Uhrzeit HH:MM oder null */
+  RS.activeNewsBlock = (blocks, hhmm) => (blocks || []).find((b) => hhmm >= b.start && hhmm <= b.end) || null;
+
+  /* ---------- Wochen-Review ---------- */
+
+  /** Montag (YYYY-MM-DD) der ISO-Woche eines Datums */
+  RS.weekStart = (dateStr) => { const [y, m, d] = dateStr.split('-').map(Number); const dt = new Date(Date.UTC(y, m - 1, d)); const wd = dt.getUTCDay() || 7; return RS.addDaysStr(dateStr, 1 - wd); };
+
+  /**
+   * Wochenbilanz. o: {weekStart, trades, checkins:[{id,score,level}], tiltChecks, dayTypes:{date:type}, rOf}
+   */
+  RS.weekSummary = (o) => {
+    const from = o.weekStart, to = RS.addDaysStr(from, 6);
+    const tr = (o.trades || []).filter((t) => t.date >= from && t.date <= to);
+    const days = RS.dailyPnl(tr);
+    const s = RS.groupStats(tr, o.rOf || (() => null));
+    const ci = (o.checkins || []).filter((c) => c.id >= from && c.id <= to);
+    const types = {}; for (const d of days) { const ty = (o.dayTypes || {})[d.date]; if (ty) types[ty] = (types[ty] || 0) + 1; }
+    const bySetup = RS.statsBySetup(tr, o.rOf || (() => null));
+    const emo = RS.statsByEmotion(tr, o.rOf || (() => null));
+    return {
+      week: RS.isoWeek(from), from, to,
+      pnl: Math.round(tr.reduce((x, t) => x + num(t.pnl), 0) * 100) / 100, trades: tr.length, winrate: s.winrate, avgR: s.avgR,
+      tradingDays: days.length, greenDays: days.filter((d) => d.pnl > 0).length, redDays: days.filter((d) => d.pnl < 0).length,
+      bestDay: days.length ? Math.max(...days.map((d) => d.pnl)) : 0, worstDay: days.length ? Math.min(...days.map((d) => d.pnl)) : 0,
+      ruleBreaks: tr.reduce((x, t) => x + RS.ruleBreakCount(t), 0), followedPct: tr.length ? tr.filter((t) => RS.ruleBreakCount(t) === 0).length / tr.length : null,
+      dayTypes: types, tiltChecks: (o.tiltChecks || []).filter((c) => c.date >= from && c.date <= to).length,
+      tiltRed: (o.tiltChecks || []).filter((c) => c.date >= from && c.date <= to && c.level === 'RED').length,
+      checkinAvg: ci.length ? Math.round(ci.reduce((x, c) => x + num(c.score), 0) / ci.length) : null, checkins: ci.length,
+      bestSetup: bySetup.find((x) => x.avgR != null) || null, worstEmotion: emo.filter((x) => x.avgR != null).sort((a, b) => a.avgR - b.avgR)[0] || null,
+    };
+  };
+
   return RS;
 });

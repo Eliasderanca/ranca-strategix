@@ -60,7 +60,11 @@
     "sessionStart": "15:30",
     "sessionEnd": "17:30",
     "rules": "Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet",
-    "max_consecutive_losses": 2
+    "max_consecutive_losses": 2,
+    "news_block_minutes": 5,
+    "news_block_importance": [
+      "hoch"
+    ]
   },
   "instruments": [
     {

@@ -251,6 +251,21 @@ details.more>summary::-webkit-details-marker{display:none}
 /* import drop zone */
 .drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:22px;border:2px dashed var(--line);border-radius:16px;background:var(--surface);cursor:pointer;text-align:center}
 .drop.over{border-color:var(--accent);background:var(--accent-soft)}
+/* heute */
+.g-sim{grid-template-columns:minmax(0,1fr) minmax(0,1.35fr)}
+@media (max-width:980px){.g-sim{grid-template-columns:minmax(0,1fr)}}
+.steps{display:flex;flex-direction:column;gap:8px}
+.step{display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:14px;background:var(--elev);flex-wrap:wrap}
+.step-n{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:13px;background:var(--surface2);color:var(--muted);flex:none}
+.step.done{opacity:.7}.step.done .step-n{background:var(--win);color:#fff}
+.step.next{box-shadow:inset 0 0 0 2px var(--accent)}.step.next .step-n{background:var(--brand);color:#fff}
+@media (max-width:820px){.step-a{width:100%;padding-left:40px}}
+.sim-big .mono{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.shots{display:flex;flex-wrap:wrap;gap:8px}
+.shot{position:relative;width:110px;height:72px;border-radius:10px;overflow:hidden;background:var(--surface)}
+.shot img{width:100%;height:100%;object-fit:cover;cursor:zoom-in}
+.shot-x{position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;cursor:pointer;line-height:1}
+.shot.add{display:grid;place-items:center;border:2px dashed var(--line);font-size:13px;font-weight:600;color:var(--accent);cursor:pointer}
 /* daily check-in */
 .ci-card{max-width:640px}
 .ci-dot{flex:1;aspect-ratio:1;max-width:72px;border-radius:50%;border:0;background:var(--elev);font-size:20px;font-weight:700;color:var(--fg);cursor:pointer;transition:transform .12s}
@@ -354,6 +369,9 @@ const ICON={
  journal:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 2.5h10v15H5z"/><path d="M8 6h4M8 9h4M8 12h2"/></svg>',
  rules:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h12M4 10h12M4 15h12"/><circle cx="7" cy="5" r="1.6" fill="currentColor"/><circle cx="13" cy="10" r="1.6" fill="currentColor"/><circle cx="9" cy="15" r="1.6" fill="currentColor"/></svg>',
  market:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 16.5h15"/><path d="M3.5 13l4-4.5 3 2.5 5.5-6.5"/><path d="M13 4.5h3v3"/></svg>',
+ sun:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="10" r="3.6"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.3 4.3l1.4 1.4M14.3 14.3l1.4 1.4M4.3 15.7l1.4-1.4M14.3 5.7l1.4-1.4"/></svg>',
+ dice:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="3"/><circle cx="7" cy="7" r="1.1" fill="currentColor"/><circle cx="13" cy="13" r="1.1" fill="currentColor"/><circle cx="10" cy="10" r="1.1" fill="currentColor"/><circle cx="13" cy="7" r="1.1" fill="currentColor"/><circle cx="7" cy="13" r="1.1" fill="currentColor"/></svg>',
+ calcheck:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="15" height="13" rx="1.5"/><path d="M2.5 8h15M6.5 2.5v3M13.5 2.5v3M7 12.5l2 2 4-4"/></svg>',
  flag:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 17.5V3"/><path d="M4.5 3.5h10l-2 3.5 2 3.5h-10"/></svg>',
  person:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="10" cy="6.5" r="3.2"/><path d="M3.5 17c.8-3.3 3.4-5 6.5-5s5.7 1.7 6.5 5"/></svg>',
  chart:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3 17h14"/><rect x="4.5" y="10" width="2.6" height="5" rx=".8"/><rect x="8.7" y="6" width="2.6" height="9" rx=".8"/><rect x="12.9" y="3" width="2.6" height="12" rx=".8"/></svg>',
@@ -365,9 +383,9 @@ const ICON={
  shield:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2.5l6 2.5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/></svg>',
  smile:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7.5"/><path d="M7 12c1.6 1.6 4.4 1.6 6 0"/><circle cx="7.5" cy="8" r=".6" fill="currentColor"/><circle cx="12.5" cy="8" r=".6" fill="currentColor"/></svg>'
 };
-const VIEWS=[['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['cockpit','Dezember-Cockpit','flag'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
+const VIEWS=[['heute','Heute','sun'],['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['cockpit','Dezember-Cockpit','flag'],['simulator','Simulator','dice'],['woche','Wochen-Review','calcheck'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
 
-const TABS=[['markt','Markt','market'],['checkin','Check-in','heart'],['risiko','Risiko','gauge'],['prop','Prop','prop']];
+const TABS=[['heute','Heute','sun'],['markt','Markt','market'],['risiko','Risiko','gauge'],['prop','Prop','prop']];
 const VERSES=[
  ['Sprüche 16,32','Ein Langmütiger ist besser als ein Held, und wer sich selbst beherrscht, besser als einer, der eine Stadt erobert.'],
  ['Jakobus 1,19–20','Jeder Mensch sei schnell zum Hören, langsam zum Reden, langsam zum Zorn; denn der Zorn des Mannes wirkt nicht Gottes Gerechtigkeit.'],
@@ -390,8 +408,8 @@ const DEF_SET={maxDailyLoss:500,maxTrades:4,maxConsec:2,revengeMin:10,cooldownMi
  rules:'Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet'};
 
 /* ============ store ============ */
-const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log','cost_history'];
-const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[],cost_history:[]};
+const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log','cost_history','day_status','weekly_reviews'];
+const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[],cost_history:[],day_status:[],weekly_reviews:[]};
 /* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
 let SEED={account_rules:[],personal_rules:null};
 fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
@@ -598,15 +616,15 @@ document.addEventListener('focusout',()=>{if(pending){setTimeout(()=>{const a=do
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3800)}
 
 function render(){
-  const v=(location.hash||'').slice(1);UI.view=VIEWS.some(x=>x[0]===v)?v:'markt';
+  const v=(location.hash||'').slice(1);UI.view=VIEWS.some(x=>x[0]===v)?v:'heute';
   $('#tabbar').innerHTML=TABS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('')+`<a role="button" tabindex="0" data-act="more" class="${TABS.some(t=>t[0]===UI.view)?'':'on'}">${ICON.more}<span>Mehr</span></a>`;
   $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('');
   document.body.classList.toggle('hide-pnl',hidePnlNow());
-  const f={cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
+  const f={heute:vHeute,simulator:vSim,woche:vWoche,cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
   $('#main').innerHTML=f();setSync();
   if(UI.view==='coach'){const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}
   if(UI.view==='agents')tickCooldown();
-  renderLock();renderTilt();
+  renderLock();renderTilt();armNewsTimer();
 }
 window.addEventListener('hashchange',render);
 
@@ -688,6 +706,7 @@ function riskBar(inModal){const E=ENGINE();const u=E.units.slice().sort((a,b)=>(
    <span class="rb-item"><span class="muted">bis Stop</span> <b class="mono">${money(r.remainingToStop,0)}</b></span>
    ${r.firmRemaining!=null?`<span class="rb-item"><span class="muted">bis FTMO-Limit</span> <b class="mono">${money(r.firmRemaining,0)}</b></span>`:''}
    <span class="rb-item"><span class="muted">Trades übrig</span> <b class="mono">${r.tradesLeft}${r.maxTrades?' / '+r.maxTrades:''}</b></span>
+   ${(()=>{const n=NEWS();return n.active?`<span class="chip loss">News-Sperre bis ${n.active.end}</span>`:n.blocks.filter(b=>b.end>=RS.berlinTime()).slice(0,1).map(b=>`<span class="rb-item muted small">News ${b.time} · ${esc(b.title)}</span>`).join('')})()}
    ${E.units.length>1?`<span class="rb-item muted small">${esc(u.name)}</span>`:''}${hidePnlNow()?'<span class="rb-item muted small">PnL ausgeblendet bis '+esc(PR().sessionEnd||'')+'</span>':''}</a>`}
 const RISK_PHASE={P1:'Phase 1',P2:'Phase 2',RED_DAYS:'nach 2 roten Tagen'};
 function vRisk(){const E=ENGINE(),S0=ST[E.status];
@@ -887,7 +906,7 @@ function vTrades(){
    <select id="tfSetup"><option value="all">Alle Setups</option><option value="none" ${f.setup==='none'?'selected':''}>Ohne Setup</option>${S.playbooks.map(p=>`<option value="${p.id}" ${f.setup===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
   </div>
   <div class="card" style="padding:4px 4px">${trs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Symbol</th><th>Seite</th><th class="num">Kontr.</th><th>Setup</th><th>Konto</th><th>Emotion</th><th class="num">R</th><th class="num">Net P&amp;L</th><th>Flags</th></tr></thead><tbody>
-   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[t.source==='tradovate'&&!t.emotion_before?'<span class="chip warn">Setup & Gefühl ergänzen</span>':'',...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
+   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[(t.screenshots||[]).length?`<span class="chip info">${t.screenshots.length} Bild${t.screenshots.length>1?'er':''}</span>`:'',t.source==='tradovate'&&!t.emotion_before?'<span class="chip warn">Setup & Gefühl ergänzen</span>':'',...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
    return `<tr class="click" data-act="edit-trade" data-id="${t.id}"><td>${dLabel(t.date)}</td><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b></td><td>${t.side==='Short'?'<span class="chip loss">Short</span>':'<span class="chip win">Long</span>'}</td><td class="num">${t.contracts??''}</td><td>${t.setup?esc(t.setup):p?`<span class="setup-dot" style="background:${p.color||COLORS[0]}"></span> ${esc(p.name)}`:'<span class="muted">–</span>'}</td><td>${an?esc(an):'<span class="muted">–</span>'}</td><td>${t.emotion?`<span class="chip ${isNegEmo(t.emotion)?'warn':''}">${esc(t.emotion)}${eb&&eb.intensity?' '+eb.intensity:''}</span>`:''}</td><td class="num ${rv==null?'':cls(rv)}">${rv!=null?fmtN(rv,1):''}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${flags}</td></tr>`}).join('')}
    </tbody></table></div>`:emptyBox('Keine Trades in dieser Auswahl','Erfasse einen Trade oder importiere eine CSV-Datei aus deiner Plattform (z. B. Tradovate, Topstep, Rithmic).','<button class="btn pri" data-act="add-trade">Trade erfassen</button>')}</div>`;
 }
@@ -1047,7 +1066,7 @@ function renderPTC(){
   box.innerHTML=items.map((t,i)=>`<label class="row" style="flex-wrap:nowrap;align-items:flex-start;gap:8px"><input type="checkbox" class="ptc" id="ptc${i}" style="margin-top:4px"> <span>${esc(t)}</span></label>`).join('');
   updPTC();
 }
-function updPTC(){const all=[...document.querySelectorAll('.ptc')];const ok=all.length&&all.every(c=>c.checked);const tt=S.trades.filter(x=>x.date===TODAY());const ci=CI(TODAY());const stops=[...(ci?[]:[{tx:'Mach zuerst deinen Daily Check-in.'}]),...alerts().filter(a=>a.lv==='stop')];const E=ENGINE();if(E.status==='RED')stops.unshift({tx:'Session gesperrt bis 00:00 Uhr.'});
+function updPTC(){const all=[...document.querySelectorAll('.ptc')];const ok=all.length&&all.every(c=>c.checked);const tt=S.trades.filter(x=>x.date===TODAY());const ci=CI(TODAY());const stops=[...(ci?[]:[{tx:'Mach zuerst deinen Daily Check-in.'}]),...alerts().filter(a=>a.lv==='stop')];const E=ENGINE();if(E.status==='RED')stops.unshift({tx:'Session gesperrt bis 00:00 Uhr.'});const NA=NEWS().active;if(NA)stops.unshift({tx:`News-Sperre bis ${NA.end}: ${NA.title}.`});
   $('#ptcResult').innerHTML=stops.length?`<div class="alert stop"><span class="sq" style="background:var(--loss)"></span><div><b>Gesperrt.</b> ${esc(stops[0].tx)}</div></div>`:ok?`<div class="alert"><span class="sq" style="background:var(--win)"></span><div><b>Freigegeben.</b> Trade ${tt.length+1} heute. Stop setzen, Plan respektieren.</div></div>`:`<div class="small muted">${all.filter(c=>c.checked).length} von ${all.length} erfüllt.</div>`}
 
 /* ============ VIEW: journal ============ */
@@ -1091,6 +1110,7 @@ const PR_FIELDS=[
  {k:'eval_daily_profit_soft_cap',l:'Eval: Hinweis „Feierabend“ ab Tagesgewinn ($)',t:'number',h:'wegen der Konsistenzregel'},
  {k:'eval_daily_profit_hard_warning',l:'Eval: deutliche Warnung ab Tagesgewinn ($)',t:'number'},
  {k:'max_active_accounts',l:'Max. aktive Konten gleichzeitig',t:'number'},
+ {k:'news_block_minutes',l:'News-Sperre: Minuten vor und nach dem Termin',t:'number'},
  {k:'hide_pnl_in_session',l:'PnL während des Handelsfensters ausblenden',t:'checkbox'},
  {k:'max_consecutive_losses',l:'Agenten-Hinweis nach X Verlusten in Folge',t:'number'},
  {k:'revengeMin',l:'Revenge-Fenster (Minuten nach Verlust)',t:'number'},
@@ -1142,6 +1162,7 @@ function vRules(){
     <div class="card"><h2>Mindset-Texte</h2><p class="small muted" style="margin-top:-6px">Erscheinen morgens auf der Markt-Lage und abends im Abend-Log.</p>
      ${['PRE_SESSION','WIN_PLAN','WIN_RULEBREAK','LOSS_CONTROLLED','LOSS_RULEBREAK','NO_TRADE','STREAK_WIN','STREAK_LOSS'].map(c=>{const ms=MSGS().filter(m=>m.category===c);return `<details class="more"><summary>${c} (${ms.length})</summary><div class="stack" style="margin-top:8px">${ms.map(m=>`<div class="small" style="padding:8px 10px;border-radius:10px;background:var(--elev)">${esc(m.text)} <span class="muted">– ${esc(m.bible_ref||'')}</span>${m.custom?` <button class="btn sm danger" data-act="ms-del" data-id="${m.id}">Löschen</button>`:''}</div>`).join('')}</div></details>`}).join('')}
      <div class="sep"></div><div class="stack" style="gap:8px"><select id="msCat">${['PRE_SESSION','WIN_PLAN','WIN_RULEBREAK','LOSS_CONTROLLED','LOSS_RULEBREAK','NO_TRADE','STREAK_WIN','STREAK_LOSS'].map(c=>`<option>${c}</option>`).join('')}</select><textarea id="msText" rows="2" placeholder="Eigener Text"></textarea><input type="text" id="msRef" placeholder="Bibelstelle, z. B. Psalm 37,7"><button class="btn" data-act="ms-add">Text hinzufügen</button></div></div>
+    <div class="card"><h2>Backup</h2><p class="small muted" style="margin-top:-6px">Alle Daten als eine Datei sichern. Am besten jeden Freitag.${(()=>{const b=S.app_config.find(x=>x.id==='backup');return b&&b.last?' Letztes Backup: '+new Date(b.last).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'})+'.':' Noch kein Backup.'})()}</p><button class="btn pri" data-act="backup">Backup herunterladen</button></div>
     <div class="card"><h2>Daten</h2><div class="small muted" style="margin-bottom:10px">${MODE==='cloud'?'Alle Einträge liegen in der Ranca-Datenbank dieser App. Claude kann sie auf deinen Wunsch lesen und mit dir auswerten.':'Diese Ansicht speichert nur lokal im Browser.'}<br>${S.trades.length} Trades · ${S.playbooks.length} Setups · ${S.accounts.length} Konten · ${S.journal.length} Journal-Tage</div>
      <div class="row"><button class="btn" data-act="demo-load">Demo-Daten laden</button>${demo?`<button class="btn danger" data-act="demo-clear">Demo-Daten entfernen (${demo})</button>`:''}</div></div>
    </div>
@@ -1261,8 +1282,9 @@ async function saveDayPlan(clear){
     const risk=r===''?null:+r,target=t===''?null:+t;if(a&&a.maxDailyLoss&&risk>a.maxDailyLoss)err=`${a.name}: Risiko ${money(risk,0)} liegt über dem Tageslimit des Kontos (${money(a.maxDailyLoss,0)}).`;items[id]={risk,target}});
   if(err){$('#dpErr').textContent=err;return}
   const totalRisk=Object.values(items).reduce((x,i)=>x+num(i.risk),0);
-  if(clear||(!off&&!note&&!Object.keys(items).length)){if(DP(d))await del('dayplans',d)}
-  else await put('dayplans',{id:d,items,off,note});
+  const keepNews=(DP(d)?.news||[]);
+  if((clear||(!off&&!note&&!Object.keys(items).length))&&!keepNews.length){if(DP(d))await del('dayplans',d)}
+  else await put('dayplans',clear?{id:d,items:{},off:false,note:'',news:keepNews}:{id:d,items,off,note,news:keepNews});
   for(const a of S.accounts){const plan={...(a.plan||{})},want=clear?undefined:off?'off':items[a.id]?'trade':undefined;
     if(!clear&&!off&&!items[a.id]&&plan[d]==='off')continue;
     if(plan[d]===want)continue;if(want)plan[d]=want;else delete plan[d];await put('accounts',{...a,plan})}
@@ -1290,7 +1312,7 @@ function editTrade(t){
   const calcU=UI.calc&&UI.calc.stop?UI.calc:null;
   QT={id:t?.id,unit:unitKey,instrument:t?.instrument||t?.symbol||pf.instrument||ins[0]?.id||'MNQ',direction:t?.direction||t?.side||pf.direction||'Long',setup:t?.setup||'',
     planned_rr:t?.planned_rr??pf.planned_rr??(jc.planned_rr_options||[2])[0],followed_plan:t?t.followed_plan!==false:true,
-    eb:t?.emotion_before?{...t.emotion_before}:{emotion:'',intensity:5},ea:t?.emotion_after?{...t.emotion_after}:{emotion:'',intensity:5},ruleBreaks:[...(t?.ruleBreaks||[])]};
+    eb:t?.emotion_before?{...t.emotion_before}:{emotion:'',intensity:5},ea:t?.emotion_after?{...t.emotion_after}:{emotion:'',intensity:5},ruleBreaks:[...(t?.ruleBreaks||[])],shots:[...(t?.screenshots||[])]};
   const contracts=t?.contracts??(calcU?RS.positionSize({risk:ENGINE().units[0]?.r.riskPerTrade||0,stopPoints:+calcU.stop,usdPerPoint:(ins.find(i=>i.id===calcU.instr)||{}).usd_per_point||2}).contracts||'':pf.contracts??'');
   const stop=t?.stop_points??(calcU?calcU.stop:pf.stop_points??'');
   const chips=(k,opts,cur)=>`<div class="row qt-chips" data-k="${k}" style="gap:6px">${opts.map(([v,l])=>`<button type="button" class="ci-chip ${String(cur)===String(v)?'on':''}" data-act="qt" data-k="${k}" data-v="${esc(v)}">${esc(l)}</button>`).join('')}</div>`;
@@ -1309,6 +1331,7 @@ function editTrade(t){
     <div class="qt-sec"><div class="lbl">Plan befolgt?</div>${chips('followed_plan',[['true','Ja'],['false','Nein']],String(QT.followed_plan))}</div>
     <div class="qt-sec"><div class="lbl">Gefühl vor dem Trade</div>${emo('eb',QT.eb)}<div id="qt_oc"></div></div>
     <div class="qt-sec"><div class="lbl">Gefühl nach dem Trade</div>${emo('ea',QT.ea)}</div>
+    <div class="qt-sec"><div class="lbl">Chart-Screenshots</div><div id="qtShots">${shotsHTML()}</div></div>
     <details class="more"><summary>Datum, Uhrzeit, Notiz, Regelbrüche</summary>
      <div class="form" style="margin-top:10px"><div class="field"><label for="qt_date">Datum</label><input type="date" id="qt_date" value="${esc(t?.date||(UI.view==='journal'?UI.jDate:TODAY()))}"></div><div class="field"><label for="qt_time">Uhrzeit (Berlin)</label><input type="time" id="qt_time" value="${esc(t?.time||RS.berlinTime())}"></div>
      <div class="field full"><label for="qt_notes">Notiz</label><textarea id="qt_notes" rows="2">${esc(t?.notes||'')}</textarea></div>
@@ -1333,7 +1356,8 @@ async function qtSave(){
   const doc={...(old||{}),date:$('#qt_date').value||TODAY(),time:$('#qt_time').value||RS.berlinTime(),account_ids:u.ids,accountId:u.ids[0]||'',instrument:QT.instrument,symbol:QT.instrument,
     direction:QT.direction,side:QT.direction,setup:QT.setup||'',contracts,stop_points:stop,planned_rr:QT.planned_rr==null?null:+QT.planned_rr,pnl,
     followed_plan:QT.followed_plan,emotion_before:{...QT.eb},emotion_after:QT.ea.emotion?{...QT.ea}:null,emotion:QT.eb.emotion,notes:$('#qt_notes').value.trim(),ruleBreaks:QT.ruleBreaks};
-  doc.result_r=RS.tradeR({pnl,stop_points:stop,contracts},I.usd_per_point);delete doc.r;
+  doc.result_r=RS.tradeR({pnl,stop_points:stop,contracts},I.usd_per_point);delete doc.r;doc.screenshots=QT.shots||[];
+  {const nb=RS.activeNewsBlock(NEWS(doc.date).blocks,doc.time);if(nb&&!doc.ruleBreaks.includes('News ignoriert')){doc.ruleBreaks=[...doc.ruleBreaks,'News ignoriert'];setTimeout(()=>toast(`Trade lag in der News-Sperre (${nb.title}). Als Regelbruch markiert.`),400)}}
   const isNew=!old;if(isNew&&pnl<0)doc.tilt_required=true;
   try{localStorage.setItem(QT_PREF_KEY,JSON.stringify({unit:QT.unit,instrument:QT.instrument,direction:QT.direction,planned_rr:QT.planned_rr,contracts,stop_points:stop}))}catch(e){}
   const saved=await put('trades',doc);await syncDay(doc.date);if(old&&old.date!==doc.date)await syncDay(old.date);
@@ -1607,6 +1631,160 @@ async function impApply(){const P=IMP&&impPlan();if(!P||!P.trades.length)return 
   const open=S.trades.filter(t=>t.source==='tradovate'&&!t.emotion_before).length;
   toast(`${n} neu, ${m} ergänzt.${open?' '+open+' Trades brauchen noch Setup und Gefühl.':''}`);return true}
 
+/* ============ Tagesstatus (abgehakte Schritte) ============ */
+const DS=d=>S.day_status.find(x=>x.id===d)||{};
+async function markDay(k,v=true){const d=TODAY();await put('day_status',{...DS(d),id:d,[k]:v})}
+
+/* ============ News-Sperre ============ */
+function newsEvents(d){const ev=[],seen=new Set();
+  S.briefings.filter(b=>b.id<=d&&b.id>=addDays(d,-7)).sort((a,b)=>b.id.localeCompare(a.id)).forEach(b=>(b.upcoming||[]).forEach(u=>{const k=(u.title||'')+'|'+(u.time||u.when||'');if(!seen.has(k)){seen.add(k);ev.push(u)}}));
+  (DP(d)?.news||[]).forEach(n=>ev.push({...n,date:d,manual:true}));return ev}
+function NEWS(d=TODAY()){const p=PR();const blocks=RS.newsBlocks(newsEvents(d),d,num(p.news_block_minutes)||5,p.news_block_importance||['hoch']);return {blocks,active:d===TODAY()?RS.activeNewsBlock(blocks,RS.berlinTime()):null}}
+let newsTimer=null;function armNewsTimer(){clearTimeout(newsTimer);const n=NEWS();const now=RS.berlinTime();const next=n.blocks.map(b=>[b.start,b.end]).flat().filter(t=>t>now).sort()[0];
+  if(!next)return;const [h,m]=next.split(':').map(Number),[nh,nm]=now.split(':').map(Number);const ms=((h*60+m)-(nh*60+nm))*60000+1500;if(ms>0&&ms<36e6)newsTimer=setTimeout(()=>{render();armNewsTimer()},ms)}
+
+/* ============ Heute: Startseite mit Tagesablauf ============ */
+function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';
+  const ci=CI(d),st=DS(d),dp=DP(d),E=ENGINE(),N=NEWS(d),tt=S.trades.filter(t=>t.date===d),j=S.journal.find(x=>x.id===d);
+  const b=S.briefings.find(x=>x.id===d),wk=RS.weekStart(d),wr=S.weekly_reviews.find(x=>x.id===wk),lastWr=S.weekly_reviews.filter(x=>x.id<wk&&x.fokus).sort((a,b)=>b.id.localeCompare(a.id))[0];
+  const wd=parseD(d).getDay(),friday=wd===5,weekend=wd===0||wd===6;
+  const planTxt=dp&&(dp.off||Object.keys(dp.items||{}).length)?(dp.off?'Pausentag':Object.entries(dp.items||{}).map(([id,it])=>`${esc(AC(id)?.name||'Konto')}: Risiko ${money(it.risk||0,0)}, Ziel ${money(it.target||0,0)}`).join(' · ')||'geplant'):'';
+  const steps=[
+   {k:'checkin',t:'Daily Check-in',done:!!ci,sub:ci?`${LEVEL[ci.level].t} · ${ci.score}/100${ci.intention?' · „'+esc(ci.intention)+'“':''}`:'Herz und Kopf prüfen, bevor du den Chart öffnest.',act:ci?'<a class="btn sm" href="#checkin">Ansehen</a>':'<a class="btn sm pri" href="#checkin">Starten</a>'},
+   {k:'briefing',t:'Markt-Briefing lesen',done:!!st.briefing_read,sub:b?esc((b.summary||'').split(/(?<=[.!?])\s+/)[0]):'Kommt werktags um 07:16 Uhr.',act:`<a class="btn sm" href="#markt">Öffnen</a>${st.briefing_read?'':'<button class="btn sm" data-act="day-mark" data-k="briefing_read">Gelesen</button>'}`},
+   {k:'plan',t:'Tagesplan festlegen',done:!!(dp&&(dp.off||Object.keys(dp.items||{}).length)),sub:dp?planTxt:'Welche Konten handelst du, mit welchem Risiko und welchem Tagesziel?',act:`<button class="btn sm ${dp&&(dp.off||Object.keys(dp.items||{}).length)?'':'pri'}" data-act="heute-plan">${dp&&(dp.off||Object.keys(dp.items||{}).length)?'Ändern':'Planen'}</button>`},
+   {k:'news',t:'News-Zeiten prüfen',done:!!st.news_checked,sub:N.blocks.length?N.blocks.map(x=>`<b>${x.start}–${x.end}</b> ${esc(x.title)}`).join(' · '):'Heute keine wichtigen Termine bekannt.',act:`<button class="btn sm" data-act="news-add">Termin ergänzen</button>${st.news_checked?'':'<button class="btn sm" data-act="day-mark" data-k="news_checked">Geprüft</button>'}`},
+   {k:'session',t:'Session',done:!!st.session_done||E.status==='RED',sub:`${tt.length} Trade${tt.length===1?'':'s'} heute · <span class="pnlv ${cls(sum(tt))}">${money(sum(tt),0)}</span> · Ampel ${ST[E.status].t}`,act:`<button class="btn sm pri" data-act="add-trade">Trade erfassen</button>${st.session_done?'':'<button class="btn sm" data-act="day-mark" data-k="session_done">Session beendet</button>'}`},
+   {k:'import',t:'Tradovate-Export importieren',done:tt.some(t=>t.import_key)||!!st.no_trades,sub:st.no_trades?'Heute nicht gehandelt.':tt.some(t=>t.import_key)?`${tt.filter(t=>t.import_key).length} Trades aus Tradovate`:'Exakte Zahlen und Gebühren nach der Session.',act:`<button class="btn sm" data-act="tv-import">Importieren</button>${tt.length||st.no_trades?'':'<button class="btn sm" data-act="day-mark" data-k="no_trades">Nicht gehandelt</button>'}`},
+   {k:'abend',t:'Abend-Log schreiben',done:!!(j&&j.review),sub:j&&j.review?'Tagesabschluss gespeichert.':'Review, Stimmung am Abend, eine Lektion für morgen.',act:`<button class="btn sm" data-act="heute-journal">${j&&j.review?'Ansehen':'Schreiben'}</button>`},
+   ...(friday?[{k:'woche',t:'Wochen-Review',done:!!(wr&&wr.fokus),sub:wr&&wr.fokus?'Fokus nächste Woche: '+esc(wr.fokus):'Bilanz der Woche und ein Fokus für nächste Woche.',act:'<a class="btn sm" href="#woche">Öffnen</a>'}]:[])];
+  const done=steps.filter(s=>s.done).length,next=steps.find(s=>!s.done);
+  const m=b&&b.instruments?b.instruments.slice(0,3):[];
+  return `<div class="head"><div><h1>${greet}</h1><div class="sub">${dLabel(d)} · ${weekend?'Wochenende: Ruhe, Review, Familie.':'Dein Tag in ${steps.length} Schritten.'.replace('${steps.length}',steps.length)}</div></div></div>
+  ${reminderHTML()}${riskBar()}
+  ${N.active?`<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>News-Sperre bis ${N.active.end}:</b> ${esc(N.active.title)}. Kein neuer Trade.</div></div>`:''}
+  ${mindCard(prePick(d),'Mindset für heute',{cls:'top'})}
+  <div class="grid g-side" style="align-items:start">
+   <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tagesablauf</h2><span class="small muted">${done} von ${steps.length} erledigt</span></div>
+    <div class="bar win" style="margin:10px 0 14px"><i style="width:${done/steps.length*100}%"></i></div>
+    <div class="steps">${steps.map((s,i)=>`<div class="step ${s.done?'done':''} ${next&&next.k===s.k?'next':''}"><span class="step-n">${s.done?'✓':i+1}</span><div style="flex:1;min-width:0"><b>${s.t}</b><div class="small muted">${s.sub}</div></div><div class="row step-a" style="gap:6px">${s.act}</div></div>`).join('')}</div></div>
+   <div class="stack">
+    ${lastWr?`<div class="mind" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Fokus dieser Woche</div><p class="mind-t">${esc(lastWr.fokus)}</p></div>`:''}
+    ${m.length?`<a class="card" href="#markt" style="text-decoration:none;color:inherit;display:block"><div class="row" style="justify-content:space-between"><b>Markt</b><span class="chip ${num(b.sentiment?.score)<=-20?'loss':num(b.sentiment?.score)>=20?'win':''}">${esc(b.sentiment?.label||'')}</span></div><div class="stack small" style="margin-top:8px;gap:4px">${m.map(x=>`<div class="row" style="justify-content:space-between"><span>${esc(x.name)}</span><b class="mono ${cls(x.change)}">${sgn(x.change)} (${sgn(x.changePct)} %)</b></div>`).join('')}</div></a>`:''}
+    <div class="card"><b>Werkzeuge</b><div class="row" style="gap:6px;margin-top:10px"><a class="btn sm" href="#risiko">Positionsgröße</a><a class="btn sm" href="#simulator">Simulator</a><a class="btn sm" href="#woche">Wochen-Review</a><a class="btn sm" href="#cockpit">Cockpit</a></div></div>
+   </div>
+  </div>`;
+}
+function newsAdd(){const F=[{k:'time',l:'Uhrzeit (Berlin)',t:'time',req:1},{k:'title',l:'Was?',t:'text',ph:'z. B. FOMC-Protokoll'}];
+  openModal('News-Termin für heute',`<div class="form">${formFields(F,{})}</div><p class="small muted">Rund um den Termin gilt eine Sperre von ±${num(PR().news_block_minutes)||5} Minuten.</p>`,async()=>{const v=readFields(F);if(!v.time){toast('Bitte eine Uhrzeit eingeben.');return false}
+   const d=TODAY(),dp=DP(d)||{id:d,items:{},off:false,note:''};await put('dayplans',{...dp,id:d,news:[...(dp.news||[]),{time:v.time,title:v.title||'News'}]});armNewsTimer();toast('Termin gespeichert')})}
+
+/* ============ Simulator ============ */
+function simDefaults(){const c=CP(),ms=(c.milestones||[]);const ev=ms.find(m=>m.id==='eval'),q=ms.find(m=>m.id==='quali');
+  const wdays=(a,b)=>{let n=0,x=a;while(x<=b){const g=parseD(x).getDay();if(g&&g<6)n++;x=addDays(x,1)}return n};
+  return {mode:'eval',src:'manual',winrate:50,avgWin:2,avgLoss:1,setup:'all',evalDays:ev&&ev.from?wdays(ev.from,ev.to):9,fundedDays:q&&q.from?wdays(q.from,q.to):5,runs:5000,res:null}}
+function simSource(o){if(o.src==='trades'){const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;
+   const list=S.trades.filter(t=>!t.demo&&(o.setup==='all'||(t.setup||PB(t.setupId)?.name)===o.setup)).map(t=>RS.tradeR(t,usd(t))).filter(r=>r!=null);return {list}}
+  return {winrate:num(o.winrate)/100,avgWin:num(o.avgWin),avgLoss:num(o.avgLoss)}}
+function simRun(){const o=UI.sim,rule=RULES()[0];if(!rule){toast('Kein Regelsatz gefunden.');return}const src=simSource(o);
+  if(o.src==='trades'&&!src.list.length){toast('Keine Trades mit R-Wert gefunden. Nutze vorerst „Annahme“.');return}
+  const sample=RS.rSampler(src),pr=PR(),runs=+o.runs||5000;
+  const ev=RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs,seed:'e',minDays:2});
+  const fu=RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs,seed:'f'});
+  const cmp=[null,100,150,200,250].map(r=>({risk:r,ev:RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs:2000,seed:'c'+r,minDays:2,riskOverride:r}),fu:RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs:2000,seed:'g'+r,riskOverride:r})}));
+  o.res={ev,fu,cmp,n:src.list?src.list.length:null,fee:num(rule.monthly_fee)};render()}
+function vSim(){const o=UI.sim||(UI.sim=simDefaults()),r=o.res;const setups=JC().setups||[];
+  const nTr=o.src==='trades'?simSource(o).list.length:null;
+  const pctB=(v,c)=>`<div class="sim-big"><div class="mono" style="color:${c}">${Math.round(v*100)} %</div></div>`;
+  const hist=(arr)=>{const mx=Math.max(1,...arr);return `<svg viewBox="0 0 ${arr.length*34+20} 120" width="100%" style="max-width:520px;display:block" role="img" aria-label="Tag des Bestehens">${arr.map((v,i)=>{const h=v/mx*66;return `<rect x="${12+i*34}" y="${92-h}" width="24" height="${h}" rx="4" fill="var(--accent)" opacity="${v?1:.15}"/><text x="${24+i*34}" y="110" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">T${i+1}</text>${v?`<text x="${24+i*34}" y="${86-h}" text-anchor="middle" font-size="10" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${Math.round(v/ (r.ev.runs)*100)}%</text>`:''}`}).join('')}</svg>`};
+  const ev=r&&r.ev,fu=r&&r.fu,decEV=r?ev.pPass*fu.expectedNet:0;
+  return `<div class="head"><div><h1>Challenge- & Payout-Simulator</h1><div class="sub">Tausende mögliche Dezember-Verläufe nach den FTMO-Regeln und deinen eigenen Regeln.</div></div></div>
+  <div class="grid g-sim" style="align-items:start">
+   <div class="card"><h2>Annahmen</h2>
+    <div class="lbl" style="margin-bottom:6px">Woher kommen die Trade-Ergebnisse?</div>
+    <div class="seg" style="margin-bottom:14px"><button type="button" class="${o.src==='manual'?'on':''}" data-act="sim-src" data-v="manual">Annahme</button><button type="button" class="${o.src==='trades'?'on':''}" data-act="sim-src" data-v="trades">Meine Trades</button></div>
+    ${o.src==='manual'?`<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="field"><label for="sim_winrate">Trefferquote %</label><input type="number" id="sim_winrate" value="${o.winrate}" min="0" max="100"></div><div class="field"><label for="sim_avgWin">Ø Gewinn (R)</label><input type="number" step="0.1" id="sim_avgWin" value="${o.avgWin}"></div><div class="field"><label for="sim_avgLoss">Ø Verlust (R)</label><input type="number" step="0.1" id="sim_avgLoss" value="${o.avgLoss}"></div></div>
+     <p class="small muted">Ehrliche Schätzung: Bei VWAP- und Value-Area-Setups sind 40–55 % Trefferquote bei 1,5–2 R typisch. Sobald du 30+ eigene Trades hast, nimm „Meine Trades“.</p>`
+    :`<div class="field"><label for="sim_setup">Setup</label><select id="sim_setup"><option value="all">Alle Setups</option>${setups.map(x=>`<option ${o.setup===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><p class="small ${nTr<30?'neg':'muted'}">${nTr} Trades mit R-Wert.${nTr<30?' Unter 30 Trades ist das Ergebnis noch sehr unsicher.':''}</p>`}
+    <div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:6px"><div class="field"><label for="sim_evalDays">Eval-Handelstage</label><input type="number" id="sim_evalDays" value="${o.evalDays}" min="1" max="40"></div><div class="field"><label for="sim_fundedDays">Funded-Tage bis Payout</label><input type="number" id="sim_fundedDays" value="${o.fundedDays}" min="1" max="40"></div><div class="field"><label for="sim_runs">Durchläufe</label><input type="number" id="sim_runs" value="${o.runs}" min="500" max="20000" step="500"></div></div>
+    <p class="small muted">Gerechnet mit: Regelsatz ${esc(RULES()[0]?.name||'')}, deinem Risiko (${money(PR().risk_per_trade_phase1,0)} / ${money(PR().risk_per_trade_phase2,0)}), Tages-Stop, max. ${PR().max_trades_per_day} Trades, Schluss nach 2 Gewinnern, 100 $ nach 2 roten Tagen, Eval-Feierabend ab ${money(PR().eval_daily_profit_soft_cap,0)}. Ohne Slippage und Gebühren. Annahme: Du hältst dich an deine Regeln.</p>
+    <button class="btn pri" data-act="sim-run" style="width:100%;justify-content:center;padding:12px">Simulieren</button></div>
+   <div class="stack">${!r?`<div class="card">${emptyBox('Noch keine Simulation','Stell links deine Annahmen ein und tippe auf „Simulieren“. Das dauert ein bis zwei Sekunden.')}</div>`:`
+    <div class="card"><div class="lbl">Eval in ${o.evalDays} Handelstagen</div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
+     <div><div class="small muted">bestanden</div>${pctB(ev.pPass,'var(--win)')}</div><div><div class="small muted">Konto verloren</div>${pctB(ev.pBreach,'var(--loss)')}</div><div><div class="small muted">nicht fertig</div>${pctB(ev.pOpen,'var(--muted)')}</div></div>
+     <div class="small muted" style="margin:6px 0 10px">${ev.medianDays?`Bestanden meist nach <b>${ev.medianDays} Handelstagen</b>.`:''}${ev.pConsistencyBlocked>0.01?` In ${Math.round(ev.pConsistencyBlocked*100)} % der Fälle war das Ziel erreicht, aber die Konsistenzregel noch nicht erfüllt.`:''}</div>${hist(ev.passHist)}</div>
+    <div class="card"><div class="lbl">Funded: ${o.fundedDays} Tage bis zum ersten Payout</div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
+     <div><div class="small muted">Payout erreicht</div>${pctB(fu.pPayout,'var(--win)')}</div><div><div class="small muted">Konto verloren</div>${pctB(fu.pBreach,'var(--loss)')}</div><div><div class="small muted">noch offen</div>${pctB(fu.pOpen,'var(--muted)')}</div></div>
+     <div class="small muted" style="margin-top:6px">Wenn ausgezahlt wird: im Schnitt <b>${money(fu.avgPayoutNet,0)}</b> netto (Median ${money(fu.medianPayoutNet,0)}).</div></div>
+    <div class="card" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Dezember pro Konto (Erwartungswert)</div>
+     <div style="font-size:30px;font-weight:800;margin:4px 0">${money(decEV,0)} <span style="font-size:15px;opacity:.75">− ${money(r.fee,0)} Abo = ${money(decEV-r.fee,0)}</span></div>
+     <div class="small" style="opacity:.85">Chance auf Bestehen × Chance auf Payout × Ø Payout. Das ist ein Durchschnitt über viele mögliche Verläufe, keine Vorhersage für deinen Dezember.</div></div>
+    <div class="card"><h2>Welches Risiko pro Trade?</h2><div class="tbl-wrap"><table><thead><tr><th>Risiko</th><th class="num">Eval bestanden</th><th class="num">Eval verloren</th><th class="num">Payout</th><th class="num">Erwartung/Konto</th></tr></thead><tbody>${r.cmp.map(c=>`<tr ${c.risk===null?'style="font-weight:700"':''}><td>${c.risk===null?'Meine Regeln':money(c.risk,0)}</td><td class="num pos">${Math.round(c.ev.pPass*100)} %</td><td class="num neg">${Math.round(c.ev.pBreach*100)} %</td><td class="num">${Math.round(c.fu.pPayout*100)} %</td><td class="num"><b>${money(c.ev.pPass*c.fu.expectedNet-r.fee,0)}</b></td></tr>`).join('')}</tbody></table></div>
+     <p class="small muted">Mehr Risiko heißt schneller bestehen, aber auch öfter verlieren. Wähl das Risiko, bei dem „verloren“ für dich tragbar bleibt, nicht das mit dem höchsten Erwartungswert.</p></div>`}
+   </div>
+  </div>`;
+}
+
+/* ============ Wochen-Review ============ */
+function vWoche(){const ws=UI.wk||(UI.wk=RS.weekStart(TODAY()));const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;
+  const types={};S.trading_days.forEach(x=>{if(x.day_type)types[x.id]=x.day_type});
+  const s=RS.weekSummary({weekStart:ws,trades:S.trades.filter(t=>!t.demo),checkins:S.checkins,tiltChecks:S.tilt_checks,dayTypes:types,rOf:t=>RS.tradeR(t,usd(t))});
+  const rv=S.weekly_reviews.find(x=>x.id===ws)||{},past=S.weekly_reviews.filter(x=>x.id!==ws).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,6);
+  const tile=(l,v,c='')=>`<div class="card kpi"><div class="lbl">${l}</div><div class="v ${c}">${v}</div></div>`;
+  return `<div class="head"><div><h1>Wochen-Review</h1><div class="sub">KW ${s.week.slice(-2)} · ${dLabel(s.from)} bis ${dLabel(s.to)}</div></div><div class="row"><button class="btn sm" data-act="wk-nav" data-d="-7" aria-label="Woche zurück">‹</button><button class="btn sm" data-act="wk-nav" data-d="0">Diese Woche</button><button class="btn sm" data-act="wk-nav" data-d="7" aria-label="Woche vor">›</button></div></div>
+  <div class="grid g-kpi" style="margin-bottom:16px">${tile('P&amp;L',`<span class="pnlv">${money(s.pnl,0)}</span>`,cls(s.pnl))}${tile('Trades · Winrate',`${s.trades} · ${s.winrate==null?'–':Math.round(s.winrate*100)+' %'}`)}${tile('Ø R',s.avgR==null?'–':fmtN(s.avgR,2),s.avgR==null?'':cls(s.avgR))}${tile('Regeltreue',s.followedPct==null?'–':Math.round(s.followedPct*100)+' %',s.followedPct!=null&&s.followedPct<0.8?'neg':'')}${tile('Grün / Rot',`<span class="pos">${s.greenDays}</span> / <span class="neg">${s.redDays}</span>`)}${tile('Ø Check-in',s.checkinAvg==null?'–':s.checkinAvg)}</div>
+  <div class="grid g-side" style="align-items:start">
+   <div class="stack">
+    <div class="card"><h2>Was die Woche zeigt</h2><div class="stack small">
+     <div>Tagestypen: ${Object.entries(s.dayTypes).map(([k,v])=>`<span class="chip ${DAY_CHIP[k]}">${DAY_LABEL[k]} × ${v}</span>`).join(' ')||'<span class="muted">keine Handelstage</span>'}</div>
+     <div>Regelbrüche: <b>${s.ruleBreaks}</b> · Tilt-Checks: <b>${s.tiltChecks}</b>${s.tiltRed?` (davon ${s.tiltRed} mit Sperre)`:''}</div>
+     ${s.bestSetup?`<div>Bestes Setup: <b>${esc(s.bestSetup.key)}</b> (${fmtN(s.bestSetup.avgR,2)} R, ${s.bestSetup.n} Trades)</div>`:''}
+     ${s.worstEmotion&&s.worstEmotion.avgR<0?`<div>Teuerstes Gefühl: <b>${esc(s.worstEmotion.key)}</b> (${fmtN(s.worstEmotion.avgR,2)} R)</div>`:''}
+     <div>Bester Tag ${money(s.bestDay,0)} · schlechtester Tag ${money(s.worstDay,0)}</div></div></div>
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Coach-Analyse</h2><button class="btn sm" data-act="wk-ai" ${UI.wkBusy?'disabled':''}>${UI.wkBusy?'Analysiert…':rv.ai?'Neu analysieren':'Woche analysieren'}</button></div>
+     <div class="small" id="wkAi" style="white-space:pre-wrap;margin-top:10px">${rv.ai?esc(rv.ai):'<span class="muted">Der Coach wertet die Woche mit deinem Profil und deinen Regeln aus.</span>'}</div></div>
+   </div>
+   <div class="card"><h2>Deine Reflexion</h2><form id="wkForm" class="stack" style="gap:12px">
+    <div class="field"><label for="wk_gut">Was lief gut?</label><textarea id="wk_gut" rows="3">${esc(rv.gut||'')}</textarea></div>
+    <div class="field"><label for="wk_aendern">Was ändere ich?</label><textarea id="wk_aendern" rows="3">${esc(rv.aendern||'')}</textarea></div>
+    <div class="field"><label for="wk_fokus">Ein Fokus für nächste Woche</label><input type="text" id="wk_fokus" value="${esc(rv.fokus||'')}" placeholder="z. B. Nach dem ersten Verlust 15 Minuten Pause"></div>
+    <div class="field"><label for="wk_dank">Wofür bin ich dankbar?</label><textarea id="wk_dank" rows="2">${esc(rv.dank||'')}</textarea></div>
+    <button class="btn pri" type="submit">Review speichern</button></form>
+    ${past.length?`<div class="sep"></div><div class="lbl" style="margin-bottom:6px">Frühere Fokus-Ziele</div><div class="stack small">${past.map(p=>`<div><b>KW ${RS.isoWeek(p.id).slice(-2)}:</b> ${esc(p.fokus||'–')}</div>`).join('')}</div>`:''}</div>
+  </div>`;
+}
+async function wkAi(){let sample=null;try{sample=window.claude&&await window.claude.use('sample')}catch(e){}if(!sample){toast('Die Coach-Analyse läuft nur in claude.ai.');return}
+  const ws=UI.wk,usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2,types={};S.trading_days.forEach(x=>{if(x.day_type)types[x.id]=x.day_type});
+  const s=RS.weekSummary({weekStart:ws,trades:S.trades.filter(t=>!t.demo),checkins:S.checkins,tiltChecks:S.tilt_checks,dayTypes:types,rOf:t=>RS.tradeR(t,usd(t))});
+  const rv=S.weekly_reviews.find(x=>x.id===ws)||{};UI.wkBusy=true;render();
+  try{const {text}=await sample(coachPrompt()+coachContext()+`\n\nAUFGABE: Wochen-Review für KW ${s.week.slice(-2)}. Wochenbilanz (JSON): ${JSON.stringify(s)}. Reflexion des Traders: ${JSON.stringify({gut:rv.gut,aendern:rv.aendern})}. Gib: 1) zwei Sätze Bilanz mit Zahlen, 2) das wichtigste Muster der Woche, 3) genau EINEN konkreten Fokus für nächste Woche. Maximal 150 Wörter.`,{cache:false,onText:({text})=>{const el=$('#wkAi');if(el)el.textContent=text}});
+    await put('weekly_reviews',{...rv,id:ws,ai:text,ai_at:new Date().toISOString()})}
+  catch(e){toast(e.code==='not_granted'?'Du hast dem Coach den Zugriff nicht erlaubt.':'Die Analyse wurde unterbrochen. Bitte noch einmal versuchen.')}
+  UI.wkBusy=false;render()}
+
+/* ============ Simulator-Eingaben ============ */
+function simRead(){const o=UI.sim;if(!o)return;['winrate','avgWin','avgLoss','evalDays','fundedDays','runs'].forEach(k=>{const el=document.getElementById('sim_'+k);if(el&&el.value!=='')o[k]=+el.value});const su=$('#sim_setup');if(su)o.setup=su.value}
+
+/* ============ Chart-Screenshots ============ */
+let ASSETS=null;(async()=>{try{if(window.claude&&window.claude.use)ASSETS=await window.claude.use('assets')}catch(e){ASSETS=null}})();
+const shotUrl=s=>s&&s.id?'/_blob/'+s.id:(s&&s.data)||'';
+function shotsHTML(){if(!QT)return '';return `<div class="shots">${(QT.shots||[]).map((s,i)=>`<div class="shot"><img src="${esc(shotUrl(s))}" alt="Chart-Screenshot ${i+1}" data-act="shot-view" data-i="${i}"><button type="button" class="shot-x" data-act="shot-del" data-i="${i}" aria-label="Screenshot entfernen">×</button></div>`).join('')}<label class="shot add" for="qt_shot">${ASSETS?'+ Bild':'nur in claude.ai'}<input type="file" id="qt_shot" accept="image/png,image/jpeg,image/webp" ${ASSETS?'':'disabled'} hidden></label></div><div class="small muted">Ziehen, auswählen oder mit Cmd+V einfügen.</div>`}
+async function shotUpload(file){if(!ASSETS||!QT||!file)return;if(!/^image\/(png|jpeg|webp|gif)$/.test(file.type)){toast('Bitte ein PNG-, JPG- oder WebP-Bild verwenden.');return}
+  const box=$('#qtShots');if(box)box.insertAdjacentHTML('beforeend','<div class="small muted" id="shotBusy">Lädt hoch…</div>');
+  try{const r=await ASSETS.upload(file);QT.shots=[...(QT.shots||[]),{id:r.id}];}catch(e){toast(e.code==='too_large'?'Das Bild ist zu groß (max. 20 MB).':'Hochladen fehlgeschlagen. Bitte erneut versuchen.')}
+  const b2=$('#qtShots');if(b2)b2.innerHTML=shotsHTML()}
+document.addEventListener('paste',e=>{if(!QT||!$('#qtShots'))return;const f=[...(e.clipboardData?.files||[])].find(x=>/^image\//.test(x.type));if(f){e.preventDefault();shotUpload(f)}});
+document.addEventListener('dragover',e=>{if(e.target.closest&&e.target.closest('#qtShots'))e.preventDefault()});
+document.addEventListener('drop',e=>{if(!(e.target.closest&&e.target.closest('#qtShots')))return;e.preventDefault();const f=[...(e.dataTransfer?.files||[])].find(x=>/^image\//.test(x.type));if(f)shotUpload(f)});
+function shotView(src){const el=document.createElement('div');el.className='ov';el.id='shotOv';el.innerHTML=`<img src="${esc(src)}" alt="Chart-Screenshot" style="max-width:min(1200px,96vw);max-height:90vh;border-radius:12px;margin:auto">`;el.onclick=()=>el.remove();document.body.appendChild(el)}
+
+/* ============ Backup ============ */
+async function backup(){const data={app:'Ranca Strategix',created:new Date().toISOString(),version:1,collections:Object.fromEntries(COLS.map(c=>[c,S[c]]))};
+  const name=`ranca-strategix-backup-${TODAY()}.json`,json=JSON.stringify(data,null,1);let dl=null;try{dl=window.claude&&await window.claude.use('downloads')}catch(e){}
+  if(!dl){toast('Download geht nur in claude.ai oder in der Mac-App.');return}
+  try{await dl.save({filename:name,data:new Blob([json],{type:'application/json'})});toast('Backup gespeichert');await put('app_config',{...(S.app_config.find(x=>x.id==='backup')||{}),id:'backup',last:new Date().toISOString()})}
+  catch(e){if(e.code!=='declined')toast('Backup fehlgeschlagen ('+(e.code||'Fehler')+').')}}
+
 /* ============ CSV import ============ */
 function importModal(){
   openModal('Trades aus CSV importieren',`<p class="small muted" style="margin-top:0">Exportiere deine Trades (z. B. Tradovate „Performance“, Topstep, NinjaTrader, Rithmic) als CSV und füge den Inhalt hier ein. Erkannt werden Spalten wie Datum/Zeit (bzw. Bought/Sold Timestamp), Symbol, Seite, Menge, Entry/Exit und P&amp;L.</p>
@@ -1680,6 +1858,17 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'day-mark':await markDay(b.dataset.k);toast('Erledigt');break;
+   case 'heute-plan':openDayPlan(TODAY(),null);break;
+   case 'heute-journal':UI.jDate=TODAY();location.hash='journal';break;
+   case 'news-add':newsAdd();break;
+   case 'sim-src':simRead();UI.sim.src=b.dataset.v;render();break;
+   case 'sim-run':simRead();b.disabled=true;b.textContent='Rechnet…';setTimeout(simRun,30);break;
+   case 'wk-nav':UI.wk=b.dataset.d==='0'?RS.weekStart(TODAY()):RS.addDaysStr(UI.wk,+b.dataset.d);render();break;
+   case 'wk-ai':wkAi();break;
+   case 'shot-del':QT.shots.splice(+b.dataset.i,1);$('#qtShots').innerHTML=shotsHTML();break;
+   case 'shot-view':shotView(b.getAttribute('src'));break;
+   case 'backup':backup();break;
    case 'tv-import':tvImport();break;
    case 'imp-unit':IMP.unit=b.dataset.v;b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));impPreview();break;
    case 'cp-add':costAdd();break;
@@ -1748,6 +1937,8 @@ document.addEventListener('click',async e=>{
 document.addEventListener('mousedown',e=>{if(e.target.id==='ov')closeModal()});
 document.addEventListener('input',e=>{if(/^qt_/.test(e.target.id||''))qtLive();if(e.target.id==='calcStop'){UI.calc.stop=e.target.value;const E=ENGINE(),u=E.units.find(x=>x.key===UI.calc.unit)||E.units[0];const I=INSTR().find(x=>x.id===UI.calc.instr)||INSTR()[0];const acc=u&&u.account,rule=acc?RULE(acc.rule_id):null;const lim=rule?RS.contractLimit(rule,acc.stage,acctM(acc).profit,I):null;$('#calcOut').innerHTML=calcOut(e.target.value?RS.positionSize({risk:u.r.riskPerTrade,stopPoints:+String(e.target.value).replace(',','.'),usdPerPoint:I.usd_per_point,limit:lim}):null,I)}});
 document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='qt_shot'&&t.files[0]){shotUpload(t.files[0]);return}
+  if(t.id==='sim_setup'){simRead();render();return}
   if(t.id==='stAcct'){UI.stF.acct=t.value;render();return}
   if(t.id==='calcUnit'){UI.calc.unit=t.value;$('#calcCard').innerHTML='<h2>Positionsgröße</h2>'+calcInner();return}
   if(t.id==='dashAcct'){UI.acct=t.value;saveUI();render()}
@@ -1759,6 +1950,7 @@ document.addEventListener('change',e=>{const t=e.target;
   else if(t.id==='ptcSetup')renderPTC();else if(t.classList.contains('ptc'))updPTC();
 });
 document.addEventListener('submit',async e=>{const f=e.target;
+  if(f.id==='wkForm'){e.preventDefault();const g=k=>document.getElementById('wk_'+k).value.trim();await put('weekly_reviews',{...(S.weekly_reviews.find(x=>x.id===UI.wk)||{}),id:UI.wk,gut:g('gut'),aendern:g('aendern'),fokus:g('fokus'),dank:g('dank')});toast('Wochen-Review gespeichert');return}
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
   else if(f.id==='setForm'){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
   else if(f.id==='jForm'){e.preventDefault();const g=k=>document.getElementById('j_'+k);
