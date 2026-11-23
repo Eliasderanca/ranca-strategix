@@ -1,6 +1,6 @@
 # Ranca Strategix
 
-Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboard, Prop-Kalender, Strategix Coach.
+Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboard, Kalender (P&L und Prop), Strategix Coach.
 
 - **Live-App:** https://claude.ai/artifact/S7DArUyTrmaRwN8Urm3uwv (claude.ai-Artifact)
 - **Spezifikation Dezember:** [docs/dezember-spec.md](docs/dezember-spec.md)
@@ -14,7 +14,10 @@ Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboa
 | `config/seed.json` | Startwerte für Regelsätze und persönliche Regeln (gilt nur, solange die Datenbank leer ist) |
 | `tests/` | Unit-Tests für `logic.js` |
 | `scripts/smoke.js` | Browser-Rauchtest mit Playwright |
+| `scripts/noscroll-check.js` | Prüft je Seite und Tab, dass am Desktop nichts scrollt (`W=1440 H=800 node scripts/noscroll-check.js`) |
 | `desktop/` | Mac-App (Electron-Fenster um die Live-App) |
+
+**Ohne Scrollen:** Am Desktop hat jede Seite eine feste Bildschirmhöhe. Längere Seiten teilen sich in Tabs (`<div class="tabpane" data-tab="…" data-tl="…">`), die `applyTabs()` als Tab-Leiste in den Seitenkopf setzt. Der zuletzt gewählte Tab pro Seite bleibt gespeichert. Lange Listen (Trades, Journal) sind in Seiten aufgeteilt.
 
 Daten liegen in der Datenbank des Artifacts. Außerhalb von claude.ai speichert die App in localStorage.
 

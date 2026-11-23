@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   async function page(opts, hash) {
-    const c = await b.newContext(opts); const p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message + ' @ ' + (e.stack || '').split('\n')[1]));
+    const c = await b.newContext(opts); const p = require('./tabs-helper.js')(await c.newPage()); p.on('pageerror', (e) => errs.push(e.message + ' @ ' + (e.stack || '').split('\n')[1]));
     await p.route('http://rs.test/**', (r) => { const u = new URL(r.request().url()); const f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const fp = path.join(ROOT, f);
       if (!fs.existsSync(fp)) return r.fulfill({ status: 404, body: '' }); let body = fs.readFileSync(fp, 'utf8');
       if (f === 'index.html') body = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + body + '</body></html>';
@@ -19,7 +19,7 @@ const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
   // News-Termin jetzt -> Sperre
   const now = await p.evaluate(() => RS.berlinTime());
   await p.click('[data-act=news-add]'); await p.fill('#f_time', now); await p.fill('#f_title', 'Test-News'); await p.click('#mForm button[type=submit]'); await p.waitForTimeout(250);
-  console.log('News aktiv:', JSON.stringify(await p.evaluate(() => NEWS().active)), '| Leiste:', await p.isVisible('.riskbar .chip.loss'));
+  console.log('News aktiv:', JSON.stringify(await p.evaluate(() => NEWS().active)), '| Hinweis sichtbar:', await p.isVisible('.alert.stop') || await p.isVisible('.riskbar .chip.loss'));
   await p.screenshot({ path: OUT + '/os-heute.png', fullPage: true });
   await p.evaluate(() => document.querySelector('[data-act=add-trade]').click()); await p.waitForTimeout(150);
   console.log('Screenshot-Bereich:', (await p.textContent('#qtShots')).replace(/\s+/g, ' ').trim());

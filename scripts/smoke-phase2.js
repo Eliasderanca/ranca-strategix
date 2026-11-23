@@ -5,7 +5,7 @@ const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   async function page(opts) {
-    const c = await b.newContext(opts); const p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message));
+    const c = await b.newContext(opts); const p = require('./tabs-helper.js')(await c.newPage()); p.on('pageerror', (e) => errs.push(e.message));
     await p.route('http://rs.test/**', (r) => { const u = new URL(r.request().url()); const f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const fp = path.join(ROOT, f);
       if (!fs.existsSync(fp)) return r.fulfill({ status: 404, body: '' }); let body = fs.readFileSync(fp, 'utf8');
       if (f === 'index.html') body = '<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"></head><body>' + body + '</body></html>';

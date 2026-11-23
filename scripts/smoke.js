@@ -7,7 +7,7 @@ const OUT = process.argv[2] || '/tmp';
 (async () => {
   const b = await chromium.launch(); const errs = [];
   async function page(opts) {
-    const c = await b.newContext(opts); const p = await c.newPage();
+    const c = await b.newContext(opts); const p = require('./tabs-helper.js')(await c.newPage());
     p.on('pageerror', (e) => errs.push(e.message));
     await p.route('http://rs.test/**', (r) => {
       const u = new URL(r.request().url()); let f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1);
@@ -36,10 +36,10 @@ const OUT = process.argv[2] || '/tmp';
   await p.evaluate(async () => { const a = S.accounts.find((x) => x.stage === 'FUNDED'); for (const [d, v] of [['2026-11-16', 600], ['2026-11-17', 550]]) await put('trades', { date: d, time: '15:40', pnl: v, accountId: a.id, ruleBreaks: [] }); });
   await p.waitForTimeout(300); await p.screenshot({ path: OUT + '/p1-prop.png', fullPage: true });
   await p.evaluate(() => (location.hash = 'regeln')); await p.waitForTimeout(300); await p.screenshot({ path: OUT + '/p1-regeln.png', fullPage: true });
-  await p.fill('#f_max_trades_per_day', '3'); await p.click('#setForm button[type=submit]'); await p.waitForTimeout(150);
+  await p.fill('#f_max_trades_per_day', '3'); await p.click('.tabpane.on .set-form button[type=submit]'); await p.waitForTimeout(150);
   console.log('SET().maxTrades nach Speichern:', await p.evaluate(() => SET().maxTrades), '| Tages-Stop alt-Feld:', await p.evaluate(() => SET().maxDailyLoss));
   console.log('Berlin heute:', await p.evaluate(() => TODAY()));
-  for (const v of ['markt', 'checkin', 'dashboard', 'trades', 'playbook', 'coach', 'agents', 'journal']) { await p.evaluate((v) => (location.hash = v), v); await p.waitForTimeout(120); }
+  for (const v of ['markt', 'checkin', 'dashboard', 'kalender', 'trades', 'playbook', 'coach', 'agents', 'journal']) { await p.evaluate((v) => (location.hash = v), v); await p.waitForTimeout(120); }
   const m = await page({ ...devices['iPhone 13'] }); await m.screenshot({ path: OUT + '/p1-phone.png' });
   console.log('Seitenbreite Handy:', await m.evaluate(() => document.documentElement.scrollWidth));
   console.log('JS-Fehler:', errs.length ? errs : 'keine');

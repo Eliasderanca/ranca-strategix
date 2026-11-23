@@ -446,6 +446,33 @@ select,input[type=text],input[type=number],input[type=date],input[type=time],tex
   .legend{position:relative;inset:auto;width:auto;margin-top:12px}
   .card{border-radius:24px;padding:18px}
 }
+
+/* ============ Ohne Scrollen: feste Bildschirmhöhe, Bereiche als Tabs ============ */
+.tabpane{display:none}.tabpane.on{display:block}
+.ptabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%;scrollbar-width:none}
+.ptabs::-webkit-scrollbar{display:none}
+.ptabs button{white-space:nowrap}
+@media (min-width:821px){
+  html,body{height:100%;overflow:hidden}
+  .app{height:100vh;min-height:0}
+  .shell{height:calc(100vh - 40px);display:flex;flex-direction:column}
+  .main{flex:1;min-height:0;overflow-y:auto;padding-block:30px 28px;scrollbar-width:thin}
+  .main.pane-fill{display:flex;flex-direction:column}
+  .main.pane-fill .tabpane.on{display:flex;flex-direction:column;flex:1;min-height:0}
+  .calcard{flex:1;min-height:0;display:flex;flex-direction:column;padding:18px}
+  .calcard .calwrap{flex:1;min-height:0}
+  .calcard .cal{height:100%;grid-template-rows:auto repeat(var(--wk,6),minmax(0,1fr))}
+  .calcard .cal-cell,.calcard .cal-week{min-height:0;overflow:hidden}
+  .head{margin-bottom:16px}
+}
+@media (min-width:821px){.nav{gap:2px}.nav a{padding:3px 8px}.nav a .ni{width:30px;height:30px}.nav a svg{width:16px;height:16px}}
+@media (min-width:821px) and (max-height:940px){.rail-card{display:none}.nav a .ni{width:28px;height:28px}.nav a{font-size:13.5px}}
+.cal.noweek{grid-template-columns:repeat(7,minmax(78px,1fr))}
+.heute-head{margin-bottom:12px;justify-content:flex-end}.heute-head:not(:has(*)){display:none}
+@media (min-width:821px){.chatcard{flex:1;min-height:0;display:flex;flex-direction:column}.chatcard .chat{flex:1;min-height:0;max-height:none}}
+.radar-sm svg{max-width:270px!important}
+@media (min-width:821px) and (max-height:860px){h1{font-size:38px}.main{padding-block:22px 20px}.dash-verse{display:none}
+  .rail{padding:16px 12px}.rail .brand{padding:2px 10px 4px}.rail .addbtn{padding:8px 14px}.nav a{padding:2px 8px;font-size:13px}.nav a .ni{width:25px;height:25px}.nav a svg{width:14px;height:14px}}
 </style>
 
 <div class="app">
@@ -522,9 +549,9 @@ const ICON={
  shield:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 2.5l6 2.5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/></svg>',
  smile:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10" cy="10" r="7.5"/><path d="M7 12c1.6 1.6 4.4 1.6 6 0"/><circle cx="7.5" cy="8" r=".6" fill="currentColor"/><circle cx="12.5" cy="8" r=".6" fill="currentColor"/></svg>'
 };
-const VIEWS=[['heute','Heute','sun'],['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['prop','Prop-Kalender','prop'],['cockpit','Dezember-Cockpit','flag'],['simulator','Simulator','dice'],['woche','Wochen-Review','calcheck'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
+const VIEWS=[['heute','Heute','sun'],['markt','Markt-Lage','market'],['checkin','Daily Check-in','heart'],['risiko','Risiko heute','gauge'],['dashboard','Dashboard','dash'],['trades','Trades','trades'],['statistik','Statistik','chart'],['playbook','Playbook','book'],['kalender','Kalender','calcheck'],['prop','Prop-Konten','prop'],['cockpit','Dezember-Cockpit','flag'],['simulator','Simulator','dice'],['woche','Wochen-Review','calcheck'],['coach','Strategix Coach','coach'],['agents','Agenten','agents'],['profil','Trader-Profil','person'],['journal','Journal','journal'],['regeln','Regeln & Ziele','rules']];
 
-const TABS=[['heute','Heute','sun'],['markt','Markt','market'],['risiko','Risiko','gauge'],['prop','Prop','prop']];
+const TABS=[['heute','Heute','sun'],['markt','Markt','market'],['risiko','Risiko','gauge'],['kalender','Kalender','calcheck']];
 const VERSES=[
  ['Sprüche 16,32','Ein Langmütiger ist besser als ein Held, und wer sich selbst beherrscht, besser als einer, der eine Stadt erobert.'],
  ['Jakobus 1,19–20','Jeder Mensch sei schnell zum Hören, langsam zum Reden, langsam zum Zorn; denn der Zorn des Mannes wirkt nicht Gottes Gerechtigkeit.'],
@@ -760,13 +787,33 @@ function render(){
   $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}"><span class="ni">${ICON[i]}</span><span>${l}</span></a>`).join('');
   try{$('#railCard').innerHTML=railCard()}catch(e){}
   document.body.classList.toggle('hide-pnl',hidePnlNow());
-  const f={heute:vHeute,simulator:vSim,woche:vWoche,cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
-  $('#main').innerHTML=f();setSync();
+  const f={heute:vHeute,simulator:vSim,woche:vWoche,cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,kalender:vKalender,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
+  $('#main').innerHTML=f();applyTabs();setSync();
   if(UI.view==='coach'){const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}
   if(UI.view==='agents')tickCooldown();
   renderLock();renderTilt();armNewsTimer();
 }
 window.addEventListener('hashchange',render);
+
+/* ============ Seiten-Tabs: statt scrollen zwischen Bereichen wechseln ============ */
+// Jede View kann Bereiche als <div class="tabpane" data-tab="key" data-tl="Label"> markieren.
+// Hier wird daraus eine Tab-Leiste im Seitenkopf; nur der aktive Bereich ist sichtbar.
+UI.sub={};try{UI.sub=JSON.parse(localStorage.getItem('rs-sub')||'{}')||{}}catch(e){}
+function applyTabs(){const main=$('#main'),panes=[...main.querySelectorAll('.tabpane')].filter(p=>!p.parentElement.closest('.tabpane'));
+  main.classList.toggle('has-fill',panes.some(p=>p.classList.contains('fill')));
+  if(panes.length<2){panes.forEach(p=>p.classList.add('on'));return}
+  const keys=panes.map(p=>p.dataset.tab),cur=keys.includes(UI.sub[UI.view])?UI.sub[UI.view]:keys[0];
+  panes.forEach(p=>p.classList.toggle('on',p.dataset.tab===cur));
+  const bar=document.createElement('div');bar.className='seg ptabs';bar.setAttribute('role','tablist');
+  bar.innerHTML=panes.map(p=>`<button type="button" role="tab" aria-selected="${p.dataset.tab===cur}" class="${p.dataset.tab===cur?'on':''}" data-act="subtab" data-v="${p.dataset.tab}">${p.dataset.tl}</button>`).join('');
+  const head=main.querySelector('.head');
+  if(head){const right=head.children[1];if(right&&right.classList.contains('row'))right.prepend(bar);else{const r=document.createElement('div');r.className='row';r.appendChild(bar);if(right){head.replaceChild(r,right);r.appendChild(right)}else head.appendChild(r)}}
+  else main.prepend(bar);
+  main.classList.toggle('pane-fill',main.querySelector('.tabpane.on.fill')!=null)}
+function setSubTab(v){UI.sub[UI.view]=v;try{localStorage.setItem('rs-sub',JSON.stringify(UI.sub))}catch(e){}
+  const main=$('#main');main.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on',p.dataset.tab===v));
+  main.querySelectorAll('.ptabs button').forEach(b=>{const on=b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
+  main.classList.toggle('pane-fill',main.querySelector('.tabpane.on.fill')!=null);main.scrollTop=0}
 
 /* ============ components ============ */
 function acctSelect(id,val,withNone=true){return `<select id="${id}"><option value="all">Alle Konten</option>${withNone?`<option value="none" ${val==='none'?'selected':''}>Ohne Konto</option>`:''}${S.accounts.map(a=>`<option value="${a.id}" ${val===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>`}
@@ -797,10 +844,10 @@ function equity(curve){
 }
 function calGrid(ym,cellFn,weekFn){
   const[y,m]=ym.split('-').map(Number),first=new Date(y,m-1,1),off=(first.getDay()+6)%7,dim=new Date(y,m,0).getDate();
-  let h=WD.map(d=>`<div class="cal-h">${d}</div>`).join('')+(weekFn?'<div class="cal-h">Woche</div>':'<div class="cal-h"></div>');
+  let h=WD.map(d=>`<div class="cal-h">${d}</div>`).join('')+(weekFn?'<div class="cal-h">Woche</div>':'');
   const cells=[];for(let i=0;i<off;i++)cells.push(null);for(let d=1;d<=dim;d++)cells.push(ym+'-'+pad(d));while(cells.length%7)cells.push(null);
-  for(let w=0;w<cells.length/7;w++){const wk=cells.slice(w*7,w*7+7);h+=wk.map(d=>d?cellFn(d):'<div class="cal-cell empty"></div>').join('');h+=weekFn?weekFn(wk.filter(Boolean),w+1):'<div></div>'}
-  return `<div class="calwrap"><div class="cal">${h}</div></div>`;
+  for(let w=0;w<cells.length/7;w++){const wk=cells.slice(w*7,w*7+7);h+=wk.map(d=>d?cellFn(d):'<div class="cal-cell empty"></div>').join('');if(weekFn)h+=weekFn(wk.filter(Boolean),w+1)}
+  return `<div class="calwrap"><div class="cal${weekFn?'':' noweek'}" style="--wk:${cells.length/7}">${h}</div></div>`;
 }
 function monthNav(act,ym){return `<div class="row"><button class="btn sm" data-act="${act}" data-d="-1" aria-label="Vormonat">‹</button><b style="min-width:128px;text-align:center;font-family:var(--f-display)">${ymLabel(ym)}</b><button class="btn sm" data-act="${act}" data-d="1" aria-label="Nächster Monat">›</button><button class="btn sm" data-act="${act}" data-d="0">Heute</button></div>`}
 
@@ -821,21 +868,23 @@ function vMarket(){
     <div class="small muted" style="margin-top:8px">Vortag ${fmtN(x.prev)}</div>
     ${x.note||x.pre?`<details class="more"><summary>Warum?</summary><p class="small" style="margin:6px 0 0">${x.pre?'<b>Vorbörslich:</b> '+esc(x.pre)+'<br>':''}${esc(x.note||'')}</p></details>`:''}</div>`};
   const dir={up:['▲','win'],down:['▼','loss'],flat:['–','']},impC={hoch:'var(--loss)',mittel:'var(--warn)',niedrig:'var(--faint)'};
-  return head+reminderHTML()+riskBar()+ciBanner()+mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})+`
+  return head+reminderHTML()+riskBar()+ciBanner()+`
+  <div class="tabpane" data-tab="lage" data-tl="Überblick">
   <div class="mkt-hero">
    <div class="mood"><div class="face" style="background:${fc}">${sc>0?'+':''}${sc}</div><div style="flex:1;min-width:0"><div class="row" style="justify-content:space-between"><b style="font-size:17px">${esc(sent.label||'')}</b><span class="small muted">Marktstimmung</span></div><div class="gauge" role="img" aria-label="Stimmung ${sc} von -100 bis 100"><i style="left:${(sc+100)/2}%"></i></div><div class="gauge-l"><span>Angst</span><span>Neutral</span><span>Gier</span></div></div></div>
   </div>
   <p style="font-size:17px;margin:0 0 4px;max-width:70ch">${esc(first)}</p>
   ${rest||sent.text?`<details class="more" style="margin-bottom:16px"><summary>Mehr lesen</summary><p class="small muted" style="margin:6px 0 0;max-width:70ch">${esc(rest)} ${esc(sent.text||'')}</p></details>`:'<div style="height:16px"></div>'}
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:16px">${(b.instruments||[]).map(card).join('')}</div>
+  </div><div class="tabpane" data-tab="heute" data-tl="Für dich heute">${mindCard(prePick(TODAY()),'Mindset für heute',{cls:'top'})}
   ${b.tradingNote?`<div class="callout" style="margin-bottom:16px"><svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" style="flex:none;margin-top:2px"><path d="M10 2.5l6 2.5v4.5c0 4-2.6 6.6-6 8-3.4-1.4-6-4-6-8V5z"/><path d="M7.5 10l2 2 3-3.5"/></svg><div><div class="lbl">Für deinen Handel heute</div><div style="margin-top:2px">${esc(b.tradingNote)}</div></div></div>`:''}
-  <div class="grid g-2" style="margin-bottom:16px">
+  </div><div class="tabpane" data-tab="events" data-tl="Ereignisse & Termine"><div class="grid g-2" style="margin-bottom:16px">
    <div><h2>Was den Preis bewegt hat</h2><div class="list">${(b.events||[]).map(e=>`<details class="li"><summary><span style="flex:1;min-width:0;font-weight:600">${esc(e.title)}</span><span class="row" style="gap:4px;flex-wrap:nowrap">${(e.impact||[]).filter(i=>i.dir!=='flat').map(i=>`<span class="chip ${(dir[i.dir]||dir.flat)[1]}">${esc(INS_KEY[i.key]||i.key)} ${(dir[i.dir]||dir.flat)[0]}</span>`).join('')}</span></summary><div class="body">${esc(e.text||'')}</div></details>`).join('')||'<div class="li-row muted">Keine besonderen Ereignisse.</div>'}</div></div>
    <div><h2>Termine</h2><div class="list">${(b.upcoming||[]).map(u=>`<div class="li-row"><span class="dotimp" style="background:${impC[u.importance]||'var(--faint)'}" title="Wichtigkeit: ${esc(u.importance||'')}"></span><div style="min-width:0"><div style="font-weight:600">${esc(u.title)}</div><div class="small muted">${esc(u.when)}</div></div></div>`).join('')||'<div class="li-row muted">Keine wichtigen Termine.</div>'}</div>
     <div class="row small muted" style="gap:12px;margin-top:8px"><span class="row" style="gap:5px"><span class="dotimp" style="background:var(--loss)"></span>hoch</span><span class="row" style="gap:5px"><span class="dotimp" style="background:var(--warn)"></span>mittel</span><span class="row" style="gap:5px"><span class="dotimp" style="background:var(--faint)"></span>niedrig</span></div></div>
   </div>
-  ${bs.length>1?`<h2>Verlauf</h2><div class="list" style="margin-bottom:16px"><div class="tbl-wrap"><table><thead><tr><th>Tag</th>${(b.instruments||[]).map(x=>`<th class="num">${esc(INS_KEY[x.key]||x.name)}</th>`).join('')}<th>Stimmung</th></tr></thead><tbody>${bs.slice(0,10).map(r=>`<tr><td>${dLabel(r.id)}</td>${(b.instruments||[]).map(x=>{const y=(r.instruments||[]).find(z=>z.key===x.key);return `<td class="num ${y?cls(y.change):''}">${y?sgn(y.changePct)+' %':'–'}</td>`}).join('')}<td>${esc(r.sentiment?.label||'')}</td></tr>`).join('')}</tbody></table></div></div>`:''}
-  ${(b.sources||[]).length?`<details class="more src"><summary>Quellen (${b.sources.length})</summary><div class="small" style="margin-top:6px">${b.sources.map(x=>`<a href="${/^https:\/\//.test(x.url||'')?esc(x.url):'#'}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(' · ')}<br>Kurse können je nach Quelle und Uhrzeit leicht abweichen. Keine Anlageberatung.</div></details>`:''}`;
+  </div><div class="tabpane" data-tab="verlauf" data-tl="Verlauf & Quellen">${bs.length>1?`<h2>Verlauf</h2><div class="list" style="margin-bottom:16px"><div class="tbl-wrap"><table><thead><tr><th>Tag</th>${(b.instruments||[]).map(x=>`<th class="num">${esc(INS_KEY[x.key]||x.name)}</th>`).join('')}<th>Stimmung</th></tr></thead><tbody>${bs.slice(0,10).map(r=>`<tr><td>${dLabel(r.id)}</td>${(b.instruments||[]).map(x=>{const y=(r.instruments||[]).find(z=>z.key===x.key);return `<td class="num ${y?cls(y.change):''}">${y?sgn(y.changePct)+' %':'–'}</td>`}).join('')}<td>${esc(r.sentiment?.label||'')}</td></tr>`).join('')}</tbody></table></div></div>`:''}
+  ${(b.sources||[]).length?`<details class="more src"><summary>Quellen (${b.sources.length})</summary><div class="small" style="margin-top:6px">${b.sources.map(x=>`<a href="${/^https:\/\//.test(x.url||'')?esc(x.url):'#'}" target="_blank" rel="noopener">${esc(x.title)}</a>`).join(' · ')}<br>Kurse können je nach Quelle und Uhrzeit leicht abweichen. Keine Anlageberatung.</div></details>`:''}</div>`;
 }
 
 /* ============ Risk-Engine im UI ============ */
@@ -863,10 +912,8 @@ function vRisk(){const E=ENGINE(),S0=ST[E.status];
     ${r.reasons.length||r.notices.length?`<div class="stack" style="margin-top:14px">${r.reasons.map(x=>`<div class="alert ${r.status==='RED'?'stop':'warn'}"><span class="sq" style="background:${c.c}"></span><div>${esc(x)}</div></div>`).join('')}${r.notices.map(x=>`<div class="alert ${x.level==='warn'?'warn':''}"><span class="sq" style="background:var(--info)"></span><div>${esc(x.text)}</div></div>`).join('')}</div>`:''}</div>`};
   const ins=INSTR(),ui=UI.calc||(UI.calc={unit:E.units[0]?.key,instr:(()=>{try{return localStorage.getItem('rs-instr')}catch(e){return null}})()||ins[0]?.id,stop:''});
   return head+`<div class="callout" style="margin-bottom:16px;background:${S0.c};align-items:center"><div style="font-size:28px;font-weight:800;letter-spacing:-.02em">${S0.t}</div><div><b>${S0.d}</b><div class="small" style="opacity:.85">${E.status==='RED'?'Gesperrt bis 00:00 Uhr (Berlin).':E.status==='YELLOW'?'Gelb: 1 Verlust oder die Hälfte des Tages-Stops ist verbraucht.':'Alle Regeln im grünen Bereich.'}</div></div></div>
-  <div class="grid g-side" style="align-items:start">
-   <div class="stack" style="gap:16px">${E.units.map(unitCard).join('')}</div>
-   <div class="card" id="calcCard"><h2>Positionsgröße</h2>${calcInner()}</div>
-  </div>`}
+  ${E.units.map((u,i)=>`<div class="tabpane" data-tab="u${i}" data-tl="${E.units.length>1?esc(u.name):'Ampel & Limits'}">${unitCard(u)}</div>`).join('')}
+  <div class="tabpane" data-tab="calc" data-tl="Positionsgröße"><div class="card" id="calcCard" style="max-width:760px"><h2>Positionsgröße</h2>${calcInner()}</div></div>`}
 function calcInner(){const E=ENGINE(),ins=INSTR(),c=UI.calc;const u=E.units.find(x=>x.key===c.unit)||E.units[0];const I=ins.find(x=>x.id===c.instr)||ins[0];
   if(!u||!I)return '<div class="muted small">Instrumente werden geladen…</div>';
   const acc=u.account,rule=acc?RULE(acc.rule_id):null;const prof=acc?acctM(acc).profit:0;const limit=rule?RS.contractLimit(rule,acc.stage,prof,I):null;
@@ -958,31 +1005,31 @@ function vCheckin(){
   const hist=[...S.checkins].sort((a,b)=>b.id.localeCompare(a.id)).slice(0,30);
   const histHTML=()=>{if(!hist.length)return '';const g={green:[],yellow:[],red:[]};hist.forEach(x=>{const t=S.trades.filter(y=>y.date===x.id);if(t.length)g[x.level]?.push(sum(t))});
     const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
-    return `<h2 style="margin-top:22px">Verlauf</h2><div class="card"><div class="row" style="gap:6px;margin-bottom:14px">${hist.slice(0,21).reverse().map(x=>`<span title="${dLabel(x.id)}: ${x.score}/100" style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:${LEVEL[x.level].c}">${x.score}</span>`).join('')}</div>
+    return `<div class="tabpane" data-tab="verlauf" data-tl="Verlauf"><div class="card"><div class="row" style="gap:6px;margin-bottom:14px">${hist.slice(0,21).reverse().map(x=>`<span title="${dLabel(x.id)}: ${x.score}/100" style="width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff;background:${LEVEL[x.level].c}">${x.score}</span>`).join('')}</div>
      <div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">${['green','yellow','red'].map(k=>{const v=avg(g[k]);return `<div><div class="small muted"><span class="dotimp" style="display:inline-block;background:${LEVEL[k].c}"></span> Ø P&amp;L an ${{green:'grünen',yellow:'gelben',red:'roten'}[k]} Tagen</div><div class="mono ${v==null?'':cls(v)}" style="font-size:20px;font-weight:700">${v==null?'–':money(v,0)}</div><div class="small muted">${g[k].length} Handelstage</div></div>`}).join('')}</div>
-     <div class="small muted" style="margin-top:10px">So siehst du mit der Zeit schwarz auf weiß, was dein innerer Zustand mit deinem P&amp;L macht.</div></div>`};
+     <div class="small muted" style="margin-top:10px">So siehst du mit der Zeit schwarz auf weiß, was dein innerer Zustand mit deinem P&amp;L macht.</div></div></div>`};
   if(c&&!UI.ci.redo){const L=LEVEL[c.level];
-    return head+`<div class="card" style="text-align:center;padding:28px 18px">
+    return head+`<div class="tabpane" data-tab="heute" data-tl="Heute"><div class="card" style="text-align:center;padding:28px 18px">
       <div style="width:120px;height:120px;border-radius:50%;margin:0 auto 14px;display:grid;place-items:center;background:${L.bg};box-shadow:inset 0 0 0 6px ${L.c}"><div><div class="mono" style="font-size:38px;font-weight:700;color:${L.c}">${c.score}</div><div class="small muted">von 100</div></div></div>
       <h2 style="font-size:24px;margin:0;color:${L.c}">${L.t}</h2><p style="margin:6px auto 0;max-width:46ch">${L.d}</p>
       ${(c.flags||[]).length?`<div class="stack" style="text-align:left;max-width:520px;margin:16px auto 0">${c.flags.map(f=>`<div class="alert warn"><span class="sq" style="background:var(--warn)"></span><div>${esc(f)}</div></div>`).join('')}</div>`:''}
       ${c.intention?`<p style="margin:16px auto 0;max-width:52ch;font-style:italic">„${esc(c.intention)}“</p>`:''}
       <p class="verse" style="margin:18px auto 0;display:inline-block"><b>${L.v[0]}</b> · „${L.v[1]}“</p>
       <div class="row" style="justify-content:center;margin-top:18px">${c.level==='red'?`<button class="btn pri" data-act="ci-cool">Cool-down starten</button>`:`<a class="btn pri" href="#prop">Tagesplan prüfen</a>`}<button class="btn" data-act="ci-redo">Neu einchecken</button></div>
-      <div class="small muted" style="margin-top:10px">Eingecheckt um ${esc(c.at||'')} Uhr</div></div>`+histHTML();}
+      <div class="small muted" style="margin-top:10px">Eingecheckt um ${esc(c.at||'')} Uhr</div></div></div>`+histHTML();}
   const i=UI.ci.step,q=CI_Q[i],a=UI.ci.a,n=CI_Q.length;
   let body='';
   if(q.type==='scale')body=`<div class="row" style="justify-content:space-between;gap:8px;flex-wrap:nowrap">${[1,2,3,4,5].map(v=>`<button type="button" class="ci-dot ${a[q.k]===v?'on':''}" data-act="ci-pick" data-v="${v}" aria-label="${v} von 5">${v}</button>`).join('')}</div><div class="gauge-l" style="margin-top:8px"><span>${q.lo}</span><span>${q.hi}</span></div>`;
   else if(q.type==='pick')body=`<div class="stack">${q.o.map(([v,l])=>`<button type="button" class="ci-opt ${a[q.k]===v?'on':''}" data-act="ci-pick" data-v="${v}">${esc(l)}</button>`).join('')}</div>`;
   else if(q.type==='multi')body=`<div class="${q.k==='commit'?'stack':'row'}" style="gap:8px">${q.o.map(v=>`<button type="button" class="${q.k==='commit'?'ci-opt':'ci-chip'} ${(a[q.k]||[]).includes(v)?'on':''}" data-act="ci-pick" data-v="${esc(v)}">${q.k==='commit'?'<span class="ci-box"></span>':''}${esc(v)}</button>`).join('')}</div>`;
   else body=`<input type="text" id="ciText" value="${esc(a.intention||'')}" placeholder="Meine Absicht heute…" style="width:100%;font-size:17px;padding:13px 14px" maxlength="160">`;
-  return head+`<div class="card ci-card">
+  return head+`<div class="tabpane" data-tab="heute" data-tl="Heute"><div class="card ci-card">
     <div class="row" style="justify-content:space-between"><span class="small muted">Frage ${i+1} von ${n}</span>${UI.ci.redo&&c?'<span class="chip">Neu einchecken</span>':''}</div>
     <div class="bar" style="margin:8px 0 20px"><i style="width:${(i)/n*100}%"></i></div>
     <h2 style="font-size:24px;line-height:1.2;margin-bottom:${q.sub?'6px':'18px'}">${q.q}</h2>${q.sub?`<p class="small muted" style="margin:0 0 18px">${esc(q.sub)}</p>`:''}
     ${body}
     <div class="row" style="justify-content:space-between;margin-top:22px">${i>0?'<button class="btn ghost" data-act="ci-back">‹ Zurück</button>':'<span></span>'}${q.type==='multi'||q.type==='text'?`<button class="btn pri" data-act="ci-next">${q.type==='text'?'Auswerten':'Weiter'}</button>`:''}</div>
-  </div>`+(i===0?histHTML():'');
+  </div></div>`+(i===0?histHTML():'');
 }
 
 /* ============ VIEW: dashboard ============ */
@@ -997,8 +1044,8 @@ function vDash(){
   <div class="head"><div><h1>Dashboard</h1><div class="sub">${lastImport?'Letzte Änderung: '+new Date(lastImport).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short'}):'Noch keine Trades erfasst'}</div></div>
    <div class="row">${acctSelect('dashAcct',UI.acct)}${monthNav('dash-month',UI.ym)}</div></div>
   ${riskBar()}
-  <p class="verse"><b>${vr}</b> · „${vt}“</p>
-  ${acctMetricsHTML()}
+  <div class="tabpane" data-tab="uebersicht" data-tl="Übersicht">
+  <p class="verse dash-verse" style="margin-bottom:12px"><b>${vr}</b> · „${vt}“</p>
   ${noData?`<div class="card" style="margin-bottom:14px">${emptyBox('Willkommen bei Ranca Strategix','Lege zuerst dein Playbook und deine Prop-Konten an, dann erfasse oder importiere Trades. Zum Ausprobieren kannst du markierte Demo-Daten laden und später mit einem Klick entfernen.','<div class="row" style="justify-content:center"><a class="btn pri" href="#playbook">Playbook anlegen</a><a class="btn" href="#prop">Prop-Konto anlegen</a><button class="btn" data-act="demo-load">Demo-Daten laden</button></div>')}</div>`:''}
   <div class="grid g-kpi" style="margin-bottom:14px">
    <div class="card kpi"><div class="lbl">Net P&amp;L · ${ymLabel(UI.ym).split(' ')[0]}</div><div class="v ${cls(s.net)}">${money(s.net)}</div><div class="s">${s.n} Trades · ${s.days} Handelstage</div></div>
@@ -1009,7 +1056,7 @@ function vDash(){
   </div>
   <div class="grid g-3" style="margin-bottom:14px">
    <div class="card"><div class="row" style="justify-content:space-between"><div class="lbl">Strategix Score</div>${sc!=null?`<span class="chip ${sc>=70?'win':sc>=50?'warn':'loss'}">${sc>=80?'Stark':sc>=70?'Gut':sc>=50?'Ausbaufähig':'Kritisch'}</span>`:''}</div>
-     ${parts?`<div class="row" style="align-items:center;gap:4px"><div class="mono" style="font-size:34px;font-weight:600">${sc}</div><div class="muted small">/ 100</div></div><div style="display:flex;justify-content:center">${radar(parts,sc)}</div>`:'<div class="muted small" style="padding:20px 0">Score erscheint ab dem ersten Trade im Monat.</div>'}
+     ${parts?`<div class="row" style="align-items:center;gap:4px"><div class="mono" style="font-size:34px;font-weight:600">${sc}</div><div class="muted small">/ 100</div></div><div class="radar-sm" style="display:flex;justify-content:center">${radar(parts,sc)}</div>`:'<div class="muted small" style="padding:20px 0">Score erscheint ab dem ersten Trade im Monat.</div>'}
    </div>
    <div class="card"><div class="lbl">Monatsziel · ${ymLabel(goalM)}</div>
      <div class="mono" style="font-size:24px;font-weight:600;margin:6px 0 2px" ><span class="${cls(gs.net)}">${money(gs.net,0)}</span> <span class="muted" style="font-size:14px">von ${money(st.monthGoal,0)}</span></div>
@@ -1022,13 +1069,11 @@ function vDash(){
      <div class="small muted" style="margin-top:10px">Ziel anpassen unter <a href="#regeln" style="color:var(--accent)">Regeln &amp; Ziele</a>.</div>
    </div>
    <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="lbl">Agenten-Hinweise heute</div><a class="btn sm ghost" href="#agents">Alle ansehen</a></div>
-     <div class="stack">${al.length?al.slice(0,4).map(alertHTML).join(''):`<div class="alert"><span class="sq" style="background:var(--win)"></span><div><div class="who">Alle Agenten</div>Alles im Rahmen. Bleib bei deinem Plan.</div></div>`}</div>
+     <div class="stack">${al.length?al.slice(0,innerHeight<900?2:3).map(alertHTML).join(''):`<div class="alert"><span class="sq" style="background:var(--win)"></span><div><div class="who">Alle Agenten</div>Alles im Rahmen. Bleib bei deinem Plan.</div></div>`}</div>
    </div>
   </div>
-  <div class="card" style="margin-bottom:14px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">P&amp;L-Kalender</h2><span class="small muted">Monat: <b class="mono ${cls(s.net)}">${money(s.net)}</b> · Tag anklicken für Details</span></div>
-   ${calGrid(UI.ym,d=>{const x=days[d],j=S.journal.find(q=>q.id===d&&(q.premarket||q.review));return `<button type="button" class="cal-cell ${x?(x.pnl>0?'win':x.pnl<0?'loss':''):''} ${d===today?'today':''}" data-act="day" data-d="${d}"><span class="d">${+d.slice(8)}</span>${x?`<span class="p ${cls(x.pnl)}">${smoney(x.pnl)}</span><span class="m">${x.n} Trade${x.n>1?'s':''}</span><span class="m">${pct(x.w/x.n,1)}</span>`:''}${j?`<span class="ic" title="Journal-Eintrag">${ICON.note}</span>`:''}</button>`},(wk,i)=>{const p=wk.reduce((a,d)=>a+(days[d]?.pnl||0),0),n=wk.filter(d=>days[d]).length;return `<div class="cal-week"><span class="small muted">Woche ${i}</span><span class="p ${cls(p)}">${smoney(p)}</span><span class="small muted">${n} Tag${n===1?'':'e'}</span></div>`})}
-  </div>
-  <div class="card"><h2>Equity-Kurve · ${ymLabel(UI.ym)}</h2>${equity(s.curve)}</div>`;
+  </div><div class="tabpane" data-tab="equity" data-tl="Equity-Kurve"><div class="card"><h2>Equity-Kurve · ${ymLabel(UI.ym)}</h2>${equity(s.curve)}</div></div>
+  ${S.accounts.some(a=>RS.isActive(EA(a)))?`<div class="tabpane" data-tab="konten" data-tl="Konten">${acctMetricsHTML()}</div>`:''}`;
 }
 function alertHTML(x){const A=AGENTS[x.a];return `<div class="alert ${x.lv}"><span class="sq" style="background:${A.c}"></span><div><div class="who">${A.n}</div>${x.tx}</div></div>`}
 
@@ -1036,6 +1081,9 @@ function alertHTML(x){const A=AGENTS[x.a];return `<div class="alert ${x.lv}"><sp
 function vTrades(){
   const f=UI.tFilter;let trs=filtAcct(S.trades,f.acct);if(f.ym!=='all')trs=inMonth(trs,f.ym);if(f.setup!=='all')trs=trs.filter(t=>(t.setupId||'none')===f.setup);
   trs=[...trs].sort(byDT).reverse();const s=stats(trs),rev=revengeIds(S.trades,SET().revengeMin);
+  const per=Math.max(5,Math.floor((innerHeight-(innerWidth>820?370:260))/47)),pages=Math.max(1,Math.ceil(trs.length/per));UI.tPage=clamp(UI.tPage||0,0,pages-1);
+  const pageTrs=trs.slice(UI.tPage*per,UI.tPage*per+per);
+  const pager=pages>1?`<div class="row" style="justify-content:space-between;padding:10px 12px"><button class="btn sm" data-act="tpage" data-d="-1" ${UI.tPage?'':'disabled'}>‹ Neuere</button><span class="small muted">Seite ${UI.tPage+1} von ${pages} · ${trs.length} Trades</span><button class="btn sm" data-act="tpage" data-d="1" ${UI.tPage<pages-1?'':'disabled'}>Ältere ›</button></div>`:'';
   const months=[...new Set(S.trades.map(t=>t.date.slice(0,7)).concat([ymNow()]))].sort().reverse();
   return `<div class="head"><div><h1>Trades</h1><div class="sub">${s.n} Trades · <span class="${cls(s.net)} mono">${money(s.net)}</span> · Trefferquote ${s.n?pct(s.wr,1):'–'}</div></div>
    <div class="row"><button class="btn pri" data-act="tv-import">Tradovate importieren</button><button class="btn" data-act="import">Anderes CSV</button><button class="btn pri" data-act="add-trade">Trade erfassen</button></div></div>
@@ -1046,16 +1094,16 @@ function vTrades(){
    <select id="tfSetup"><option value="all">Alle Setups</option><option value="none" ${f.setup==='none'?'selected':''}>Ohne Setup</option>${S.playbooks.map(p=>`<option value="${p.id}" ${f.setup===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
   </div>
   <div class="card" style="padding:4px 4px">${trs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Symbol</th><th>Seite</th><th class="num">Kontr.</th><th>Setup</th><th>Konto</th><th>Emotion</th><th class="num">R</th><th class="num">Net P&amp;L</th><th>Flags</th></tr></thead><tbody>
-   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[(t.screenshots||[]).length?`<span class="chip info">${t.screenshots.length} Bild${t.screenshots.length>1?'er':''}</span>`:'',t.source==='tradovate'&&!t.emotion_before?'<span class="chip warn">Setup & Gefühl ergänzen</span>':'',...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
+   ${pageTrs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[(t.screenshots||[]).length?`<span class="chip info">${t.screenshots.length} Bild${t.screenshots.length>1?'er':''}</span>`:'',t.source==='tradovate'&&!t.emotion_before?'<span class="chip warn">Setup & Gefühl ergänzen</span>':'',...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
    return `<tr class="click" data-act="edit-trade" data-id="${t.id}"><td>${dLabel(t.date)}</td><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b></td><td>${t.side==='Short'?'<span class="chip loss">Short</span>':'<span class="chip win">Long</span>'}</td><td class="num">${t.contracts??''}</td><td>${t.setup?esc(t.setup):p?`<span class="setup-dot" style="background:${p.color||COLORS[0]}"></span> ${esc(p.name)}`:'<span class="muted">–</span>'}</td><td>${an?esc(an):'<span class="muted">–</span>'}</td><td>${t.emotion?`<span class="chip ${isNegEmo(t.emotion)?'warn':''}">${esc(t.emotion)}${eb&&eb.intensity?' '+eb.intensity:''}</span>`:''}</td><td class="num ${rv==null?'':cls(rv)}">${rv!=null?fmtN(rv,1):''}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${flags}</td></tr>`}).join('')}
-   </tbody></table></div>`:emptyBox('Keine Trades in dieser Auswahl','Erfasse einen Trade oder importiere eine CSV-Datei aus deiner Plattform (z. B. Tradovate, Topstep, Rithmic).','<button class="btn pri" data-act="add-trade">Trade erfassen</button>')}</div>`;
+   </tbody></table></div>${pager}`:emptyBox('Keine Trades in dieser Auswahl','Erfasse einen Trade oder importiere eine CSV-Datei aus deiner Plattform (z. B. Tradovate, Topstep, Rithmic).','<button class="btn pri" data-act="add-trade">Trade erfassen</button>')}</div>`;
 }
 
 /* ============ VIEW: playbook ============ */
 function vPlaybook(){
   return `<div class="head"><div><h1>Playbook</h1><div class="sub">Deine definierten Setups. Nur was hier steht, wird gehandelt.</div></div><button class="btn pri" data-act="add-pb">Setup anlegen</button></div>
-  ${S.playbooks.length?`<div class="grid g-2">${S.playbooks.map(p=>{const tr=S.trades.filter(t=>t.setupId===p.id),s=stats(tr);const lines=x=>(x||'').split('\n').filter(Boolean);
-   return `<div class="card"><div class="row" style="justify-content:space-between"><div class="row"><span class="setup-dot" style="background:${p.color||COLORS[0]};width:12px;height:12px"></span><h2 style="margin:0">${esc(p.name)}</h2>${p.active===false?'<span class="chip">Pausiert</span>':'<span class="chip gold">Aktiv</span>'}${p.demo?'<span class="chip">Demo</span>':''}</div><button class="btn sm" data-act="edit-pb" data-id="${p.id}">Bearbeiten</button></div>
+  ${S.playbooks.length?`<div>${S.playbooks.map(p=>{const tr=S.trades.filter(t=>t.setupId===p.id),s=stats(tr);const lines=x=>(x||'').split('\n').filter(Boolean);
+   return `<div class="tabpane" data-tab="pb-${esc(p.id)}" data-tl="${esc(p.name)}"><div class="card"><div class="row" style="justify-content:space-between"><div class="row"><span class="setup-dot" style="background:${p.color||COLORS[0]};width:12px;height:12px"></span><h2 style="margin:0">${esc(p.name)}</h2>${p.active===false?'<span class="chip">Pausiert</span>':'<span class="chip gold">Aktiv</span>'}${p.demo?'<span class="chip">Demo</span>':''}</div><button class="btn sm" data-act="edit-pb" data-id="${p.id}">Bearbeiten</button></div>
    <div class="small muted" style="margin:4px 0 10px">${[p.market,p.session,p.timeframe].filter(Boolean).map(esc).join(' · ')}</div>
    ${p.description?`<p style="margin:0 0 10px">${esc(p.description)}</p>`:''}
    <div class="grid g-kpi" style="grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-bottom:12px">
@@ -1067,11 +1115,11 @@ function vPlaybook(){
     <div><h3>Risiko</h3><ul class="clean small">${p.riskPerTrade?`<li>Max. ${money(p.riskPerTrade,0)} pro Trade</li>`:''}${p.maxContracts?`<li>Max. ${p.maxContracts} Kontrakte</li>`:''}${p.maxTradesPerDay?`<li>Max. ${p.maxTradesPerDay}× pro Tag</li>`:''}${p.minRR?`<li>Mind. ${p.minRR} R Chance</li>`:''}</ul></div>
    </div>
    ${lines(p.checklist).length?`<div class="sep"></div><h3 style="margin-bottom:4px">Pre-Trade-Checkliste</h3><ul class="clean small">${lines(p.checklist).map(l=>`<li>${esc(l)}</li>`).join('')}</ul>`:''}
-   </div>`}).join('')}</div>`:`<div class="card">${emptyBox('Noch kein Setup definiert','Beschreibe jedes Setup so genau, dass ein anderer Trader es nach deinen Regeln handeln könnte: Markt, Zeitfenster, Entry, Exit, wann es ungültig ist, Risiko.','<button class="btn pri" data-act="add-pb">Erstes Setup anlegen</button>')}</div>`}`;
+   </div></div>`}).join('')}</div>`:`<div class="card">${emptyBox('Noch kein Setup definiert','Beschreibe jedes Setup so genau, dass ein anderer Trader es nach deinen Regeln handeln könnte: Markt, Zeitfenster, Entry, Exit, wann es ungültig ist, Risiko.','<button class="btn pri" data-act="add-pb">Erstes Setup anlegen</button>')}</div>`}`;
 }
 
 /* ============ VIEW: prop ============ */
-function vProp(){
+function propCtx(){
   const acts=S.accounts.map(EA);if(UI.propAcct&&!AC(UI.propAcct))UI.propAcct='';
   const sel=UI.propAcct?EA(AC(UI.propAcct)):null;const shown=sel?[sel]:acts;
   const M={};acts.forEach(a=>M[a.id]=acctM(a));
@@ -1091,27 +1139,40 @@ function vProp(){
     });
     {const dp=DP(d);if(dp&&dp.note)h+=`<span class="pchip" style="color:var(--muted);white-space:normal" title="${esc(dp.note)}">${esc(dp.note.length>28?dp.note.slice(0,27)+'…':dp.note)}</span>`}
     return `<button type="button" class="cal-cell pcell ${d===today?'today':''}" data-act="pday" data-d="${d}">${h}</button>`};
-  return `<div class="head"><div><h1>Prop-Firm-Kalender</h1><div class="sub">Challenge- und Funded-Tage, Regeln und dein erwarteter Payout-Tag.</div></div><button class="btn pri" data-act="add-acct">Konto anlegen</button></div>
-  ${riskBar()}
-  ${acts.length?acctGroupsHTML(acts,M):`<div class="card" style="margin-bottom:14px">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`}
-  <div class="grid g-side">
-   <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px">${monthNav('prop-month',UI.propYm)}
-     <div class="row"><select id="propAcct"><option value="">Alle Konten</option>${acts.map(a=>`<option value="${a.id}" ${UI.propAcct===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select></div></div>
-    <div class="small muted" style="margin-bottom:10px">${sel?`<b>Rechtsklick</b> (am Handy: Tippen) auf einen Tag: Konten, Risiko und Tagesziel planen. Mit gewähltem Konto schaltet ein Klick schnell zwischen Handelstag, Pause und leer.`:'<b>Rechtsklick</b> (am Handy: Tippen) auf einen Tag: welche Konten du handelst, mit welchem Risiko und welchem Tagesziel. Daraus berechnet Strategix auch Ziel- und Payout-Termine.'}</div>
-    ${calGrid(UI.propYm,cell,null)}
-    <div class="row small" style="margin-top:10px;gap:12px"><span class="pchip trade"><span class="dot" style="background:var(--accent)"></span>C = Challenge-Tag</span><span class="pchip trade"><span class="dot" style="background:var(--accent)"></span>F = Funded-Tag</span><span class="pchip off">Pause</span><span class="pchip pass">Ziel erwartet</span><span class="pchip payout">Payout</span><span class="pchip end">Frist-Ende</span></div>
-   </div>
-   <div class="card"><h2>Wichtige Termine</h2>${keyDates.length?`<div class="stack">${keyDates.slice(0,10).map(([d,a,k])=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px"><div><div><b>${k==='payout'?'Erwarteter Payout':k==='pass'?'Profitziel erwartet':'Challenge-Frist endet'}</b></div><div class="small muted"><span class="setup-dot" style="background:${a.color||COLORS[0]}"></span> ${esc(a.name)}${k==='payout'?' · ca. '+money(M[a.id].payoutAmt,0):''}</div></div><span class="chip ${k==='payout'?'gold':k==='pass'?'info':'loss'}">${dLabel(d)}</span></div>`).join('')}</div>`:'<div class="muted small">Sobald Konten mit Regeln angelegt sind, erscheinen hier Ziel-, Frist- und Payout-Termine.</div>'}
-    <div class="sep"></div><div class="small muted">Berechnung: Profitziel-Termin = verbleibender Gewinn ÷ geplanter Tagesgewinn, mindestens die Mindest-Handelstage, gezählt über deine geplanten Handelstage (ohne Planung: Mo–Fr). Payout-Termin = fehlende qualifizierte Gewinntage + Payout-Zyklus + Bearbeitungszeit.</div>
-   </div>
-  </div>`;
+  return {acts,sel,shown,M,today,keyDates,cell};
 }
-function acctGroupsHTML(acts,M){const g=RS.groupAccounts(acts);let h='';
-  g.groups.forEach(gr=>{const ms=gr.members.map(a=>M[a.id]);const tp=ms.reduce((x,m)=>x+m.todayP,0),pr=ms.reduce((x,m)=>x+m.profit,0);
-    h+=`<div class="card" style="margin-bottom:14px;background:var(--accent-soft)"><div class="row" style="justify-content:space-between;margin-bottom:12px"><div><div class="lbl">Copy-Gruppe</div><h2 style="margin:0">${esc(gr.name)} · ${gr.members.length} Konten</h2></div><div class="row"><span class="chip">Heute <b class="mono ${cls(tp)}">&nbsp;${money(tp,0)}</b></span><span class="chip">Gesamt <b class="mono ${cls(pr)}">&nbsp;${money(pr,0)}</b></span></div></div>
-    <div class="grid g-2">${gr.members.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`});
-  if(g.singles.length)h+=`<div class="grid g-2" style="margin-bottom:14px">${g.singles.map(a=>acctCard(a,M[a.id])).join('')}</div>`;
+function vProp(){const {acts,M}=propCtx();
+  return `<div class="head"><div><h1>Prop-Konten</h1><div class="sub">Challenge- und Funded-Konten mit Regeln, Fortschritt und erwartetem Payout.</div></div><div class="row"><a class="btn" href="#kalender">Zum Prop-Kalender</a><button class="btn pri" data-act="add-acct">Konto anlegen</button></div></div>
+  ${riskBar()}
+  ${acts.length?propPanes(acts,M):`<div class="card">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`}`;
+}
+/* Konten auf Tabs verteilen: je Copy-Gruppe ein Tab, Einzelkonten je 2 pro Tab */
+function propPanes(acts,M){const g=RS.groupAccounts(acts);let h='';
+  g.groups.forEach((gr,i)=>{h+=`<div class="tabpane" data-tab="g${i}" data-tl="${esc(gr.name)}">${groupCard(gr,M)}</div>`});
+  for(let i=0;i<g.singles.length;i+=2){const part=g.singles.slice(i,i+2);h+=`<div class="tabpane" data-tab="s${i}" data-tl="${esc(part.map(a=>a.name).join(' + '))}"><div class="grid g-2">${part.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`}
   return h}
+function groupCard(gr,M){const ms=gr.members.map(a=>M[a.id]);const tp=ms.reduce((x,m)=>x+m.todayP,0),pr=ms.reduce((x,m)=>x+m.profit,0);
+  return `<div class="card" style="margin-bottom:14px;background:var(--accent-soft)"><div class="row" style="justify-content:space-between;margin-bottom:12px"><div><div class="lbl">Copy-Gruppe</div><h2 style="margin:0">${esc(gr.name)} · ${gr.members.length} Konten</h2></div><div class="row"><span class="chip">Heute <b class="mono ${cls(tp)}">&nbsp;${money(tp,0)}</b></span><span class="chip">Gesamt <b class="mono ${cls(pr)}">&nbsp;${money(pr,0)}</b></span></div></div>
+    <div class="grid g-2">${gr.members.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`}
+
+/* ============ VIEW: Kalender (P&L + Prop) ============ */
+function vKalender(){
+  const all=filtAcct(S.trades,UI.acct),mt=inMonth(all,UI.ym),s=stats(mt),days=byDay(mt),today=TODAY();
+  const P=propCtx();
+  const pnlCal=calGrid(UI.ym,d=>{const x=days[d],j=S.journal.find(q=>q.id===d&&(q.premarket||q.review));return `<button type="button" class="cal-cell ${x?(x.pnl>0?'win':x.pnl<0?'loss':''):''} ${d===today?'today':''}" data-act="day" data-d="${d}"><span class="d">${+d.slice(8)}</span>${x?`<span class="p ${cls(x.pnl)}">${smoney(x.pnl)}</span><span class="m">${x.n} Trade${x.n>1?'s':''} · ${pct(x.w/x.n,0)}</span>`:''}${j?`<span class="ic" title="Journal-Eintrag">${ICON.note}</span>`:''}</button>`},(wk,i)=>{const p=wk.reduce((a,d)=>a+(days[d]?.pnl||0),0),n=wk.filter(d=>days[d]).length;return `<div class="cal-week"><span class="small muted">Woche ${i}</span><span class="p ${cls(p)}">${smoney(p)}</span><span class="small muted">${n} Tag${n===1?'':'e'}</span></div>`});
+  return `<div class="head"><div><h1>Kalender</h1><div class="sub">P&amp;L-Tage und Prop-Planung, jeweils als eigener Tab</div></div></div>
+  <div class="tabpane fill" data-tab="pnl" data-tl="P&amp;L-Kalender"><div class="card calcard">
+   <div class="row" style="justify-content:space-between;margin-bottom:10px">${monthNav('dash-month',UI.ym)}<div class="row">${acctSelect('dashAcct',UI.acct)}<span class="small muted">Monat: <b class="mono pnlv ${cls(s.net)}">${money(s.net)}</b> · ${s.n} Trades · Tag anklicken für Details</span></div></div>
+   ${pnlCal}</div></div>
+  <div class="tabpane fill" data-tab="prop" data-tl="Prop-Kalender"><div class="card calcard">
+   <div class="row" style="justify-content:space-between;margin-bottom:8px">${monthNav('prop-month',UI.propYm)}
+    <div class="row"><select id="propAcct"><option value="">Alle Konten</option>${P.acts.map(a=>`<option value="${a.id}" ${UI.propAcct===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select><span class="small muted">${P.sel?'Klick: Handelstag / Pause / leer · Rechtsklick: planen':'<b>Rechtsklick</b> (Handy: Tippen) auf einen Tag: Konten, Risiko und Tagesziel planen'}</span></div></div>
+   ${calGrid(UI.propYm,P.cell,null)}
+   <div class="row small" style="margin-top:8px;gap:8px"><span class="pchip trade"><span class="dot" style="background:var(--accent)"></span>C = Challenge-Tag</span><span class="pchip trade"><span class="dot" style="background:var(--accent)"></span>F = Funded-Tag</span><span class="pchip off">Pause</span><span class="pchip pass">Ziel erwartet</span><span class="pchip payout">Payout</span><span class="pchip end">Frist-Ende</span></div>
+  </div></div>
+  <div class="tabpane" data-tab="termine" data-tl="Wichtige Termine"><div class="card"><h2>Wichtige Termine</h2>${P.keyDates.length?`<div class="stack">${P.keyDates.slice(0,10).map(([d,a,k])=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:7px"><div><div><b>${k==='payout'?'Erwarteter Payout':k==='pass'?'Profitziel erwartet':'Challenge-Frist endet'}</b></div><div class="small muted"><span class="setup-dot" style="background:${a.color||COLORS[0]}"></span> ${esc(a.name)}${k==='payout'?' · ca. '+money(P.M[a.id].payoutAmt,0):''}</div></div><span class="chip ${k==='payout'?'gold':k==='pass'?'info':'loss'}">${dLabel(d)}</span></div>`).join('')}</div>`:'<div class="muted small">Sobald Konten mit Regeln angelegt sind, erscheinen hier Ziel-, Frist- und Payout-Termine.</div>'}
+   <div class="sep"></div><div class="small muted">Berechnung: Profitziel-Termin = verbleibender Gewinn ÷ geplanter Tagesgewinn, mindestens die Mindest-Handelstage, gezählt über deine geplanten Handelstage (ohne Planung: Mo–Fr). Payout-Termin = fehlende qualifizierte Gewinntage + Payout-Zyklus + Bearbeitungszeit.</div></div></div>`;
+}
 function acctCard(a,m){a=EA(a);
   const c=a.color||COLORS[0],fund=a.phase==='funded';
   const ddP=a.maxDrawdown?clamp(m.ddUsed/a.maxDrawdown*100):0,dlP=a.maxDailyLoss?clamp(-Math.min(0,m.todayP)/a.maxDailyLoss*100):0;
@@ -1147,15 +1208,15 @@ function vCoach(){
   const Q=CC().quick_questions||[];const red=ENGINE().status==='RED';
   return `<div class="head"><div><h1>Strategix Coach</h1><div class="sub">Direkt, ehrlich, mit deinen Zahlen. Kennt dein Profil, deine Regeln und deinen Status heute.</div></div></div>
   ${red?'<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>Status ROT.</b> Der Coach empfiehlt heute keinen weiteren Trade.</div></div>':''}
-  <div class="grid g-side">
-   <div class="card"><div class="lbl" style="margin-bottom:8px">Gespräch</div>
+  <div class="tabpane fill" data-tab="chat" data-tl="Gespräch">
+   <div class="card chatcard"><div class="lbl" style="margin-bottom:8px">Gespräch</div>
     <div class="chat" id="chatBox">${UI.chat.length?UI.chat.map(m=>`<div class="msg ${m.role==='user'?'u':'a'}">${esc(m.content)}</div>`).join(''):`<div class="muted small">Der Coach liest deine Trades, Setups, Prop-Regeln und Journal-Einträge und antwortet konkret mit Zahlen. Wähle eine Frage oder schreib eine eigene.</div>`}
      ${UI.chatBusy?'<div class="msg a" id="liveMsg">Denkt nach…</div>':''}</div>
     <div class="quick" style="margin:10px 0">${Q.map(q=>`<button class="btn sm" data-act="ask" data-q="${esc(q)}" ${UI.chatBusy?'disabled':''}>${esc(q)}</button>`).join('')}</div>
     <form id="chatForm" class="row" style="flex-wrap:nowrap"><input type="text" id="chatIn" placeholder="Frag deinen Coach…" style="flex:1" autocomplete="off"><button class="btn pri" type="submit" ${UI.chatBusy?'disabled':''}>Senden</button>${UI.chatBusy?'<button class="btn" type="button" data-act="stop-chat">Stopp</button>':''}${UI.chat.length&&!UI.chatBusy?'<button class="btn ghost" type="button" data-act="clear-chat">Neu</button>':''}</form>
     <div class="small muted" id="chatNote" style="margin-top:6px"></div>
    </div>
-   <div class="card"><div class="lbl">Mustererkennung · letzte 90 Tage</div><h2 style="margin-top:6px">Muster, die du selbst nicht siehst</h2>
+   </div><div class="tabpane" data-tab="muster" data-tl="Muster"><div class="card"><div class="lbl">Mustererkennung · letzte 90 Tage</div><h2 style="margin-top:6px">Muster, die du selbst nicht siehst</h2>
     <div class="stack">${pats.length?pats.map(p=>`<div class="pattern"><span class="sq" style="background:${p.c}"></span><div class="k">${p.k}</div><span></span><div>${p.tx}</div></div>`).join(''):'<div class="muted small">Ab etwa 10 Trades mit Uhrzeit, Setup und Emotion erkennt Strategix hier Muster: Tageszeit, Revenge-Trades, stärkstes Setup, Wochentag, Emotionen, Regelbrüche.</div>'}</div>
    </div>
   </div>`;
@@ -1184,12 +1245,12 @@ function vAgents(){
     <div class="stack">${mine.length?mine.map(x=>`<div class="alert ${x.lv}"><span class="sq" style="background:${A.c}"></span><div>${x.tx}</div></div>`).join(''):`<div class="alert"><span class="sq" style="background:var(--win)"></span><div>Keine Auffälligkeiten.</div></div>`}</div></div>`};
   const pbs=S.playbooks.filter(p=>p.active!==false);
   return `<div class="head"><div><h1>Agenten</h1><div class="sub">Drei Wächter, die die Teile deines Tradings beobachten, die du im Moment nicht siehst.</div></div></div>
-  <div class="grid g-3" style="margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${card('habit')}${card('risk')}${card('mind')}</div>
-  <div class="grid g-2">
+  <div class="tabpane" data-tab="agenten" data-tl="Hinweise"><div class="grid g-3" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">${card('habit')}${card('risk')}${card('mind')}</div></div>
+  <div class="tabpane" data-tab="check" data-tl="Pre-Trade-Check"><div style="max-width:760px">
    <div class="card"><h2>Pre-Trade-Check</h2><p class="small muted" style="margin-top:-4px">Erst wenn alle Punkte abgehakt sind, gibt Strategix den Trade frei.</p>
     <select id="ptcSetup" style="margin-bottom:10px;width:100%"><option value="">Setup wählen…</option>${pbs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('')}</select>
-    <div id="ptcList" class="stack"></div><div id="ptcResult" style="margin-top:10px"></div></div>
-   <div class="card"><h2>Cool-down</h2><p class="small muted" style="margin-top:-4px">Nach einem Verlust, bei Frust oder dem Drang, es „zurückzuholen“: Timer starten, Plattform zu, aufstehen.</p>
+    <div id="ptcList" class="stack"></div><div id="ptcResult" style="margin-top:10px"></div></div></div></div>
+   <div class="tabpane" data-tab="cool" data-tl="Cool-down"><div class="card" style="max-width:760px"><h2>Cool-down</h2><p class="small muted" style="margin-top:-4px">Nach einem Verlust, bei Frust oder dem Drang, es „zurückzuholen“: Timer starten, Plattform zu, aufstehen.</p>
     <div class="timer" id="cdTimer">${pad(st.cooldownMin)}:00</div>
     <div class="row" style="margin:8px 0 14px"><button class="btn pri" data-act="cd-start">${st.cooldownMin}-Min-Pause starten</button><button class="btn" data-act="cd-stop">Abbrechen</button></div>
     <p class="verse" style="margin:0"><b>${vr}</b> · „${vt}“</p>
@@ -1212,25 +1273,30 @@ function updPTC(){const all=[...document.querySelectorAll('.ptc')];const ok=all.
 /* ============ VIEW: journal ============ */
 function vJournal(){
   const d=UI.jDate,j=S.journal.find(x=>x.id===d)||{},dt=S.trades.filter(t=>t.date===d).sort(byDT),p=sum(dt);
-  const list=[...new Set(S.journal.map(x=>x.id).concat(S.trades.map(t=>t.date)))].sort().reverse().slice(0,40);
+  const allL=[...new Set(S.journal.map(x=>x.id).concat(S.trades.map(t=>t.date)))].sort().reverse();
+  const per=Math.max(5,Math.floor((innerHeight-300)/58)),pages=Math.max(1,Math.ceil(allL.length/per));UI.jPage=clamp(UI.jPage||0,0,pages-1);
+  const list=allL.slice(UI.jPage*per,UI.jPage*per+per);
   return `<div class="head"><div><h1>Journal</h1><div class="sub">Plan vor dem Markt, Review danach. Hier wächst Disziplin.</div></div></div>
   <div class="grid g-side" style="grid-template-columns:minmax(0,1.6fr) minmax(0,.8fr)">
    <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:12px"><div class="row"><input type="date" id="jDate" value="${d}"><b>${dLabel(d)}</b></div><span class="mono ${cls(p)}"><b>${dt.length?money(p)+' · '+dt.length+' Trades':'Keine Trades'}</b></span></div>
-    <form id="jForm" class="form">
+    <form id="jForm">
+     <div class="tabpane" data-tab="pre" data-tl="Vor dem Markt"><div class="form">
      <div class="field full"><label for="j_premarket">Pre-Market-Plan (Bias, Levels, News, welche Setups, max. Risiko)</label><textarea id="j_premarket" rows="4">${esc(j.premarket||'')}</textarea></div>
      <div class="field"><label for="j_mood">Stimmung vor dem Handel</label><select id="j_mood">${['','1 · gestresst','2 · angespannt','3 · neutral','4 · ruhig','5 · klar & fokussiert'].map((l,i)=>`<option value="${i||''}" ${num(j.mood)===i&&i?'selected':''}>${l||'–'}</option>`).join('')}</select></div>
      <div class="field"><label for="j_sleep">Schlaf (Stunden)</label><input type="number" id="j_sleep" step="0.5" value="${j.sleep??''}"></div>
+     </div></div>
+     <div class="tabpane" data-tab="abend" data-tl="Abend-Review"><div class="form">
      <div class="field"><label for="j_mood_evening">Stimmung am Abend</label><select id="j_mood_evening">${['','1 · schlecht','2 · gedrückt','3 · neutral','4 · zufrieden','5 · dankbar & ruhig'].map((l,i)=>`<option value="${i||''}" ${num(j.mood_evening)===i&&i?'selected':''}>${l||'–'}</option>`).join('')}</select></div>
      <div class="field full"><label for="j_review">Abend-Review (was lief, was nicht, warum)</label><textarea id="j_review" rows="4">${esc(j.review||'')}</textarea></div>
      <div class="field full"><label for="j_lessons">Eine Lektion für morgen</label><input type="text" id="j_lessons" value="${esc(j.lessons||'')}"></div>
      <div class="field full"><label for="j_heart">Herz-Check (Gebet, Dankbarkeit, was mich heute antreibt)</label><textarea id="j_heart" rows="2">${esc(j.heart||'')}</textarea></div>
      <div class="field full checks"><label><input type="checkbox" id="j_followed" ${j.followedPlan?'checked':''}> Plan vollständig befolgt</label></div>
-     <div class="full row"><button class="btn pri" type="submit">Eintrag speichern</button>${j.id?'<button class="btn danger" type="button" data-act="del-journal">Löschen</button>':''}</div>
+     </div></div>
+     <div class="tabpane" data-tab="tag" data-tl="Tagesabschluss">${eveningHTML(d)||'<div class="muted small" style="margin-top:12px">Der Tagesabschluss erscheint, sobald an diesem Tag gehandelt wurde.</div>'}${dt.length?`<div class="sep"></div><h3 style="margin-bottom:6px">Trades an diesem Tag</h3>${tradeMini(dt)}`:''}</div>
+     <div class="row" style="margin-top:14px"><button class="btn pri" type="submit">Eintrag speichern</button>${j.id?'<button class="btn danger" type="button" data-act="del-journal">Löschen</button>':''}</div>
     </form>
-    ${eveningHTML(d)}
-    ${dt.length?`<div class="sep"></div><h3 style="margin-bottom:6px">Trades an diesem Tag</h3>${tradeMini(dt)}`:''}
    </div>
-   <div class="card"><h2>Einträge</h2><div class="stack">${list.length?list.map(x=>{const jj=S.journal.find(q=>q.id===x),pp=sum(S.trades.filter(t=>t.date===x));return `<button type="button" class="btn" style="justify-content:space-between;width:100%" data-act="jpick" data-d="${x}"><span>${dLabel(x)} ${jj?.premarket?'<span class="chip gold">Plan</span>':''}${jj?.review?' <span class="chip info">Review</span>':''}</span><span class="mono ${cls(pp)}">${pp?smoney(pp):''}</span></button>`}).join(''):'<div class="muted small">Noch keine Einträge.</div>'}</div></div>
+   <div class="card"><h2>Einträge</h2><div class="stack">${list.length?list.map(x=>{const jj=S.journal.find(q=>q.id===x),pp=sum(S.trades.filter(t=>t.date===x));return `<button type="button" class="btn" style="justify-content:space-between;width:100%" data-act="jpick" data-d="${x}"><span>${dLabel(x)} ${jj?.premarket?'<span class="chip gold">Plan</span>':''}${jj?.review?' <span class="chip info">Review</span>':''}</span><span class="mono ${cls(pp)}">${pp?smoney(pp):''}</span></button>`}).join(''):'<div class="muted small">Noch keine Einträge.</div>'}</div>${pages>1?`<div class="row" style="justify-content:space-between;margin-top:10px"><button class="btn sm" data-act="jpage" data-d="-1" ${UI.jPage?'':'disabled'}>‹ Neuer</button><span class="small muted">Seite ${UI.jPage+1} von ${pages}</span><button class="btn sm" data-act="jpage" data-d="1" ${UI.jPage<pages-1?'':'disabled'}>Älter ›</button></div>`:''}</div>
   </div>`;
 }
 function tradeMini(dt){return `<div class="tbl-wrap"><table><tbody>${dt.map(t=>`<tr class="click" data-act="edit-trade" data-id="${t.id}"><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b> ${esc(t.side||'')}</td><td>${esc(PB(t.setupId)?.name||'–')}</td><td>${esc(t.emotion||'')}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td></tr>`).join('')}</tbody></table></div>`}
@@ -1287,26 +1353,30 @@ function editRule(r){const v={...(r||{name:'Neuer Regelsatz',micros_per_mini:10,
     const id=r?.id||x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||uid();
     await put('account_rules',{...(r||{}),...x,funded_contract_scaling:sc,id});toast('Regelsatz gespeichert')},
     r&&S.account_rules.some(q=>q.id===r.id)&&!S.accounts.some(a=>a.rule_id===r.id)?`<button class="btn danger" type="button" data-act="del-rule" data-id="${r.id}">Löschen</button>`:'')}
+const PR_GROUPS=[['risiko','Risiko-Regeln',['risk_per_trade_phase1','risk_per_trade_phase2','phase2_from_profit','daily_stop_phase1','daily_stop_phase2','max_losing_trades_per_day','max_trades_per_day','fourth_trade_requires_green','after_two_red_days_risk','stop_after_two_winners','eval_daily_profit_soft_cap','eval_daily_profit_hard_warning','max_active_accounts']],
+ ['session','Session & Agenten',['news_block_minutes','hide_pnl_in_session','max_consecutive_losses','revengeMin','cooldownMin','sessionStart','sessionEnd']],
+ ['ziele','Ziele & Handelsregeln',['goalMonth','monthGoal','maxRedDays','rules']]];
 function vRules(){
   const st=PR(),demo=S.trades.filter(t=>t.demo).length+S.playbooks.filter(t=>t.demo).length+S.accounts.filter(t=>t.demo).length;
+  const grp=([k,l,keys])=>`<div class="tabpane" data-tab="${k}" data-tl="${l}"><div class="${k==='ziele'?'grid g-side':''}" style="align-items:start"><div class="card"><h2>${l}</h2><p class="small muted" style="margin-top:-6px">Strenger als die Firma. Die Risk-Engine und die Agenten rechnen mit diesen Werten.</p><form class="form f3 set-form">${formFields(PR_FIELDS.filter(f=>keys.includes(f.k)),st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>${k==='ziele'?`
+    <div class="card"><h2>Dezember-Plan</h2><ul class="clean small"><li>Ein Monat mit vielen kleinen grünen Tagen schlägt einen mit zwei großen.</li><li>Tageslimit ist heilig: erreicht heißt Plattform zu, nicht „noch einer“.</li><li>Nur Setups aus dem Playbook. Alles andere ist Glücksspiel.</li><li>Jeden Abend Review, jeden Freitag Wochen-Auswertung mit dem Coach.</li></ul>
+     <p class="verse" style="margin-top:10px"><b>Sprüche 13,11</b> · „Schnell erworbener Reichtum zerrinnt; wer aber Stück für Stück sammelt, vermehrt ihn.“</p></div>`:''}</div></div>`;
   return `<div class="head"><div><h1>Regeln &amp; Ziele</h1><div class="sub">Deine Leitplanken für den Dezember. Die Agenten prüfen dagegen.</div></div></div>
-  <div class="grid g-side">
-   <div class="stack">
-    <div class="card"><h2>Meine Regeln</h2><p class="small muted" style="margin-top:-6px">Strenger als die Firma. Die Risk-Engine und die Agenten rechnen mit diesen Werten.</p><form id="setForm" class="form">${formFields(PR_FIELDS,st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>
+  ${PR_GROUPS.map(grp).join('')}
+  <div class="tabpane" data-tab="firma" data-tl="Firmen-Regelsätze">
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Firmen-Regelsätze</h2><button class="btn sm" data-act="add-rule">Regelsatz anlegen</button></div>
      <div class="list" style="margin-top:12px;background:var(--elev)">${RULES().map(r=>`<div class="li-row" style="align-items:flex-start"><div style="flex:1;min-width:0" class="small">${ruleSummary(r).replace(/<div class="muted"[\s\S]*$/,'')}<div class="muted" style="margin-top:4px">${S.accounts.filter(a=>a.rule_id===r.id).length} Konten nutzen diesen Regelsatz${S.account_rules.some(q=>q.id===r.id)?'':' · Startwert, noch nicht gespeichert'}</div></div><button class="btn sm" data-act="edit-rule" data-id="${r.id}">Bearbeiten</button></div>`).join('')||'<div class="li-row muted">Noch kein Regelsatz.</div>'}</div></div>
-   </div>
-   <div class="stack">
-    <div class="card"><h2>Dezember-Plan</h2><ul class="clean small"><li>Ein Monat mit vielen kleinen grünen Tagen schlägt einen mit zwei großen.</li><li>Tageslimit ist heilig: erreicht heißt Plattform zu, nicht „noch einer“.</li><li>Nur Setups aus dem Playbook. Alles andere ist Glücksspiel.</li><li>Jeden Abend Review, jeden Freitag Wochen-Auswertung mit dem Coach.</li></ul>
-     <p class="verse" style="margin-top:10px"><b>Sprüche 13,11</b> · „Schnell erworbener Reichtum zerrinnt; wer aber Stück für Stück sammelt, vermehrt ihn.“</p></div>
+  </div>
+  <div class="tabpane" data-tab="mindset" data-tl="Mindset-Texte">
     <div class="card"><h2>Mindset-Texte</h2><p class="small muted" style="margin-top:-6px">Erscheinen morgens auf der Markt-Lage und abends im Abend-Log.</p>
      ${['PRE_SESSION','WIN_PLAN','WIN_RULEBREAK','LOSS_CONTROLLED','LOSS_RULEBREAK','NO_TRADE','STREAK_WIN','STREAK_LOSS'].map(c=>{const ms=MSGS().filter(m=>m.category===c);return `<details class="more"><summary>${c} (${ms.length})</summary><div class="stack" style="margin-top:8px">${ms.map(m=>`<div class="small" style="padding:8px 10px;border-radius:10px;background:var(--elev)">${esc(m.text)} <span class="muted">– ${esc(m.bible_ref||'')}</span>${m.custom?` <button class="btn sm danger" data-act="ms-del" data-id="${m.id}">Löschen</button>`:''}</div>`).join('')}</div></details>`}).join('')}
      <div class="sep"></div><div class="stack" style="gap:8px"><select id="msCat">${['PRE_SESSION','WIN_PLAN','WIN_RULEBREAK','LOSS_CONTROLLED','LOSS_RULEBREAK','NO_TRADE','STREAK_WIN','STREAK_LOSS'].map(c=>`<option>${c}</option>`).join('')}</select><textarea id="msText" rows="2" placeholder="Eigener Text"></textarea><input type="text" id="msRef" placeholder="Bibelstelle, z. B. Psalm 37,7"><button class="btn" data-act="ms-add">Text hinzufügen</button></div></div>
+  </div>
+  <div class="tabpane" data-tab="daten" data-tl="Backup & Daten"><div class="grid g-2" style="align-items:start">
     <div class="card"><h2>Backup</h2><p class="small muted" style="margin-top:-6px">Alle Daten als eine Datei sichern. Am besten jeden Freitag.${(()=>{const b=S.app_config.find(x=>x.id==='backup');return b&&b.last?' Letztes Backup: '+new Date(b.last).toLocaleString('de-DE',{dateStyle:'medium',timeStyle:'short',timeZone:'Europe/Berlin'})+'.':' Noch kein Backup.'})()}</p><button class="btn pri" data-act="backup">Backup herunterladen</button></div>
     <div class="card"><h2>Daten</h2><div class="small muted" style="margin-bottom:10px">${MODE==='cloud'?'Alle Einträge liegen in der Ranca-Datenbank dieser App. Claude kann sie auf deinen Wunsch lesen und mit dir auswerten.':'Diese Ansicht speichert nur lokal im Browser.'}<br>${S.trades.length} Trades · ${S.playbooks.length} Setups · ${S.accounts.length} Konten · ${S.journal.length} Journal-Tage</div>
      <div class="row"><button class="btn" data-act="demo-load">Demo-Daten laden</button>${demo?`<button class="btn danger" data-act="demo-clear">Demo-Daten entfernen (${demo})</button>`:''}</div></div>
-   </div>
-  </div>`;
+  </div></div>`;
 }
 
 /* ============ forms ============ */
@@ -1565,11 +1635,11 @@ function vStats(){const f=UI.stF||(UI.stF={days:'90',acct:'all'});
     ${wk.map((w,i)=>{const x=40+i*45,h=w.breaks/maxB*120;return `<rect x="${x}" y="${140-h}" width="30" height="${Math.max(h,0)}" rx="5" fill="${i===wk.length-1?'var(--loss)':'var(--warn)'}" opacity="${w.breaks?1:.25}"/><text x="${x+15}" y="160" text-anchor="middle" font-size="10.5" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">KW${w.week.slice(-2)}</text>${w.breaks?`<text x="${x+15}" y="${134-h}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${w.breaks}</text>`:''}`}).join('')}</svg>`;
   const worse=al.afterLoss.avgR!=null&&al.others.avgR!=null&&al.afterLoss.avgR<al.others.avgR;
   return head+`
-  <h2>Nach einem Verlust</h2><div class="grid g-2" style="margin-bottom:16px">${tile('Trade direkt nach einem Verlust',al.afterLoss,worse)}${tile('Alle anderen Trades',al.others)}</div>
+  <div class="tabpane" data-tab="verlust" data-tl="Nach Verlust"><h2>Nach einem Verlust</h2><div class="grid g-2" style="margin-bottom:16px">${tile('Trade direkt nach einem Verlust',al.afterLoss,worse)}${tile('Alle anderen Trades',al.others)}</div>
   ${worse?`<div class="alert warn" style="margin:-6px 0 16px"><span class="sq" style="background:var(--warn)"></span><div>Deine Trades nach einem Verlust sind im Schnitt ${fmtN(al.others.avgR-al.afterLoss.avgR,2)} R schlechter. Die Pflicht-Pause ist für dich besonders wichtig.</div></div>`:''}
-  <h2>Trade 1 bis 4 des Tages</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">${idx.map(x=>tile('Trade '+x.label,x)).join('')}</div>
-  <div class="grid g-2" style="margin-bottom:16px">${table('Nach Gefühl vor dem Trade',emo.map(x=>row(x.key,x)).join(''),'Gefühl')}${table('Ø R je Setup',su.map(x=>row(x.key,x)).join(''),'Setup')}</div>
-  <div class="card"><h2>Regelbrüche pro Woche</h2>${bars}<div class="small muted">Letzte 8 Kalenderwochen. Gezählt werden „Plan nicht befolgt“ und markierte Regelbrüche.</div></div>`;
+  </div><div class="tabpane" data-tab="index" data-tl="Trade 1–4"><h2>Trade 1 bis 4 des Tages</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">${idx.map(x=>tile('Trade '+x.label,x)).join('')}</div>
+  </div><div class="tabpane" data-tab="gefuehl" data-tl="Gefühl & Setup"><div class="grid g-2" style="margin-bottom:16px">${table('Nach Gefühl vor dem Trade',emo.map(x=>row(x.key,x)).join(''),'Gefühl')}${table('Ø R je Setup',su.map(x=>row(x.key,x)).join(''),'Setup')}</div>
+  </div><div class="tabpane" data-tab="regeln" data-tl="Regelbrüche"><div class="card"><h2>Regelbrüche pro Woche</h2>${bars}<div class="small muted">Letzte 8 Kalenderwochen. Gezählt werden „Plan nicht befolgt“ und markierte Regelbrüche.</div></div></div>`;
 }
 
 /* ============ Phase 4: Mindset ============ */
@@ -1627,23 +1697,23 @@ function vProfil(){const C=PSYC(),p=PROFILE();
     overconfidence:f=>`${f.tradesAfterTarget} Trades nach Erreichen des Tagesziels oder nach 2 Gewinnern (an ${f.daysReached} Tagen)`,
     discipline:f=>`Ø ${fmtN(f.breaksPerWeek,1)} Regelbrüche pro Woche (${f.weeks} Wochen)`};
   return head+`${age>=(C.repeat_days||30)?`<div class="alert warn" style="margin-bottom:16px"><span class="sq" style="background:var(--warn)"></span><div>Dein letzter Test ist ${age} Tage alt. Zeit für einen neuen Durchlauf. <button class="btn sm" data-act="pt-start" style="margin-left:6px">Jetzt wiederholen</button></div></div>`:''}
-  <div class="grid g-side" style="margin-bottom:16px;align-items:start">
+  <div class="tabpane" data-tab="dim" data-tl="9 Dimensionen"><div class="grid g-side" style="align-items:start">
    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Deine 9 Dimensionen</h2><span class="small muted">Test vom ${dLabel(p.created_date||String(p.created_at).slice(0,10))}</span></div>
     <div style="display:flex;justify-content:center">${radar(parts,'')}</div><div class="small muted" style="text-align:center">Je weiter außen, desto größer das Risiko.</div></div>
    <div class="card"><div class="stack" style="gap:10px">${C.dimensions.map(d=>{const s=p.scores[d.key],l=LV[p.levels[d.key]];return `<div class="meter-row"><span>${esc(d.name)}</span><span class="chip" style="background:${l.bg};color:${l.c}">${s} · ${l.t}</span><div class="bar"><i style="width:${s}%;background:${l.c}"></i></div></div>`}).join('')}</div></div>
   </div>
-  <h2>Deine größten Risiken</h2>
+  </div><div class="tabpane" data-tab="risiken" data-tl="Größte Risiken">
   ${risks.length?`<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-bottom:16px">${risks.map((d,i)=>{const l=LV[p.levels[d.key]];return `<div class="card" style="border-top:4px solid ${l.c}"><div class="row" style="justify-content:space-between"><span class="lbl">Risiko ${i+1}</span><span class="chip" style="background:${l.bg};color:${l.c}">${p.scores[d.key]} / 100</span></div>
     <h2 style="margin:6px 0">${esc(d.name)}</h2><p class="small" style="margin:0 0 12px">${esc(d.explanation)}</p>
     <div class="mind" style="background:var(--elev)"><div class="lbl">Gegenregel</div><p class="mind-t" style="font-size:15px">${esc(String(d.counter_rule).replace('{fomo_points}',C.fomo_points||20))}</p></div>
     ${d.key==='payout'?`<button class="btn ${PR().hide_pnl_in_session?'pri':''}" style="margin-top:10px" data-act="toggle-hidepnl">${PR().hide_pnl_in_session?'PnL in der Session ausgeblendet ✓':'PnL in der Session ausblenden'}</button>`:''}</div>`}).join('')}</div>`:`<div class="card" style="margin-bottom:16px"><p style="margin:0">Keine Dimension im gelben oder roten Bereich. Bleib wachsam, gerade Stärken werden im Erfolg nachlässig.</p></div>`}
-  <div class="grid g-2" style="margin-bottom:16px;align-items:start">
+  </div><div class="tabpane" data-tab="trigger" data-tl="Trigger & Tilt-Map"><div class="grid g-2" style="align-items:start">
    <div class="card"><h2>Deine Trigger</h2>${trig.length?`<div class="row" style="gap:6px">${trig.map(([k,v])=>`<span class="chip ${v>=3?'loss':v>=2?'warn':''}">${esc(k)} · ${'●'.repeat(v)}${'○'.repeat(3-v)}</span>`).join('')}</div>`:'<div class="muted small">Keine Trigger ausgewählt.</div>'}</div>
    <div class="card"><h2>Deine Tilt-Map</h2><div class="stack" style="gap:10px">${(C.tilt_map||[]).filter(q=>p.tilt_map?.[q.key]).map(q=>`<div><div class="small muted">${esc(q.label)}</div><div style="white-space:pre-wrap">${esc(p.tilt_map[q.key])}</div></div>`).join('')||'<div class="muted small">Noch nichts eingetragen.</div>'}</div></div>
   </div>
-  <div class="card" style="margin-bottom:16px"><h2>Realitäts-Check</h2>${!rc.ready?`<p class="small muted" style="margin:0">Ab ${C.reality_min_trades||20} Trades im Journal vergleicht Strategix deine Selbsteinschätzung mit deinen echten Daten. Noch ${rc.need} Trades.</p>`:
+  </div><div class="tabpane" data-tab="reality" data-tl="Realitäts-Check"><div class="card" style="margin-bottom:16px"><h2>Realitäts-Check</h2>${!rc.ready?`<p class="small muted" style="margin:0">Ab ${C.reality_min_trades||20} Trades im Journal vergleicht Strategix deine Selbsteinschätzung mit deinen echten Daten. Noch ${rc.need} Trades.</p>`:
    `<div class="stack">${rc.items.map(it=>{const d=C.dimensions.find(x=>x.key===it.key),l=LV[it.level];return `<div class="alert ${it.verdict==='overrated'?'warn':''}"><span class="sq" style="background:${it.verdict==='overrated'?'var(--warn)':it.verdict==='underrated'?'var(--info)':'var(--win)'}"></span><div><b>${esc(d.name)}</b> · Selbsteinschätzung ${it.score} (${l.t})<div class="small">${rcText[it.key](it.facts)}</div><div class="small" style="margin-top:4px"><b>${it.verdict==='overrated'?'Du schätzt dich hier stärker ein, als deine Daten zeigen.':it.verdict==='underrated'?'Deine Daten sind hier besser als deine Selbsteinschätzung.':'Selbsteinschätzung und Daten passen zusammen.'}</b></div></div></div>`}).join('')}</div>`}</div>
-  ${hist.length>1?`<div class="card"><h2>Verlauf</h2><div class="tbl-wrap"><table><thead><tr><th>Dimension</th>${hist.map(h=>`<th class="num">${dLabel(h.created_date||String(h.created_at).slice(0,10))}</th>`).join('')}</tr></thead><tbody>${C.dimensions.map(d=>`<tr><td>${esc(d.name)}</td>${hist.map(h=>{const s=h.scores?.[d.key];const l=LV[RS.profileLevel(s??0,C.thresholds)];return `<td class="num"><b style="color:${l.c}">${s??'–'}</b></td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>`:''}`;
+  ${hist.length>1?`<div class="card"><h2>Verlauf</h2><div class="tbl-wrap"><table><thead><tr><th>Dimension</th>${hist.map(h=>`<th class="num">${dLabel(h.created_date||String(h.created_at).slice(0,10))}</th>`).join('')}</tr></thead><tbody>${C.dimensions.map(d=>`<tr><td>${esc(d.name)}</td>${hist.map(h=>{const s=h.scores?.[d.key];const l=LV[RS.profileLevel(s??0,C.thresholds)];return `<td class="num"><b style="color:${l.c}">${s??'–'}</b></td>`}).join('')}</tr>`).join('')}</tbody></table></div></div>`:''}</div>`;
 }
 function ptFlow(){const C=PSYC(),pt=UI.pt,n=C.dimensions.length,total=n+2;const step=pt.step;
   const bar=`<div class="row" style="justify-content:space-between"><span class="small muted">${step<n?`Teil A · Seite ${step+1} von ${n}`:step===n?'Teil B · Trigger':'Teil C · Tilt-Map'}</span><button class="btn ghost sm" data-act="pt-cancel">Abbrechen</button></div><div class="bar" style="margin:8px 0 18px"><i style="width:${step/total*100}%"></i></div>`;
@@ -1684,27 +1754,26 @@ function vCockpit(){const {c,payouts,sum}=cockpitData(),today=TODAY();
   const msC={done:'var(--faint)',now:'var(--accent)',next:'var(--line)'};
   return `<div class="head"><div><h1>Dezember-Cockpit</h1><div class="sub">Budget, Fahrplan und Payouts · ${dLabel(c.period_from)} bis ${dLabel(c.period_to)}</div></div><button class="btn" data-act="cp-settings">Budget & Kurs</button></div>
   ${reminderHTML()}
-  <div class="grid g-kpi" style="margin-bottom:16px">
+  <div class="tabpane" data-tab="budget" data-tl="Budget & Payouts"><div class="grid g-kpi" style="margin-bottom:16px">
    <div class="card kpi"><div class="lbl">Budget</div><div class="v">${eur(c.budget_eur,0)}</div><div class="bar ${used>85?'loss':used>60?'warn':'win'}" style="margin-top:8px"><i style="width:${used}%"></i></div><div class="s">${Math.round(used)} % verbraucht</div></div>
    <div class="card kpi"><div class="lbl">Ausgegebene Fees</div><div class="v neg">${eur(sum.feesEur)}</div><div class="s">${costs.length} Ausgaben im Zeitraum</div></div>
    <div class="card kpi"><div class="lbl">Reserve</div><div class="v ${sum.reserveEur<0?'neg':''}">${eur(sum.reserveEur)}</div><div class="s">${sum.reserveEur<0?'Budget überschritten':'noch verfügbar'}</div></div>
    <div class="card kpi"><div class="lbl">Payouts</div><div class="v pos pnlv">${money(sum.payoutNetUsd,0)}</div><div class="s pnlv">netto (90 %) · brutto ${money(sum.payoutGrossUsd,0)} · ≈ ${eur(sum.payoutNetEur,0)}</div></div>
    <div class="card kpi"><div class="lbl">ROI</div><div class="v ${sum.roiPct==null?'':cls(sum.roiPct)} pnlv">${sum.roiPct==null?'–':(sum.roiPct>0?'+':'')+fmtN(sum.roiPct,1)+' %'}</div><div class="s">(Payouts netto − Fees) / Fees</div></div>
   </div>
-  <div class="grid g-side" style="margin-bottom:16px;align-items:start">
-   <div class="card"><h2>Fahrplan</h2><div class="tl">${ms.map(m=>{const st=RS.milestoneState(m,today);return `<div class="tl-i ${st}"><span class="tl-d" style="background:${msC[st]}"></span><div><b>${esc(m.label)}</b> <span class="small muted">${esc(m.hint||'')}</span>${st==='now'?' <span class="chip gold">jetzt</span>':st==='done'?' <span class="chip">erledigt</span>':''}</div></div>`}).join('')}</div></div>
-   <div class="stack">
+  <div class="grid g-2" style="align-items:start">
     <div class="card" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Break-even</div><div style="font-size:28px;font-weight:800;margin:4px 0">${eur(sum.breakEvenEur||0)} <span style="font-size:16px;opacity:.75">= ${money(sum.breakEvenUsd||0,0)}</span></div><div class="small" style="opacity:.85">Bruttogewinn, den du auszahlen musst, damit die Fees gedeckt sind (Fees ÷ 0,9). Kurs: 1 € = ${fmtN(c.fx_usd_per_eur,2)} $.</div>${sum.breakEvenLeftEur?`<div style="margin-top:8px"><b>Noch offen: ${eur(sum.breakEvenLeftEur)}</b></div>`:sum.feesEur?'<div style="margin-top:8px"><b>Break-even erreicht ✓</b></div>':''}</div>
     <div class="card"><h2>Payouts im Zeitraum</h2>${pIn.length?`<div class="stack small">${pIn.map(p=>`<div class="row" style="justify-content:space-between"><span>${dLabel(p.date)} · ${esc(p.account)}</span><b class="mono pos pnlv">${money(p.amount,0)}</b></div>`).join('')}</div>`:'<div class="small muted">Noch kein Payout. Erfasse ihn im Prop-Kalender beim Konto über „Payout erfassen“.</div>'}</div>
    </div>
   </div>
-  <div class="card" style="margin-bottom:16px"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Ausgaben im Zeitraum</h2><button class="btn pri sm" data-act="cp-add">Ausgabe erfassen</button></div>
+  <div class="tabpane" data-tab="fahrplan" data-tl="Fahrplan"><div class="card"><h2>Fahrplan</h2><div class="tl">${ms.map(m=>{const st=RS.milestoneState(m,today);return `<div class="tl-i ${st}"><span class="tl-d" style="background:${msC[st]}"></span><div><b>${esc(m.label)}</b> <span class="small muted">${esc(m.hint||'')}</span>${st==='now'?' <span class="chip gold">jetzt</span>':st==='done'?' <span class="chip">erledigt</span>':''}</div></div>`}).join('')}</div></div></div>
+  <div class="tabpane" data-tab="ausgaben" data-tl="Ausgaben"><div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Ausgaben im Zeitraum</h2><button class="btn pri sm" data-act="cp-add">Ausgabe erfassen</button></div>
    ${costs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Konto</th><th>Firma</th><th class="num">Eval</th><th class="num">Reset</th><th class="num">Aktivierung</th><th class="num">Gesamt</th><th></th></tr></thead><tbody>${costs.map(x=>`<tr><td>${dLabel(x.date)}</td><td>${esc(x.account)}</td><td>${esc(x.firm)}</td><td class="num">${eur(x.eval_fee)}</td><td class="num">${eur(x.reset)}</td><td class="num">${eur(x.activation_fee)}</td><td class="num"><b>${eur(x.total_spend)}</b></td><td><button class="btn sm ghost" data-act="cp-del" data-id="${x.id}">Löschen</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="small muted">Noch keine Ausgabe im Dezember-Zeitraum. Erfasse jeden Eval-Kauf, Reset und jede Aktivierung.</div>'}</div>
-  <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Historie ${year}</h2><button class="btn sm" data-act="cp-import">CSV importieren</button></div>
+  </div><div class="tabpane" data-tab="historie" data-tl="Historie"><div class="card"><div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Historie ${year}</h2><button class="btn sm" data-act="cp-import">CSV importieren</button></div>
    ${hist.length?`<div class="grid g-kpi" style="margin-bottom:12px"><div><div class="lbl">Ausgaben</div><div class="mono neg" style="font-size:20px;font-weight:700">${eur(ht.spend)}</div></div><div><div class="lbl">Payouts</div><div class="mono pos" style="font-size:20px;font-weight:700">${eur(ht.payout)}</div></div><div><div class="lbl">Netto ${year}</div><div class="mono ${cls(ht.payout-ht.spend)}" style="font-size:20px;font-weight:700">${eur(ht.payout-ht.spend)}</div></div></div>
     <div class="tbl-wrap"><table><thead><tr><th>Firma</th><th class="num">Einträge</th><th class="num">Ausgaben</th><th class="num">Payouts</th><th class="num">Netto</th></tr></thead><tbody>${Object.entries(byFirm).map(([f,o])=>`<tr><td>${esc(f)}</td><td class="num">${o.n}</td><td class="num">${eur(o.spend)}</td><td class="num">${eur(o.payout)}</td><td class="num ${cls(o.payout-o.spend)}"><b>${eur(o.payout-o.spend)}</b></td></tr>`).join('')}</tbody></table></div>
     <details class="more"><summary>Alle ${hist.length} Einträge</summary><div class="tbl-wrap" style="margin-top:8px"><table><thead><tr><th>Datum</th><th>Konto</th><th>Firma</th><th>Eval-Status</th><th class="num">Ausgaben</th><th class="num">Payout</th><th class="num">Netto</th><th>Status</th><th>Notiz</th></tr></thead><tbody>${hist.map(x=>`<tr><td>${dLabel(x.date)}</td><td>${esc(x.account)}</td><td>${esc(x.firm)}</td><td>${esc(x.eval_status)}</td><td class="num">${eur(x.total_spend)}</td><td class="num">${eur(x.payout)}</td><td class="num ${cls(x.net)}">${eur(x.net)}</td><td>${esc(x.status)}</td><td class="small">${esc(x.notes)}</td></tr>`).join('')}</tbody></table></div></details>`
-   :'<div class="small muted">Importiere deine bisherige 2026-Historie als CSV (Trennzeichen „;“, Zahlen wie „1.234,56 €“). Spalten: Account; Firm; Date; Eval Fee; Reset; Eval Status; Activation Fee; Total Spend; Payout; Net; Status; Notes.</div>'}</div>`;
+   :'<div class="small muted">Importiere deine bisherige 2026-Historie als CSV (Trennzeichen „;“, Zahlen wie „1.234,56 €“). Spalten: Account; Firm; Date; Eval Fee; Reset; Eval Status; Activation Fee; Total Spend; Payout; Net; Status; Notes.</div>'}</div></div>`;
 }
 const COST_FIELDS=[{k:'date',l:'Datum',t:'date',req:1},{k:'account',l:'Konto',t:'text',ph:'z. B. FTMO Pro 50K #1'},{k:'firm',l:'Firma',t:'text',def:'FTMO Futures'},
  {k:'eval_fee',l:'Eval-Gebühr / Abo (€)',t:'number'},{k:'reset',l:'Reset (€)',t:'number'},{k:'activation_fee',l:'Aktivierung (€)',t:'number'},{k:'eval_status',l:'Eval-Status',t:'text',ph:'läuft / bestanden / nicht bestanden'},{k:'notes',l:'Notiz',t:'text'}];
@@ -1826,7 +1895,10 @@ function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Gute
   const acc=S.accounts.map(EA).filter(RS.isActive)[0],am=acc?acctM(acc):null;
   const eq=am?(()=>{let c=0;return [0,...am.dates.map(x=>c+=am.days[x].pnl)]})():[];
   const line=eq.length>1?(()=>{const mn=Math.min(...eq),mxx=Math.max(...eq),rg=mxx-mn||1;return eq.map((v,i)=>`${i?'L':'M'}${(i/(eq.length-1)*150+6).toFixed(1)},${(70-(v-mn)/rg*56).toFixed(1)}`).join('')})():'M6,60 L40,48 L70,56 L110,30 L156,22';
-  return `<div class="grid g-2 hero" style="gap:26px;align-items:stretch;margin-bottom:22px">
+  return `<div class="head heute-head"></div>
+   ${reminderHTML()}
+   ${N.active?`<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>News-Sperre bis ${N.active.end}:</b> ${esc(N.active.title)}. Kein neuer Trade.</div></div>`:''}
+   <div class="tabpane" data-tab="start" data-tl="Start"><div class="grid g-2 hero" style="gap:26px;align-items:stretch">
     <div class="stack" style="gap:18px">
      <h1>${greet}<br>${ci?'Lass uns sauber traden.':'Erst Herz, dann Chart.'}</h1>
      <div class="goal"><div class="goal-t">Du hast ${pct} % deines Tagesablaufs geschafft${next?`. Als Nächstes: ${esc(next.t)}`:'. Stark.'}</div>
@@ -1842,17 +1914,16 @@ function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Gute
      </div>
      <form id="heuteAsk" class="ask" style="margin-top:18px"><input type="text" id="heuteQ" placeholder="Frag deinen Coach…" autocomplete="off" aria-label="Frage an den Coach"><button type="submit" aria-label="Senden">${ICO2.send}</button></form>
     </div>
-   </div>
-   ${reminderHTML()}${riskBar()}
-   ${N.active?`<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>News-Sperre bis ${N.active.end}:</b> ${esc(N.active.title)}. Kein neuer Trade.</div></div>`:''}
-   <div class="row" style="justify-content:space-between;margin:28px 0 14px"><h2 style="font-size:26px;margin:0">Zusammenfassung</h2><div class="seg">${[['tag','Heute'],['woche','Woche'],['monat','Monat']].map(([v,l])=>`<button type="button" class="${(UI.hz||'woche')===v?'on':''}" data-act="hz" data-v="${v}">${l}</button>`).join('')}</div></div>
-   <div class="sumrow" style="margin-bottom:28px">
+   </div></div>
+   <div class="tabpane" data-tab="zusammenfassung" data-tl="Zusammenfassung">${riskBar()}
+   <div class="row" style="justify-content:space-between;margin:6px 0 14px"><h2 style="font-size:26px;margin:0">Zusammenfassung</h2><div class="seg">${[['tag','Heute'],['woche','Woche'],['monat','Monat']].map(([v,l])=>`<button type="button" class="${(UI.hz||'woche')===v?'on':''}" data-act="hz" data-v="${v}">${l}</button>`).join('')}</div></div>
+   <div class="sumrow">
     <div class="sum grey">${ringSvg(tr.length?ok/tr.length:0,wd?cin/wd:0)}<div class="legend"><div><span class="lb"><span class="dot" style="background:var(--accent)"></span>Plan befolgt</span><br><b>${ok}<small>/${tr.length} Trades</small></b></div><div><span class="lb"><span class="dot" style="background:#151515"></span>Check-ins</span><br><b>${cin}<small>/${wd} Tage</small></b></div></div></div>
     <div class="sum white">${barsSvg}<div style="position:absolute;left:22px;bottom:22px"><div class="lb">P&amp;L ${lab}</div><div class="big pnlv ${cls(tot)}">${money(tot,0)}</div><div class="small muted">${tr.length} Trades</div></div></div>
     <a class="sum dark" href="#prop" style="text-decoration:none"><svg viewBox="0 0 162 80" width="80%" style="position:absolute;left:18px;top:18px" aria-hidden="true"><path d="${line}" fill="none" stroke="#3fb39d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
      <div style="position:absolute;left:22px;bottom:22px"><div class="lb">${acc?'Drawdown frei':'Prop-Konto'}</div><div class="big">${acc?money(am.ddLeft,0):'anlegen'}</div></div></a>
-   </div>
-   <div class="grid g-side" style="align-items:start">
+   </div></div>
+   <div class="tabpane" data-tab="ablauf" data-tl="Tagesablauf"><div class="grid g-side" style="align-items:start">
     <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tagesablauf</h2><span class="small muted">${done} von ${steps.length} erledigt</span></div>
      <div class="steps" style="margin-top:14px">${steps.map((s,i)=>`<div class="step ${s.done?'done':''} ${next&&next.k===s.k?'next':''}"><span class="step-n">${s.done?'✓':i+1}</span><div style="flex:1;min-width:0"><b>${s.t}</b><div class="small muted">${s.sub}</div></div><div class="row step-a" style="gap:6px">${s.act}</div></div>`).join('')}</div></div>
     <div class="stack">
@@ -1860,7 +1931,7 @@ function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Gute
      ${lastWr?`<div class="mind dark"><div class="lbl">Fokus dieser Woche</div><p class="mind-t">${esc(lastWr.fokus)}</p></div>`:''}
      <div class="card"><b>Werkzeuge</b><div class="row" style="gap:6px;margin-top:10px"><a class="btn sm" href="#risiko">Positionsgröße</a><a class="btn sm" href="#simulator">Simulator</a><a class="btn sm" href="#woche">Wochen-Review</a><a class="btn sm" href="#cockpit">Cockpit</a></div></div>
     </div>
-   </div>`;
+   </div></div>`;
 }
 function miniRing(p){const r=13,c=2*Math.PI*r,v=clamp(p,0,1);return `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="${r}" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="4"/><circle cx="17" cy="17" r="${r}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(c*v).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 17 17)"/></svg>`}
 function railCard(){const d=TODAY(),st=heuteSteps(d),next=st.find(s=>!s.done);const lastWr=S.weekly_reviews.filter(x=>x.fokus).sort((a,b)=>b.id.localeCompare(a.id))[0];
@@ -1884,15 +1955,14 @@ function simRun(){const o=UI.sim,rule=RULES()[0];if(!rule){toast('Kein Regelsatz
   const ev=RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs,seed:'e',minDays:2});
   const fu=RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs,seed:'f'});
   const cmp=[null,100,150,200,250].map(r=>({risk:r,ev:RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs:2000,seed:'c'+r,minDays:2,riskOverride:r}),fu:RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs:2000,seed:'g'+r,riskOverride:r})}));
-  o.res={ev,fu,cmp,n:src.list?src.list.length:null,fee:num(rule.monthly_fee)};render()}
+  o.res={ev,fu,cmp,n:src.list?src.list.length:null,fee:num(rule.monthly_fee)};UI.sub.simulator='ergebnis';render()}
 function vSim(){const o=UI.sim||(UI.sim=simDefaults()),r=o.res;const setups=JC().setups||[];
   const nTr=o.src==='trades'?simSource(o).list.length:null;
   const pctB=(v,c)=>`<div class="sim-big"><div class="mono" style="color:${c}">${Math.round(v*100)} %</div></div>`;
   const hist=(arr)=>{const mx=Math.max(1,...arr);return `<svg viewBox="0 0 ${arr.length*34+20} 120" width="100%" style="max-width:520px;display:block" role="img" aria-label="Tag des Bestehens">${arr.map((v,i)=>{const h=v/mx*66;return `<rect x="${12+i*34}" y="${92-h}" width="24" height="${h}" rx="4" fill="var(--accent)" opacity="${v?1:.15}"/><text x="${24+i*34}" y="110" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">T${i+1}</text>${v?`<text x="${24+i*34}" y="${86-h}" text-anchor="middle" font-size="10" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${Math.round(v/ (r.ev.runs)*100)}%</text>`:''}`}).join('')}</svg>`};
   const ev=r&&r.ev,fu=r&&r.fu,decEV=r?ev.pPass*fu.expectedNet:0;
   return `<div class="head"><div><h1>Challenge- & Payout-Simulator</h1><div class="sub">Tausende mögliche Dezember-Verläufe nach den FTMO-Regeln und deinen eigenen Regeln.</div></div></div>
-  <div class="grid g-sim" style="align-items:start">
-   <div class="card"><h2>Annahmen</h2>
+  <div class="tabpane" data-tab="annahmen" data-tl="Annahmen"><div class="card" style="max-width:860px"><h2>Annahmen</h2>
     <div class="lbl" style="margin-bottom:6px">Woher kommen die Trade-Ergebnisse?</div>
     <div class="seg" style="margin-bottom:14px"><button type="button" class="${o.src==='manual'?'on':''}" data-act="sim-src" data-v="manual">Annahme</button><button type="button" class="${o.src==='trades'?'on':''}" data-act="sim-src" data-v="trades">Meine Trades</button></div>
     ${o.src==='manual'?`<div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr))"><div class="field"><label for="sim_winrate">Trefferquote %</label><input type="number" id="sim_winrate" value="${o.winrate}" min="0" max="100"></div><div class="field"><label for="sim_avgWin">Ø Gewinn (R)</label><input type="number" step="0.1" id="sim_avgWin" value="${o.avgWin}"></div><div class="field"><label for="sim_avgLoss">Ø Verlust (R)</label><input type="number" step="0.1" id="sim_avgLoss" value="${o.avgLoss}"></div></div>
@@ -1900,20 +1970,19 @@ function vSim(){const o=UI.sim||(UI.sim=simDefaults()),r=o.res;const setups=JC()
     :`<div class="field"><label for="sim_setup">Setup</label><select id="sim_setup"><option value="all">Alle Setups</option>${setups.map(x=>`<option ${o.setup===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><p class="small ${nTr<30?'neg':'muted'}">${nTr} Trades mit R-Wert.${nTr<30?' Unter 30 Trades ist das Ergebnis noch sehr unsicher.':''}</p>`}
     <div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:6px"><div class="field"><label for="sim_evalDays">Eval-Handelstage</label><input type="number" id="sim_evalDays" value="${o.evalDays}" min="1" max="40"></div><div class="field"><label for="sim_fundedDays">Funded-Tage bis Payout</label><input type="number" id="sim_fundedDays" value="${o.fundedDays}" min="1" max="40"></div><div class="field"><label for="sim_runs">Durchläufe</label><input type="number" id="sim_runs" value="${o.runs}" min="500" max="20000" step="500"></div></div>
     <p class="small muted">Gerechnet mit: Regelsatz ${esc(RULES()[0]?.name||'')}, deinem Risiko (${money(PR().risk_per_trade_phase1,0)} / ${money(PR().risk_per_trade_phase2,0)}), Tages-Stop, max. ${PR().max_trades_per_day} Trades, Schluss nach 2 Gewinnern, 100 $ nach 2 roten Tagen, Eval-Feierabend ab ${money(PR().eval_daily_profit_soft_cap,0)}. Ohne Slippage und Gebühren. Annahme: Du hältst dich an deine Regeln.</p>
-    <button class="btn pri" data-act="sim-run" style="width:100%;justify-content:center;padding:12px">Simulieren</button></div>
-   <div class="stack">${!r?`<div class="card">${emptyBox('Noch keine Simulation','Stell links deine Annahmen ein und tippe auf „Simulieren“. Das dauert ein bis zwei Sekunden.')}</div>`:`
+    <button class="btn pri" data-act="sim-run" style="width:100%;justify-content:center;padding:12px">Simulieren</button></div></div>
+   <div class="tabpane" data-tab="ergebnis" data-tl="Ergebnis">${!r?`<div class="card">${emptyBox('Noch keine Simulation','Stell im Tab „Annahmen“ deine Werte ein und tippe auf „Simulieren“. Das dauert ein bis zwei Sekunden.')}</div>`:`<div class="grid g-2" style="align-items:start">
     <div class="card"><div class="lbl">Eval in ${o.evalDays} Handelstagen</div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
      <div><div class="small muted">bestanden</div>${pctB(ev.pPass,'var(--win)')}</div><div><div class="small muted">Konto verloren</div>${pctB(ev.pBreach,'var(--loss)')}</div><div><div class="small muted">nicht fertig</div>${pctB(ev.pOpen,'var(--muted)')}</div></div>
      <div class="small muted" style="margin:6px 0 10px">${ev.medianDays?`Bestanden meist nach <b>${ev.medianDays} Handelstagen</b>.`:''}${ev.pConsistencyBlocked>0.01?` In ${Math.round(ev.pConsistencyBlocked*100)} % der Fälle war das Ziel erreicht, aber die Konsistenzregel noch nicht erfüllt.`:''}</div>${hist(ev.passHist)}</div>
     <div class="card"><div class="lbl">Funded: ${o.fundedDays} Tage bis zum ersten Payout</div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
      <div><div class="small muted">Payout erreicht</div>${pctB(fu.pPayout,'var(--win)')}</div><div><div class="small muted">Konto verloren</div>${pctB(fu.pBreach,'var(--loss)')}</div><div><div class="small muted">noch offen</div>${pctB(fu.pOpen,'var(--muted)')}</div></div>
      <div class="small muted" style="margin-top:6px">Wenn ausgezahlt wird: im Schnitt <b>${money(fu.avgPayoutNet,0)}</b> netto (Median ${money(fu.medianPayoutNet,0)}).</div></div>
-    <div class="card" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Dezember pro Konto (Erwartungswert)</div>
+    </div><div class="card" style="background:var(--brand);color:#fff;margin-top:16px"><div class="lbl" style="color:rgba(255,255,255,.7)">Dezember pro Konto (Erwartungswert)</div>
      <div style="font-size:30px;font-weight:800;margin:4px 0">${money(decEV,0)} <span style="font-size:15px;opacity:.75">− ${money(r.fee,0)} Abo = ${money(decEV-r.fee,0)}</span></div>
      <div class="small" style="opacity:.85">Chance auf Bestehen × Chance auf Payout × Ø Payout. Das ist ein Durchschnitt über viele mögliche Verläufe, keine Vorhersage für deinen Dezember.</div></div>
-    <div class="card"><h2>Welches Risiko pro Trade?</h2><div class="tbl-wrap"><table><thead><tr><th>Risiko</th><th class="num">Eval bestanden</th><th class="num">Eval verloren</th><th class="num">Payout</th><th class="num">Erwartung/Konto</th></tr></thead><tbody>${r.cmp.map(c=>`<tr ${c.risk===null?'style="font-weight:700"':''}><td>${c.risk===null?'Meine Regeln':money(c.risk,0)}</td><td class="num pos">${Math.round(c.ev.pPass*100)} %</td><td class="num neg">${Math.round(c.ev.pBreach*100)} %</td><td class="num">${Math.round(c.fu.pPayout*100)} %</td><td class="num"><b>${money(c.ev.pPass*c.fu.expectedNet-r.fee,0)}</b></td></tr>`).join('')}</tbody></table></div>
+    `}</div><div class="tabpane" data-tab="risiko" data-tl="Risiko-Vergleich">${!r?`<div class="card">${emptyBox('Noch keine Simulation','Erst simulieren, dann siehst du hier den Vergleich der Risikostufen.')}</div>`:`<div class="card"><h2>Welches Risiko pro Trade?</h2><div class="tbl-wrap"><table><thead><tr><th>Risiko</th><th class="num">Eval bestanden</th><th class="num">Eval verloren</th><th class="num">Payout</th><th class="num">Erwartung/Konto</th></tr></thead><tbody>${r.cmp.map(c=>`<tr ${c.risk===null?'style="font-weight:700"':''}><td>${c.risk===null?'Meine Regeln':money(c.risk,0)}</td><td class="num pos">${Math.round(c.ev.pPass*100)} %</td><td class="num neg">${Math.round(c.ev.pBreach*100)} %</td><td class="num">${Math.round(c.fu.pPayout*100)} %</td><td class="num"><b>${money(c.ev.pPass*c.fu.expectedNet-r.fee,0)}</b></td></tr>`).join('')}</tbody></table></div>
      <p class="small muted">Mehr Risiko heißt schneller bestehen, aber auch öfter verlieren. Wähl das Risiko, bei dem „verloren“ für dich tragbar bleibt, nicht das mit dem höchsten Erwartungswert.</p></div>`}
-   </div>
   </div>`;
 }
 
@@ -1924,25 +1993,22 @@ function vWoche(){const ws=UI.wk||(UI.wk=RS.weekStart(TODAY()));const usd=t=>(IN
   const rv=S.weekly_reviews.find(x=>x.id===ws)||{},past=S.weekly_reviews.filter(x=>x.id!==ws).sort((a,b)=>b.id.localeCompare(a.id)).slice(0,6);
   const tile=(l,v,c='')=>`<div class="card kpi"><div class="lbl">${l}</div><div class="v ${c}">${v}</div></div>`;
   return `<div class="head"><div><h1>Wochen-Review</h1><div class="sub">KW ${s.week.slice(-2)} · ${dLabel(s.from)} bis ${dLabel(s.to)}</div></div><div class="row"><button class="btn sm" data-act="wk-nav" data-d="-7" aria-label="Woche zurück">‹</button><button class="btn sm" data-act="wk-nav" data-d="0">Diese Woche</button><button class="btn sm" data-act="wk-nav" data-d="7" aria-label="Woche vor">›</button></div></div>
-  <div class="grid g-kpi" style="margin-bottom:16px">${tile('P&amp;L',`<span class="pnlv">${money(s.pnl,0)}</span>`,cls(s.pnl))}${tile('Trades · Winrate',`${s.trades} · ${s.winrate==null?'–':Math.round(s.winrate*100)+' %'}`)}${tile('Ø R',s.avgR==null?'–':fmtN(s.avgR,2),s.avgR==null?'':cls(s.avgR))}${tile('Regeltreue',s.followedPct==null?'–':Math.round(s.followedPct*100)+' %',s.followedPct!=null&&s.followedPct<0.8?'neg':'')}${tile('Grün / Rot',`<span class="pos">${s.greenDays}</span> / <span class="neg">${s.redDays}</span>`)}${tile('Ø Check-in',s.checkinAvg==null?'–':s.checkinAvg)}</div>
-  <div class="grid g-side" style="align-items:start">
-   <div class="stack">
+  <div class="tabpane" data-tab="bilanz" data-tl="Bilanz"><div class="grid g-kpi" style="margin-bottom:16px">${tile('P&amp;L',`<span class="pnlv">${money(s.pnl,0)}</span>`,cls(s.pnl))}${tile('Trades · Winrate',`${s.trades} · ${s.winrate==null?'–':Math.round(s.winrate*100)+' %'}`)}${tile('Ø R',s.avgR==null?'–':fmtN(s.avgR,2),s.avgR==null?'':cls(s.avgR))}${tile('Regeltreue',s.followedPct==null?'–':Math.round(s.followedPct*100)+' %',s.followedPct!=null&&s.followedPct<0.8?'neg':'')}${tile('Grün / Rot',`<span class="pos">${s.greenDays}</span> / <span class="neg">${s.redDays}</span>`)}${tile('Ø Check-in',s.checkinAvg==null?'–':s.checkinAvg)}</div>
     <div class="card"><h2>Was die Woche zeigt</h2><div class="stack small">
      <div>Tagestypen: ${Object.entries(s.dayTypes).map(([k,v])=>`<span class="chip ${DAY_CHIP[k]}">${DAY_LABEL[k]} × ${v}</span>`).join(' ')||'<span class="muted">keine Handelstage</span>'}</div>
      <div>Regelbrüche: <b>${s.ruleBreaks}</b> · Tilt-Checks: <b>${s.tiltChecks}</b>${s.tiltRed?` (davon ${s.tiltRed} mit Sperre)`:''}</div>
      ${s.bestSetup?`<div>Bestes Setup: <b>${esc(s.bestSetup.key)}</b> (${fmtN(s.bestSetup.avgR,2)} R, ${s.bestSetup.n} Trades)</div>`:''}
      ${s.worstEmotion&&s.worstEmotion.avgR<0?`<div>Teuerstes Gefühl: <b>${esc(s.worstEmotion.key)}</b> (${fmtN(s.worstEmotion.avgR,2)} R)</div>`:''}
-     <div>Bester Tag ${money(s.bestDay,0)} · schlechtester Tag ${money(s.worstDay,0)}</div></div></div>
-    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Coach-Analyse</h2><button class="btn sm" data-act="wk-ai" ${UI.wkBusy?'disabled':''}>${UI.wkBusy?'Analysiert…':rv.ai?'Neu analysieren':'Woche analysieren'}</button></div>
-     <div class="small" id="wkAi" style="white-space:pre-wrap;margin-top:10px">${rv.ai?esc(rv.ai):'<span class="muted">Der Coach wertet die Woche mit deinem Profil und deinen Regeln aus.</span>'}</div></div>
-   </div>
-   <div class="card"><h2>Deine Reflexion</h2><form id="wkForm" class="stack" style="gap:12px">
+     <div>Bester Tag ${money(s.bestDay,0)} · schlechtester Tag ${money(s.worstDay,0)}</div></div></div></div>
+    <div class="tabpane" data-tab="coach" data-tl="Coach-Analyse"><div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Coach-Analyse</h2><button class="btn sm" data-act="wk-ai" ${UI.wkBusy?'disabled':''}>${UI.wkBusy?'Analysiert…':rv.ai?'Neu analysieren':'Woche analysieren'}</button></div>
+     <div class="small" id="wkAi" style="white-space:pre-wrap;margin-top:10px">${rv.ai?esc(rv.ai):'<span class="muted">Der Coach wertet die Woche mit deinem Profil und deinen Regeln aus.</span>'}</div></div></div>
+   <div class="tabpane" data-tab="reflexion" data-tl="Reflexion"><div class="grid g-side" style="align-items:start"><div class="card"><h2>Deine Reflexion</h2><form id="wkForm" class="form">
     <div class="field"><label for="wk_gut">Was lief gut?</label><textarea id="wk_gut" rows="3">${esc(rv.gut||'')}</textarea></div>
     <div class="field"><label for="wk_aendern">Was ändere ich?</label><textarea id="wk_aendern" rows="3">${esc(rv.aendern||'')}</textarea></div>
     <div class="field"><label for="wk_fokus">Ein Fokus für nächste Woche</label><input type="text" id="wk_fokus" value="${esc(rv.fokus||'')}" placeholder="z. B. Nach dem ersten Verlust 15 Minuten Pause"></div>
     <div class="field"><label for="wk_dank">Wofür bin ich dankbar?</label><textarea id="wk_dank" rows="2">${esc(rv.dank||'')}</textarea></div>
-    <button class="btn pri" type="submit">Review speichern</button></form>
-    ${past.length?`<div class="sep"></div><div class="lbl" style="margin-bottom:6px">Frühere Fokus-Ziele</div><div class="stack small">${past.map(p=>`<div><b>KW ${RS.isoWeek(p.id).slice(-2)}:</b> ${esc(p.fokus||'–')}</div>`).join('')}</div>`:''}</div>
+    <div class="full"><button class="btn pri" type="submit">Review speichern</button></div></form></div>
+    ${past.length?`<div class="card"><div class="lbl" style="margin-bottom:6px">Frühere Fokus-Ziele</div><div class="stack small">${past.map(p=>`<div><b>KW ${RS.isoWeek(p.id).slice(-2)}:</b> ${esc(p.fokus||'–')}</div>`).join('')}</div></div>`:''}</div>
   </div>`;
 }
 async function wkAi(){let sample=null;try{sample=window.claude&&await window.claude.use('sample')}catch(e){}if(!sample){toast('Die Coach-Analyse läuft nur in claude.ai.');return}
@@ -2110,6 +2176,10 @@ document.addEventListener('click',async e=>{
    case 'edit-acct':editAcct(AC(id));break;
    case 'del-acct':if(b.dataset.confirm){await del('accounts',id);closeModal();toast('Konto gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
    case 'payout':payoutModal(AC(id));break;
+   case 'subtab':setSubTab(b.dataset.v);break;
+   case 'jpage':UI.jPage=(UI.jPage||0)+(+b.dataset.d);render();break;
+   case 'tpage':UI.tPage=(UI.tPage||0)+(+b.dataset.d);render();break;
+   case 'pbpage':UI.pbPage=(UI.pbPage||0)+(+b.dataset.d);render();break;
    case 'dash-month':UI.ym=b.dataset.d==='0'?ymNow():ymShift(UI.ym,+b.dataset.d);render();break;
    case 'prop-month':UI.propYm=b.dataset.d==='0'?ymNow():ymShift(UI.propYm,+b.dataset.d);render();break;
    case 'day':dayModal(b.dataset.d);break;
@@ -2147,10 +2217,10 @@ document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='heuteAsk'){e.preventDefault();const q=$('#heuteQ').value.trim();if(!q)return;location.hash='coach';setTimeout(()=>ask(q),60);return}
   if(f.id==='wkForm'){e.preventDefault();const g=k=>document.getElementById('wk_'+k).value.trim();await put('weekly_reviews',{...(S.weekly_reviews.find(x=>x.id===UI.wk)||{}),id:UI.wk,gut:g('gut'),aendern:g('aendern'),fokus:g('fokus'),dank:g('dank')});toast('Wochen-Review gespeichert');return}
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
-  else if(f.id==='setForm'){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
+  else if(f.classList.contains('set-form')){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
   else if(f.id==='jForm'){e.preventDefault();const g=k=>document.getElementById('j_'+k);
     await put('journal',{id:UI.jDate,premarket:g('premarket').value.trim(),mood:g('mood').value?+g('mood').value:null,sleep:g('sleep').value===''?null:+g('sleep').value,review:g('review').value.trim(),lessons:g('lessons').value.trim(),heart:g('heart').value.trim(),followedPlan:g('followed').checked,mood_evening:g('mood_evening').value?+g('mood_evening').value:null});
-    await syncDay(UI.jDate);if(g('review').value.trim())await storeEvening(UI.jDate);pending=false;toast('Journal gespeichert');render()}
+    await syncDay(UI.jDate);if(g('review').value.trim()){await storeEvening(UI.jDate);if(S.mindset_log.some(l=>l.id===UI.jDate+'_EVENING'))UI.sub.journal='tag'}pending=false;toast('Journal gespeichert');render()}
 });
 
 render();initStore();
