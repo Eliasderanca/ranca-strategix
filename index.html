@@ -248,6 +248,9 @@ details.more>summary::-webkit-details-marker{display:none}
 .tl-i{display:flex;gap:12px;align-items:flex-start;position:relative}
 .tl-d{width:14px;height:14px;border-radius:50%;flex:none;margin-top:3px;box-shadow:0 0 0 3px var(--surface)}
 .tl-i.done{opacity:.6}
+/* import drop zone */
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:22px;border:2px dashed var(--line);border-radius:16px;background:var(--surface);cursor:pointer;text-align:center}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
 /* daily check-in */
 .ci-card{max-width:640px}
 .ci-dot{flex:1;aspect-ratio:1;max-width:72px;border-radius:50%;border:0;background:var(--elev);font-size:20px;font-weight:700;color:var(--fg);cursor:pointer;transition:transform .12s}
@@ -876,7 +879,7 @@ function vTrades(){
   trs=[...trs].sort(byDT).reverse();const s=stats(trs),rev=revengeIds(S.trades,SET().revengeMin);
   const months=[...new Set(S.trades.map(t=>t.date.slice(0,7)).concat([ymNow()]))].sort().reverse();
   return `<div class="head"><div><h1>Trades</h1><div class="sub">${s.n} Trades · <span class="${cls(s.net)} mono">${money(s.net)}</span> · Trefferquote ${s.n?pct(s.wr,1):'–'}</div></div>
-   <div class="row"><button class="btn" data-act="import">CSV importieren</button><button class="btn pri" data-act="add-trade">Trade erfassen</button></div></div>
+   <div class="row"><button class="btn pri" data-act="tv-import">Tradovate importieren</button><button class="btn" data-act="import">Anderes CSV</button><button class="btn pri" data-act="add-trade">Trade erfassen</button></div></div>
   ${riskBar()}
   <div class="row" style="margin-bottom:12px">
    <select id="tfYm"><option value="all">Alle Monate</option>${months.map(m=>`<option value="${m}" ${f.ym===m?'selected':''}>${ymLabel(m)}</option>`).join('')}</select>
@@ -884,7 +887,7 @@ function vTrades(){
    <select id="tfSetup"><option value="all">Alle Setups</option><option value="none" ${f.setup==='none'?'selected':''}>Ohne Setup</option>${S.playbooks.map(p=>`<option value="${p.id}" ${f.setup===p.id?'selected':''}>${esc(p.name)}</option>`).join('')}</select>
   </div>
   <div class="card" style="padding:4px 4px">${trs.length?`<div class="tbl-wrap"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Symbol</th><th>Seite</th><th class="num">Kontr.</th><th>Setup</th><th>Konto</th><th>Emotion</th><th class="num">R</th><th class="num">Net P&amp;L</th><th>Flags</th></tr></thead><tbody>
-   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
+   ${trs.map(t=>{const p=PB(t.setupId),ids=t.account_ids&&t.account_ids.length?t.account_ids:(t.accountId?[t.accountId]:[]),an=ids.map(i=>AC(i)?.name).filter(Boolean).join(' + '),eb=t.emotion_before,rv=RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2);const flags=[t.source==='tradovate'&&!t.emotion_before?'<span class="chip warn">Setup & Gefühl ergänzen</span>':'',...(t.ruleBreaks||[]).map(r=>`<span class="chip loss">${esc(r)}</span>`),t.followed_plan===false&&!(t.ruleBreaks||[]).length?'<span class="chip loss">Plan nicht befolgt</span>':'',rev.has(t.id)?'<span class="chip warn">Revenge?</span>':'',t.demo?'<span class="chip">Demo</span>':''].join(' ');
    return `<tr class="click" data-act="edit-trade" data-id="${t.id}"><td>${dLabel(t.date)}</td><td class="mono">${esc(t.time||'')}</td><td><b>${esc(t.symbol||'')}</b></td><td>${t.side==='Short'?'<span class="chip loss">Short</span>':'<span class="chip win">Long</span>'}</td><td class="num">${t.contracts??''}</td><td>${t.setup?esc(t.setup):p?`<span class="setup-dot" style="background:${p.color||COLORS[0]}"></span> ${esc(p.name)}`:'<span class="muted">–</span>'}</td><td>${an?esc(an):'<span class="muted">–</span>'}</td><td>${t.emotion?`<span class="chip ${isNegEmo(t.emotion)?'warn':''}">${esc(t.emotion)}${eb&&eb.intensity?' '+eb.intensity:''}</span>`:''}</td><td class="num ${rv==null?'':cls(rv)}">${rv!=null?fmtN(rv,1):''}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${flags}</td></tr>`}).join('')}
    </tbody></table></div>`:emptyBox('Keine Trades in dieser Auswahl','Erfasse einen Trade oder importiere eine CSV-Datei aus deiner Plattform (z. B. Tradovate, Topstep, Rithmic).','<button class="btn pri" data-act="add-trade">Trade erfassen</button>')}</div>`;
 }
@@ -1554,6 +1557,56 @@ function costImport(){openModal('Historie als CSV importieren',`<p class="small 
   const prev=()=>{const r=RS.parseCostCsv($('#cpCsv').value);$('#cpPrev').innerHTML=r.rows.length?`<b>${r.rows.length} Zeilen erkannt</b> · Ausgaben ${eur(r.rows.reduce((s,x)=>s+x.total_spend,0))} · Payouts ${eur(r.rows.reduce((s,x)=>s+x.payout,0))}${r.errors.length?`<div style="color:var(--loss);margin-top:4px">${r.errors.map(esc).join('<br>')}</div>`:''}`:(r.errors.length&&$('#cpCsv').value.trim()?`<span style="color:var(--loss)">${esc(r.errors[0])}</span>`:'')};
   $('#cpCsv').addEventListener('input',prev);$('#cpFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const rd=new FileReader();rd.onload=()=>{$('#cpCsv').value=rd.result;prev()};rd.readAsText(f,'utf-8')}}
 
+/* ============ Import: Tradovate-Performance-Export ============ */
+const IMP_PREF='rs-imp';
+const impPrefs=()=>{try{return JSON.parse(localStorage.getItem(IMP_PREF)||'{}')}catch(e){return {}}};
+let IMP=null;
+function tvImport(){const pf=impPrefs(),us=qtUnits(null);
+  IMP={text:'',unit:us.some(u=>u.key===pf.unit)?pf.unit:us[0].key,tz:pf.tz||'Europe/Berlin',fees:{},parsed:null};
+  const zones=[['Europe/Berlin','Berlin (MEZ)'],['America/New_York','New York (ET)'],['America/Chicago','Chicago (CT)'],['UTC','UTC']];
+  openModal('Tradovate-Export importieren',`<p class="small muted" style="margin-top:0">In Tradovate: <b>Account Reports → Performance</b>, Zeitraum wählen, <b>Export CSV</b>. Auch Trades, die du über TradingView ausführst, stehen dort. Du kannst denselben Export mehrmals hochladen, doppelte Trades werden erkannt.</p>
+   <div class="qt">
+    <div class="qt-sec"><div class="lbl">Konto</div><div class="row qt-chips" style="gap:6px">${us.map(u=>`<button type="button" class="ci-chip ${u.key===IMP.unit?'on':''}" data-act="imp-unit" data-v="${esc(u.key)}">${esc(unitLabel(u))}</button>`).join('')}</div></div>
+    <div class="field"><label for="impTz">Zeitzone der Datei</label><select id="impTz">${zones.map(([v,l])=>`<option value="${v}" ${v===IMP.tz?'selected':''}>${l}</option>`).join('')}</select><span class="hint">so, wie sie in deinen Tradovate-Einstellungen gewählt ist</span></div>
+    <label class="drop" id="impDrop" for="impFile"><input type="file" id="impFile" accept=".csv,text/csv" hidden><b>Datei hierher ziehen</b><span class="small muted">oder klicken und auswählen</span></label>
+    <details class="more"><summary>Inhalt einfügen statt Datei</summary><textarea id="impText" rows="5" style="margin-top:8px" placeholder="symbol,_priceFormat,…,pnl,boughtTimestamp,soldTimestamp,duration"></textarea></details>
+    <div id="impPrev"></div>
+   </div>`,impApply);
+  const mf=$('#mForm button[type=submit]');if(mf){mf.textContent='Importieren';mf.disabled=true}
+  const dz=$('#impDrop');['dragover','dragenter'].forEach(ev=>dz.addEventListener(ev,e=>{e.preventDefault();dz.classList.add('over')}));['dragleave','drop'].forEach(ev=>dz.addEventListener(ev,()=>dz.classList.remove('over')));
+  dz.addEventListener('drop',e=>{e.preventDefault();const f=e.dataTransfer.files[0];if(f)impReadFile(f)});
+  $('#impFile').onchange=e=>{const f=e.target.files[0];if(f)impReadFile(f)};
+  $('#impText').addEventListener('input',e=>{IMP.text=e.target.value;impPreview()});
+  $('#impTz').addEventListener('change',e=>{IMP.tz=e.target.value;impPreview()});
+}
+function impReadFile(f){const rd=new FileReader();rd.onload=()=>{IMP.text=String(rd.result||'');IMP.fileName=f.name;const d=$('#impDrop');if(d)d.innerHTML=`<b>${esc(f.name)}</b><span class="small muted">andere Datei: klicken oder hierher ziehen</span><input type="file" id="impFile" accept=".csv,text/csv" hidden>`;const fi=$('#impFile');if(fi)fi.onchange=e=>{const x=e.target.files[0];if(x)impReadFile(x)};impPreview()};rd.readAsText(f,'utf-8')}
+function impPlan(){if(!IMP||!IMP.text.trim())return null;const r=RS.parseTradovatePerformance(IMP.text,IMP.tz);
+  const ins=INSTR().map(i=>({...i,commission_rt:IMP.fees[i.id]??i.commission_rt}));
+  const trades=r.trades.map(t=>RS.applyCommission(t,ins));const u=qtUnits(null).find(x=>x.key===IMP.unit)||{ids:[]};
+  return {r,trades,u,plan:RS.planImport(trades,S.trades,u.ids)}}
+function impPreview(){const box=$('#impPrev'),btn=$('#mForm button[type=submit]');if(!box)return;const P=impPlan();IMP.parsed=P;
+  if(!P){box.innerHTML='';if(btn)btn.disabled=true;return}
+  if(!P.trades.length){box.innerHTML=`<div class="alert stop"><span class="sq" style="background:var(--loss)"></span><div>${esc(P.r.errors[0]||'Keine Trades gefunden.')}</div></div>`;if(btn)btn.disabled=true;return}
+  const roots=[...new Set(P.trades.map(t=>t.instrument))],cnt={new:0,merge:0,skip:0};P.plan.forEach(p=>cnt[p.action]++);
+  const act={new:'<span class="chip win">neu</span>',merge:'<span class="chip info">ergänzt deinen Eintrag</span>',skip:'<span class="chip">schon da</span>'};
+  box.innerHTML=`<div class="qt-sec"><div class="lbl">Gebühren je Kontrakt (Round Turn, $)</div><div class="row" style="gap:10px">${roots.map(r=>{const i=INSTR().find(x=>x.id===r);return `<label class="field" style="width:150px"><span class="small muted">${esc(r)}${i?'':' (unbekannt)'}</span><input type="number" step="0.01" min="0" class="imp-fee" data-id="${esc(r)}" value="${esc(IMP.fees[r]??i?.commission_rt??'')}" placeholder="0,00"></label>`}).join('')}</div><span class="small muted">Der Tradovate-Export enthält den P&amp;L vor Gebühren. Prüf am ersten Tag einmal gegen deinen Kontostand.</span></div>
+   <div class="small" style="margin:10px 0"><b>${P.trades.length} Trades erkannt</b> · ${cnt.new} neu · ${cnt.merge} ergänzen deine Schnelleingabe · ${cnt.skip} schon importiert${P.r.errors.length?` · <span style="color:var(--loss)">${P.r.errors.length} Zeilen übersprungen</span>`:''}</div>
+   <div class="tbl-wrap" style="max-height:280px;overflow:auto;background:var(--surface);border-radius:12px"><table><thead><tr><th>Datum</th><th>Zeit</th><th>Instr.</th><th>Richtung</th><th class="num">Kontr.</th><th class="num">Brutto</th><th class="num">Gebühr</th><th class="num">Netto</th><th></th></tr></thead><tbody>${P.plan.map(p=>{const t=p.trade,m=p.targetId&&S.trades.find(x=>x.id===p.targetId);return `<tr><td>${dLabel(t.date)}</td><td class="mono">${t.time}–${t.exit_time}</td><td>${esc(t.instrument)}</td><td>${t.direction}</td><td class="num">${t.contracts}</td><td class="num">${money(t.pnl_gross)}</td><td class="num">${money(-t.fees)}</td><td class="num ${cls(t.pnl)}"><b>${money(t.pnl)}</b></td><td>${act[p.action]}${m?` <span class="small muted">${esc(m.time)}${m.setup?' · '+esc(m.setup):''}</span>`:''}</td></tr>`}).join('')}</tbody></table></div>`;
+  box.querySelectorAll('.imp-fee').forEach(el=>el.addEventListener('change',()=>{IMP.fees[el.dataset.id]=el.value===''?null:+el.value;impPreview()}));
+  if(btn){btn.disabled=!(cnt.new+cnt.merge);btn.textContent=cnt.new+cnt.merge?`${cnt.new+cnt.merge} Trades importieren`:'Nichts Neues'}}
+async function impApply(){const P=IMP&&impPlan();if(!P||!P.trades.length)return false;
+  try{localStorage.setItem(IMP_PREF,JSON.stringify({unit:IMP.unit,tz:IMP.tz}))}catch(e){}
+  for(const [id,v] of Object.entries(IMP.fees)){const i=S.instruments.find(x=>x.id===id)||INSTR().find(x=>x.id===id);if(i&&v!=null&&num(i.commission_rt)!==num(v))await put('instruments',{...i,id,commission_rt:v})}
+  const dates=new Set();let n=0,m=0;
+  for(const p of P.plan){if(p.action==='skip')continue;const t=p.trade,usd=(INSTR().find(i=>i.id===t.instrument)||{}).usd_per_point||2;
+    const nums={date:t.date,time:t.time,exit_time:t.exit_time,instrument:t.instrument,symbol:t.instrument,contract:t.symbol,direction:t.direction,side:t.direction,contracts:t.contracts,entry_price:t.entry_price,exit_price:t.exit_price,pnl:t.pnl,pnl_gross:t.pnl_gross,fees:t.fees,import_key:t.import_key};
+    if(p.action==='merge'){const e=S.trades.find(x=>x.id===p.targetId);const d={...e,...nums,source:'tradovate+manuell'};d.result_r=RS.tradeR({pnl:d.pnl,stop_points:d.stop_points,contracts:d.contracts},usd);if(e.date!==d.date)dates.add(e.date);await put('trades',d);m++}
+    else{await put('trades',{...nums,account_ids:P.u.ids,accountId:P.u.ids[0]||'',source:'tradovate',ruleBreaks:[],result_r:null});n++}
+    dates.add(t.date)}
+  for(const d of dates)await syncDay(d);
+  const open=S.trades.filter(t=>t.source==='tradovate'&&!t.emotion_before).length;
+  toast(`${n} neu, ${m} ergänzt.${open?' '+open+' Trades brauchen noch Setup und Gefühl.':''}`);return true}
+
 /* ============ CSV import ============ */
 function importModal(){
   openModal('Trades aus CSV importieren',`<p class="small muted" style="margin-top:0">Exportiere deine Trades (z. B. Tradovate „Performance“, Topstep, NinjaTrader, Rithmic) als CSV und füge den Inhalt hier ein. Erkannt werden Spalten wie Datum/Zeit (bzw. Bought/Sold Timestamp), Symbol, Seite, Menge, Entry/Exit und P&amp;L.</p>
@@ -1627,6 +1680,8 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'tv-import':tvImport();break;
+   case 'imp-unit':IMP.unit=b.dataset.v;b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));impPreview();break;
    case 'cp-add':costAdd();break;
    case 'cp-settings':cpSettings();break;
    case 'cp-import':costImport();break;

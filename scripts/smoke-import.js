@@ -1,0 +1,33 @@
+// Rauchtest Tradovate-Import: Datei hochladen, Abgleich mit Schnelleingabe, Gebühren, doppelter Import
+const { chromium } = require('playwright');
+const fs = require('fs'), path = require('path');
+const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
+(async () => {
+  const b = await chromium.launch(); const errs = [];
+  const c = await b.newContext({ viewport: { width: 1300, height: 950 } }); const p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message));
+  await p.route('http://rs.test/**', (r) => { const u = new URL(r.request().url()); const f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const fp = path.join(ROOT, f);
+    if (!fs.existsSync(fp)) return r.fulfill({ status: 404, body: '' }); let body = fs.readFileSync(fp, 'utf8');
+    if (f === 'index.html') body = '<!doctype html><html><head><meta charset=utf8></head><body>' + body + '</body></html>';
+    r.fulfill({ contentType: f.endsWith('.json') ? 'application/json' : f.endsWith('.js') ? 'text/javascript' : 'text/html', body }); });
+  await p.goto('http://rs.test/#trades'); await p.waitForTimeout(700);
+  await p.evaluate(async () => { for (const n of ['#1', '#2']) await put('accounts', { name: 'FTMO Pro 50K ' + n, rule_id: 'ftmo-futures-pro-50k', stage: 'EVAL', phase: 'challenge', status: 'aktiv', copy_group: 'A', plan: {}, payouts: [] });
+    const ids = S.accounts.map((a) => a.id); await put('trades', { date: '2026-12-03', time: '15:33', direction: 'Long', side: 'Long', pnl: 200, setup: 'VAL-Long', stop_points: 15, emotion_before: { emotion: 'ruhig', intensity: 3 }, account_ids: ids, accountId: ids[0], ruleBreaks: [] }); });
+  await p.waitForTimeout(200);
+  await p.click('[data-act=tv-import]'); await p.waitForTimeout(150);
+  await p.setInputFiles('#impFile', path.join(ROOT, 'tests/fixtures/tradovate-performance-beispiel.csv')); await p.waitForTimeout(250);
+  await p.fill('.imp-fee[data-id=MNQ]', '0.74'); await p.dispatchEvent('.imp-fee[data-id=MNQ]', 'change'); await p.waitForTimeout(150);
+  console.log('Vorschau:', (await p.textContent('#impPrev .small b')), '|', (await p.$$eval('#impPrev tbody tr', (r) => r.map((x) => x.innerText.replace(/\s+/g, ' ').trim()))).join(' || '));
+  console.log('Knopf:', await p.textContent('#mForm button[type=submit]'));
+  await p.screenshot({ path: OUT + '/imp-preview.png' });
+  await p.click('#mForm button[type=submit]'); await p.waitForTimeout(400);
+  const tr = await p.evaluate(() => S.trades.map((t) => ({ time: t.time, pnl: t.pnl, fees: t.fees, contracts: t.contracts, setup: t.setup || '', src: t.source, r: t.result_r, ids: (t.account_ids || []).length })));
+  console.log('Trades danach:', JSON.stringify(tr));
+  console.log('Gebühr gespeichert:', await p.evaluate(() => INSTR().find((i) => i.id === 'MNQ').commission_rt));
+  console.log('Trading-Tag 03.12.:', JSON.stringify(await p.evaluate(() => { const d = S.trading_days.find((x) => x.id === '2026-12-03'); return d && { pnl: d.pnl_total, n: d.trades_count, typ: d.day_type }; })));
+  await p.click('[data-act=tv-import]'); await p.waitForTimeout(150); await p.setInputFiles('#impFile', path.join(ROOT, 'tests/fixtures/tradovate-performance-beispiel.csv')); await p.waitForTimeout(250);
+  console.log('Zweiter Import:', await p.textContent('#mForm button[type=submit]'), '| deaktiviert:', await p.isDisabled('#mForm button[type=submit]'));
+  await p.click('[data-act=close]'); await p.evaluate(() => { UI.tFilter.ym = 'all'; render(); }); await p.waitForTimeout(150);
+  console.log('Hinweis in Liste:', await p.isVisible('text=Setup & Gefühl ergänzen'));
+  await p.screenshot({ path: OUT + '/imp-trades.png' });
+  console.log('JS-Fehler:', errs.length ? errs : 'keine'); await b.close();
+})();

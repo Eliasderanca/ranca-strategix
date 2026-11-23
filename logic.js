@@ -697,5 +697,129 @@
     return 'next';
   };
 
+  /* ---------- Import: Tradovate-Performance-Export ---------- */
+
+  /** Zeitzonen-Versatz in Minuten für einen Zeitpunkt (z. B. Europe/Berlin im Winter: +60) */
+  const tzOffsetMin = (ms, tz) => {
+    const p = Object.fromEntries(new Intl.DateTimeFormat('en-US', { timeZone: tz, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      .formatToParts(new Date(ms)).filter((x) => x.type !== 'literal').map((x) => [x.type, Number(x.value)]));
+    return (Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - ms) / 60000;
+  };
+  /** Wanduhrzeit in Zeitzone tz -> Zeitpunkt (ms). Funktioniert auch an Tagen der Zeitumstellung. */
+  RS.zonedToMs = (y, mo, d, h, mi, s, tz) => {
+    const guess = Date.UTC(y, mo - 1, d, h, mi, s || 0);
+    let ms = guess - tzOffsetMin(guess, tz) * 60000;
+    ms = guess - tzOffsetMin(ms, tz) * 60000;
+    return ms;
+  };
+
+  /** Zeitstempel aus dem Export („11/14/2026 15:31:05“, „2026-11-14 15:31:05“, „14.11.2026 15:31“) -> {date, time, ms} in Berlin */
+  RS.importTimestamp = (ts, tz = 'Europe/Berlin') => {
+    const t = String(ts || '').trim();
+    let m = t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(AM|PM)?/i);
+    let y, mo, d, h, mi, s;
+    if (m) { [, mo, d, y, h, mi, s] = m.map((x, i) => (i && i < 7 ? Number(x) : x)); if (y < 100) y += 2000; if (m[7]) { if (/pm/i.test(m[7]) && h < 12) h += 12; if (/am/i.test(m[7]) && h === 12) h = 0; } }
+    else if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?/))) { [, y, mo, d, h, mi, s] = m.map(Number); }
+    else if ((m = t.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})[ T]+(\d{1,2}):(\d{2})(?::(\d{2}))?/))) { [, d, mo, y, h, mi, s] = m.map(Number); }
+    else return null;
+    const ms = RS.zonedToMs(y, mo, d, h, mi, s || 0, tz);
+    return { ms, date: RS.berlinDate(new Date(ms)), time: RS.berlinTime(new Date(ms)) };
+  };
+
+  /** US-Geldbetrag aus Tradovate: „$1,234.50“, „$(25.00)“, „-25.00“ */
+  RS.parseUsd = (s) => {
+    if (s == null) return null;
+    let x = String(s).trim();
+    if (!x) return null;
+    const neg = /^\(.*\)$/.test(x.replace(/\$/g, '')) || /^-/.test(x) || /^\$-/.test(x) || /\(\s*[\d.,]+\s*\)/.test(x);
+    x = x.replace(/[$()\s,+-]/g, '');
+    const n = Number(x);
+    return Number.isFinite(n) ? (neg ? -n : n) : null;
+  };
+
+  /** Basis-Instrument aus Kontraktsymbol: MNQZ6 / MNQZ26 / MNQ 12-26 -> MNQ */
+  RS.instrumentRoot = (sym) => {
+    const s = String(sym || '').trim().toUpperCase().split(/\s+/)[0];
+    const m = s.match(/^([A-Z0-9]+?)[FGHJKMNQUVXZ]\d{1,2}$/);
+    return m ? m[1] : s;
+  };
+
+  /**
+   * Tradovate „Performance“-CSV (Account Reports → Performance → Export).
+   * Jede Zeile ist ein geschlossenes Kauf/Verkauf-Paar. Teil-Ausstiege derselben Einstiegs-Order
+   * werden zu einem Trade zusammengefasst. P&L ist brutto (ohne Gebühren).
+   * Rückgabe: { trades, errors, format }
+   */
+  RS.parseTradovatePerformance = (text, tz = 'Europe/Berlin') => {
+    const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+    if (lines.length < 2) return { trades: [], errors: ['Die Datei enthält keine Trades.'], format: null };
+    const split = (l) => { const out = []; let cur = '', q = false; for (const ch of l) { if (ch === '"') { q = !q; continue; } if (ch === ',' && !q) { out.push(cur.trim()); cur = ''; continue; } cur += ch; } out.push(cur.trim()); return out; };
+    const head = split(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z]/g, ''));
+    const ix = (n) => head.indexOf(n);
+    const need = ['symbol', 'qty', 'buyprice', 'sellprice', 'pnl', 'boughttimestamp', 'soldtimestamp'];
+    const miss = need.filter((n) => ix(n) < 0);
+    if (miss.length) return { trades: [], errors: [`Das ist kein Tradovate-Performance-Export (es fehlen: ${miss.join(', ')}).`], format: null };
+    const errors = [], groups = new Map();
+    lines.slice(1).forEach((l, i) => {
+      const c = split(l), g = (n) => c[ix(n)];
+      const bought = RS.importTimestamp(g('boughttimestamp'), tz), sold = RS.importTimestamp(g('soldtimestamp'), tz);
+      const qty = Number(g('qty')), pnl = RS.parseUsd(g('pnl')), bp = Number(String(g('buyprice')).replace(/,/g, '')), sp = Number(String(g('sellprice')).replace(/,/g, ''));
+      if (!bought || !sold || !(qty > 0) || pnl == null) { errors.push(`Zeile ${i + 2} übersprungen: unvollständige Angaben.`); return; }
+      const long = bought.ms <= sold.ms;
+      const entryFill = ix('buyfillid') >= 0 ? (long ? g('buyfillid') : g('sellfillid')) : null;
+      const exitFill = ix('buyfillid') >= 0 ? (long ? g('sellfillid') : g('buyfillid')) : null;
+      const entry = long ? bought : sold, exit = long ? sold : bought;
+      const key = entryFill ? `${g('symbol')}|${entryFill}` : `${g('symbol')}|${entry.ms}|${long ? 'L' : 'S'}|${long ? bp : sp}`;
+      if (!groups.has(key)) groups.set(key, { symbol: g('symbol'), long, entry, exitMs: exit.ms, exitTime: exit.time, qty: 0, pnl: 0, entryPrice: long ? bp : sp, exitNotional: 0, fills: [] });
+      const t = groups.get(key);
+      t.qty += qty; t.pnl += pnl; t.exitNotional += (long ? sp : bp) * qty; t.fills.push(exitFill || String(exit.ms));
+      if (exit.ms > t.exitMs) { t.exitMs = exit.ms; t.exitTime = exit.time; }
+    });
+    const trades = [...groups.entries()].map(([key, t]) => ({
+      date: t.entry.date, time: t.entry.time, exit_time: t.exitTime, entry_ms: t.entry.ms,
+      symbol: t.symbol, instrument: RS.instrumentRoot(t.symbol), direction: t.long ? 'Long' : 'Short', contracts: t.qty,
+      entry_price: t.entryPrice, exit_price: Math.round((t.exitNotional / t.qty) * 10000) / 10000,
+      pnl_gross: Math.round(t.pnl * 100) / 100, import_key: 'tv:' + key + '|' + t.fills.sort().join('+'),
+    })).sort((a, b) => a.entry_ms - b.entry_ms);
+    return { trades, errors, format: 'tradovate-performance' };
+  };
+
+  /** Netto-P&L: brutto minus Gebühr je Kontrakt (Round Turn) aus der Instrument-Konfiguration */
+  RS.applyCommission = (t, instruments) => {
+    const ins = (instruments || []).find((i) => i.id === t.instrument);
+    const fee = Math.round(num(ins && ins.commission_rt) * num(t.contracts) * 100) / 100;
+    return { ...t, fees: fee, pnl: Math.round((num(t.pnl_gross) - fee) * 100) / 100 };
+  };
+
+  /**
+   * Import mit vorhandenen Trades abgleichen.
+   * - schon importiert (gleicher import_key) -> 'skip'
+   * - manuell erfasster Trade gleiches Datum, gleiches Konto, gleiche Richtung, Einstieg ±toleranceMin -> 'merge'
+   *   (Zahlen aus dem Export, Setup/Gefühle/Notizen bleiben)
+   * - sonst -> 'new'
+   */
+  RS.planImport = (imported, existing, accountIds, toleranceMin = 5) => {
+    const ids = accountIds || [];
+    const sameAcc = (t) => (!ids.length ? !t.accountId && !(t.account_ids || []).length : ids.some((id) => RS.tradeHasAccount(t, id)));
+    const keys = new Set((existing || []).map((t) => t.import_key).filter(Boolean));
+    const used = new Set();
+    const toMin = (hhmm) => { const [h, m] = String(hhmm || '').split(':').map(Number); return Number.isFinite(h) ? h * 60 + (m || 0) : null; };
+    return (imported || []).map((t) => {
+      if (keys.has(t.import_key)) return { trade: t, action: 'skip' };
+      let best = null, bestD = Infinity;
+      for (const e of existing || []) {
+        if (used.has(e.id) || e.import_key || e.date !== t.date || !sameAcc(e)) continue;
+        const dir = e.direction || e.side;
+        if (dir && dir !== t.direction) continue;
+        const a = toMin(e.time), b = toMin(t.time);
+        if (a == null || b == null) continue;
+        const dd = Math.abs(a - b);
+        if (dd <= toleranceMin && dd < bestD) { best = e; bestD = dd; }
+      }
+      if (best) { used.add(best.id); return { trade: t, action: 'merge', targetId: best.id }; }
+      return { trade: t, action: 'new' };
+    });
+  };
+
   return RS;
 });

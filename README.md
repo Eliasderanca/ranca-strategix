@@ -33,6 +33,16 @@ Daten liegen in der Datenbank des Artifacts. Außerhalb von claude.ai speichert 
 | `app_config` | `journal`, `psych`, `coach`, `cockpit`: Listen, Grenzwerte, Coach-Prompt, Budget |
 | `checkins`, `journal`, `dayplans`, `briefings`, `playbooks` | Check-in, Abend-Log, Tagespläne, Markt-Briefing, Playbook |
 
+## Trades importieren (Tradovate)
+
+Tradovate → **Account Reports → Performance** → Zeitraum → **Export CSV**. In der App: **Trades → Tradovate importieren**, Konto oder Copy-Gruppe wählen, Datei hineinziehen. Auch über TradingView ausgeführte Trades stehen im Tradovate-Export.
+
+- Teil-Ausstiege derselben Einstiegs-Order werden zu einem Trade zusammengefasst.
+- Trades, die du während der Session per Schnelleingabe erfasst hast (gleiches Konto, gleiche Richtung, Einstieg ±5 Min.), werden ergänzt statt doppelt angelegt. Setup, Gefühle und Notizen bleiben.
+- Erneuter Import derselben Datei legt nichts doppelt an.
+- Der Export enthält den P&L vor Gebühren. Die Gebühr je Kontrakt (Round Turn) wird je Instrument gespeichert.
+- Beispieldatei: `tests/fixtures/tradovate-performance-beispiel.csv`
+
 ## Tests
 
 ```bash
