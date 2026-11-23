@@ -1,7 +1,7 @@
 <title>Ranca Strategix</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
 <style>
 /* Layout: iPadOS-style sidebar on desktop, iOS large titles + bottom tab bar on phones. White ground, tinted grouped cards, petrol from the Ranca logo; green/red only for P&L. Single light look by design. */
 :root{
@@ -308,6 +308,144 @@ details.more>summary::-webkit-details-marker{display:none}
   details.li>summary>span:first-child{flex:1 1 calc(100% - 30px)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* ===== Look & Feel v3: soft-graues Panel, dunkle Petrol-Seitenleiste, große runde Karten (nach Vorlage, Akzent Petrol) ===== */
+:root{
+  --bg:#e7e7e8; --shell:#f3f3f3; --surface:#ebebeb; --surface2:#e2e2e3; --elev:#ffffff; --line:#e0e0e0; --sep:rgba(0,0,0,.06);
+  --fg:#141414; --muted:#808285; --faint:#a9abae;
+  --brand:#06323a; --accent:#0e6b5c; --accent-soft:#e6f1ee; --glow:rgba(14,107,92,.38);
+  --rail:#0b3d45; --rail-2:#06262c; --rail-fg:#b9c9c9;
+  --shadow:0 12px 34px rgba(0,0,0,.07),0 2px 6px rgba(0,0,0,.04);
+  --soft:inset 0 1px 0 rgba(255,255,255,.7),0 8px 24px rgba(0,0,0,.04);
+  --r-card:30px; --r-ctl:16px;
+  --f-display:"Manrope","Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --f-body:"Manrope","Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --f-mono:"Manrope","Inter",-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+}
+html{background:#dedee0}
+body{background:radial-gradient(1200px 700px at 30% 0%,#f1f1f2 0%,transparent 60%),linear-gradient(180deg,#e9e9ea 0%,#d9d9db 100%);min-height:100%;font-family:var(--f-body);letter-spacing:-.01em}
+.app{grid-template-columns:268px 1fr;gap:20px;padding:20px max(20px,env(safe-area-inset-right,0px)) 20px max(20px,env(safe-area-inset-left,0px));min-height:100vh}
+/* Seitenleiste */
+.rail{background:linear-gradient(180deg,var(--rail) 0%,var(--rail-2) 100%);border:0;border-radius:36px;padding:22px 14px;top:20px;height:calc(100vh - 40px);box-shadow:0 20px 50px rgba(6,38,44,.35);color:var(--rail-fg)}
+.rail .brand{padding:4px 10px 8px}
+.rail .brand-mark{color:#fff}
+.rail .brand-name{color:#fff;font-weight:700}
+.rail .brand-name small{color:rgba(255,255,255,.55)}
+.rail .addbtn{background:#fff;color:var(--brand);border-radius:999px;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+.rail .addbtn:hover{background:#f2f2f2}
+.nav{gap:4px;flex:1 1 auto;min-height:0;overflow-y:auto;scrollbar-width:none;margin:0 -4px;padding:0 4px}
+.nav::-webkit-scrollbar{display:none}
+.nav a{color:rgba(255,255,255,.62);font-size:14px;font-weight:500;padding:6px 8px;border-radius:999px;gap:12px}
+.nav a .ni{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08);flex:none;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.nav a svg{width:17px;height:17px;color:rgba(255,255,255,.75)}
+.nav a:hover{background:rgba(255,255,255,.05);color:#fff}
+.nav a.on{background:transparent;color:#fff;font-weight:600}
+.nav a.on .ni{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.08),0 6px 16px rgba(0,0,0,.3)}
+.nav a.on svg{color:var(--accent)}
+.rail-card{position:relative;overflow:hidden;flex:none;border-radius:24px;padding:16px;background:rgba(255,255,255,.07);color:#fff}
+.rail-card::after{content:"";position:absolute;right:-30px;bottom:-30px;width:110px;height:110px;border-radius:50%;background:radial-gradient(circle,var(--glow),transparent 70%)}
+.rail-card b{display:block;font-size:15px;line-height:1.25}
+.rail-card p{margin:6px 0 12px;font-size:12.5px;color:rgba(255,255,255,.65)}
+.rail-card .btn{background:#fff;color:var(--brand);position:relative;z-index:1}
+.rail-foot{margin-top:12px}
+.status-line{color:rgba(255,255,255,.5)}
+/* Hauptpanel */
+.shell{background:var(--shell);border-radius:40px;box-shadow:0 30px 80px rgba(0,0,0,.10),inset 0 1px 0 #fff;min-width:0;overflow:hidden}
+.main{padding-block:36px 64px;padding-left:max(36px,env(safe-area-inset-left,0px));padding-right:max(36px,env(safe-area-inset-right,0px))}
+h1{font-family:var(--f-display);font-weight:500;font-size:48px;letter-spacing:-.04em;line-height:1.02;color:var(--fg)}
+h2{font-weight:600;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:14.5px}
+.lbl{color:var(--muted);font-weight:500;font-size:13px}
+/* Karten: weich-grau, darin weiße schwebende Elemente */
+.card{background:linear-gradient(180deg,#ededed 0%,#e7e7e7 100%);border-radius:var(--r-card);padding:22px;box-shadow:var(--soft)}
+.card.white,.kpi.card{background:#fff;box-shadow:var(--shadow)}
+.kpi .v{font-weight:600;letter-spacing:-.03em}
+.list{background:#fff;border-radius:22px;box-shadow:var(--shadow)}
+.alert{background:#fff;border-radius:18px;box-shadow:0 4px 14px rgba(0,0,0,.04)}
+.mind{background:#fff;border-radius:24px;box-shadow:var(--shadow)}
+.mind.dark,.callout{background:linear-gradient(160deg,#164b54 0%,#06323a 70%);border-radius:28px;box-shadow:0 18px 40px rgba(6,50,58,.25)}
+.verse{background:#fff;border-radius:18px}
+/* Knöpfe, Chips, Eingaben */
+.btn{background:#fff;color:var(--fg);box-shadow:0 4px 14px rgba(0,0,0,.06);font-weight:600}
+.btn:hover{opacity:1;box-shadow:0 6px 18px rgba(0,0,0,.09)}
+.btn.pri{background:var(--brand);color:#fff;box-shadow:0 10px 22px rgba(6,50,58,.28)}
+.btn.ghost{background:transparent;box-shadow:none;color:var(--accent)}
+.btn.danger{background:#fff;color:var(--loss)}
+.chip{background:#fff;color:var(--muted);box-shadow:0 2px 6px rgba(0,0,0,.04)}
+.seg{background:#e4e4e5;border-radius:999px;padding:4px;box-shadow:inset 0 1px 2px rgba(0,0,0,.05)}
+.seg button{border-radius:999px;color:var(--muted);font-weight:500}
+.seg button.on{background:#fff;color:var(--fg);font-weight:600;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+select,input[type=text],input[type=number],input[type=date],input[type=time],textarea{background:#fff;border:0;border-radius:var(--r-ctl);box-shadow:inset 0 0 0 1px rgba(0,0,0,.05),0 2px 8px rgba(0,0,0,.03)}
+.modal select,.modal input[type=text],.modal input[type=number],.modal input[type=date],.modal input[type=time],.modal textarea{background:#f3f3f3;box-shadow:none}
+.bar{height:10px;background:#e1e1e2;box-shadow:inset 0 1px 2px rgba(0,0,0,.06)}
+.bar>i{background:var(--accent)}
+.riskbar{background:#fff!important;box-shadow:var(--shadow);border-radius:999px;padding:10px 18px}
+.modal{border-radius:32px;background:#f6f6f6}
+.ci-chip,.ci-opt,.ci-dot,.pt-scale button{background:#fff;box-shadow:0 3px 10px rgba(0,0,0,.05)}
+.qt .ci-chip{background:#fff}
+.cal-cell{background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.03)}
+.cal-week{background:#efefef}
+.empty-state{background:#fff;border-radius:22px}
+.pattern,.dp-row,.step{background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.04)}
+.toast{background:rgba(20,20,20,.9)}
+/* Heute: Vorlagen-Layout */
+.hero h1{font-size:56px}
+.goal{position:relative;border-radius:30px;padding:22px 22px 18px;background:linear-gradient(180deg,#ececec,#e5e5e5);box-shadow:var(--soft)}
+.goal-t{padding-right:66px;font-size:19px;font-weight:600;letter-spacing:-.02em;max-width:22ch;line-height:1.25}
+.goal-go{position:absolute;right:20px;top:18px;width:52px;height:52px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--accent);color:#fff;cursor:pointer;box-shadow:0 0 0 7px rgba(14,107,92,.12),0 12px 26px var(--glow)}
+.goal-go svg{width:20px;height:20px}
+.goal-bar{margin-top:16px;height:42px;border-radius:999px;background:#e0e0e1;box-shadow:inset 0 2px 5px rgba(0,0,0,.06);position:relative;overflow:hidden}
+.goal-bar>i{position:absolute;inset:5px auto 5px 5px;border-radius:999px;background:#fff;box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.goal-bar span{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-weight:600;font-size:14px}
+.goal-bar span em{font-style:normal;color:var(--muted);font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.tile{min-width:0;display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 8px 16px;border-radius:999px 999px 46px 46px;background:linear-gradient(180deg,#ececec,#e4e4e4);text-decoration:none;color:var(--fg);border:0;cursor:pointer;box-shadow:var(--soft);font-size:13.5px;font-weight:500}
+.tile .ti{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.tile .ti svg{width:22px;height:22px;color:var(--fg)}
+.tile.done .ti{background:var(--accent)}.tile.done .ti svg{color:#fff}
+.tile:hover .ti{transform:translateY(-1px)}
+.coachp{position:relative;border-radius:34px;padding:24px;background:linear-gradient(180deg,#eaeaea,#e3e3e3);box-shadow:var(--soft);overflow:hidden;min-height:100%;display:flex;flex-direction:column}
+.coachp::before{content:"";position:absolute;left:50%;top:-120px;width:340px;height:240px;transform:translateX(-50%);background:radial-gradient(closest-side,var(--glow),transparent);pointer-events:none}
+.coach-pill svg{width:16px;height:16px}
+.coach-pill{white-space:nowrap;align-self:center;position:relative;display:inline-flex;gap:8px;align-items:center;background:var(--accent);color:#fff;border-radius:999px;padding:9px 18px;font-weight:600;box-shadow:0 10px 24px var(--glow);text-decoration:none}
+.bub{max-width:80%;border-radius:22px;padding:14px 18px;font-size:15px;line-height:1.35;font-weight:500}
+.bub.q{align-self:flex-end;background:rgba(255,255,255,.45);border-radius:22px 22px 6px 22px}
+.bub.a{align-self:flex-start;background:#fff;box-shadow:var(--shadow);border-radius:22px 22px 22px 6px}
+.bub-meta{align-self:flex-end;font-size:12.5px;color:var(--muted);margin:-4px 4px 0}
+.minis{display:flex;gap:10px;flex-wrap:wrap}
+.mini{display:flex;align-items:center;gap:14px;background:#fff;border-radius:22px;padding:12px 16px;box-shadow:var(--shadow);font-size:13px}
+.mini b{display:block;font-size:16px}
+.ask{display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:8px 8px 8px 20px;box-shadow:var(--shadow);margin-top:auto}
+.ask input{flex:1;border:0!important;box-shadow:none!important;padding:8px 0!important;background:transparent!important;font-size:15px}
+.ask button{width:40px;height:40px;border-radius:50%;border:0;background:#f0f0f0;display:grid;place-items:center;cursor:pointer;color:var(--fg)}
+.sumrow{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1.2fr) minmax(0,.8fr);gap:18px}
+.sum{border-radius:30px;padding:22px;min-height:190px;position:relative;overflow:hidden}
+.sum.grey{background:linear-gradient(180deg,#ececec,#e4e4e4);box-shadow:var(--soft)}
+.sum.white{background:#fff;box-shadow:var(--shadow)}
+.sum.dark{background:linear-gradient(160deg,#4a4f52 0%,#26292b 100%);color:#fff;box-shadow:0 18px 40px rgba(0,0,0,.2)}
+.sum .big{font-size:30px;font-weight:600;letter-spacing:-.03em}
+.sum .lb{font-size:14px;color:var(--muted)}
+.sum.dark .lb{color:rgba(255,255,255,.65)}
+.legend{position:absolute;right:14px;top:14px;bottom:14px;width:52%;background:#fff;border-radius:24px;box-shadow:var(--shadow);padding:16px 18px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.legend .dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:8px}
+.legend b{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.legend b small{font-size:13px;color:var(--muted);font-weight:500}
+@media (max-width:1100px){.sumrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.sumrow>:last-child{grid-column:1/-1}}
+@media (max-width:820px){
+  body{background:#f3f3f3}
+  .app{padding:0;gap:0;grid-template-columns:minmax(0,1fr)}
+  .shell{border-radius:0;box-shadow:none;background:#f3f3f3}
+  .mtop{background:rgba(243,243,243,.86)}
+  .main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+  h1{font-size:34px}.hero h1{font-size:42px}
+  .tabbar{left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));border-radius:30px;padding:8px;background:linear-gradient(180deg,var(--rail),var(--rail-2));border:0;box-shadow:0 14px 34px rgba(6,38,44,.35)}
+  .tabbar a{color:rgba(255,255,255,.6)}.tabbar a.on{color:#fff}
+  .tabbar a svg{width:22px;height:22px}
+  .sumrow{grid-template-columns:minmax(0,1fr)}.sumrow>:last-child{grid-column:auto}
+  .tiles{gap:6px}.tile{font-size:11.5px;padding:10px 2px 12px;border-radius:999px 999px 30px 30px;gap:8px}.tile .ti{width:44px;height:44px}.tile .ti svg{width:19px;height:19px}
+  .hero{gap:18px!important}.coachp{padding:18px}.sum{min-height:170px}
+  .legend{position:relative;inset:auto;width:auto;margin-top:12px}
+  .card{border-radius:24px;padding:18px}
+}
 </style>
 
 <div class="app">
@@ -318,9 +456,10 @@ details.more>summary::-webkit-details-marker{display:none}
     </div>
     <button class="addbtn" data-act="add-trade" type="button"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Trade erfassen</button>
     <nav class="nav" id="nav"></nav>
+    <div class="rail-card" id="railCard"></div>
     <div class="rail-foot"><div class="status-line" id="syncState"><i></i>Verbinde…</div></div>
   </aside>
-  <div style="min-width:0">
+  <div class="shell">
     <header class="mtop">
       <div class="brand"><svg class="brand-mark" viewBox="200 560 1660 990" aria-hidden="true"><rect x="228" y="593" width="350" height="937" fill="currentColor"/><circle cx="830" cy="737" r="170" fill="currentColor"/><polygon points="1014,593 1360,593 1846,1530 1476,1530" fill="currentColor"/></svg><div class="brand-name">Strategix</div></div>
       <button class="plus" data-act="add-trade" type="button" aria-label="Trade erfassen"><svg width="16" height="16" viewBox="0 0 14 14"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
@@ -618,7 +757,8 @@ function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());c
 function render(){
   const v=(location.hash||'').slice(1);UI.view=VIEWS.some(x=>x[0]===v)?v:'heute';
   $('#tabbar').innerHTML=TABS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('')+`<a role="button" tabindex="0" data-act="more" class="${TABS.some(t=>t[0]===UI.view)?'':'on'}">${ICON.more}<span>Mehr</span></a>`;
-  $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('');
+  $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}"><span class="ni">${ICON[i]}</span><span>${l}</span></a>`).join('');
+  try{$('#railCard').innerHTML=railCard()}catch(e){}
   document.body.classList.toggle('hide-pnl',hidePnlNow());
   const f={heute:vHeute,simulator:vSim,woche:vWoche,cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
   $('#main').innerHTML=f();setSync();
@@ -1644,37 +1784,89 @@ let newsTimer=null;function armNewsTimer(){clearTimeout(newsTimer);const n=NEWS(
   if(!next)return;const [h,m]=next.split(':').map(Number),[nh,nm]=now.split(':').map(Number);const ms=((h*60+m)-(nh*60+nm))*60000+1500;if(ms>0&&ms<36e6)newsTimer=setTimeout(()=>{render();armNewsTimer()},ms)}
 
 /* ============ Heute: Startseite mit Tagesablauf ============ */
-function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';
-  const ci=CI(d),st=DS(d),dp=DP(d),E=ENGINE(),N=NEWS(d),tt=S.trades.filter(t=>t.date===d),j=S.journal.find(x=>x.id===d);
-  const b=S.briefings.find(x=>x.id===d),wk=RS.weekStart(d),wr=S.weekly_reviews.find(x=>x.id===wk),lastWr=S.weekly_reviews.filter(x=>x.id<wk&&x.fokus).sort((a,b)=>b.id.localeCompare(a.id))[0];
-  const wd=parseD(d).getDay(),friday=wd===5,weekend=wd===0||wd===6;
-  const planTxt=dp&&(dp.off||Object.keys(dp.items||{}).length)?(dp.off?'Pausentag':Object.entries(dp.items||{}).map(([id,it])=>`${esc(AC(id)?.name||'Konto')}: Risiko ${money(it.risk||0,0)}, Ziel ${money(it.target||0,0)}`).join(' · ')||'geplant'):'';
-  const steps=[
-   {k:'checkin',t:'Daily Check-in',done:!!ci,sub:ci?`${LEVEL[ci.level].t} · ${ci.score}/100${ci.intention?' · „'+esc(ci.intention)+'“':''}`:'Herz und Kopf prüfen, bevor du den Chart öffnest.',act:ci?'<a class="btn sm" href="#checkin">Ansehen</a>':'<a class="btn sm pri" href="#checkin">Starten</a>'},
-   {k:'briefing',t:'Markt-Briefing lesen',done:!!st.briefing_read,sub:b?esc((b.summary||'').split(/(?<=[.!?])\s+/)[0]):'Kommt werktags um 07:16 Uhr.',act:`<a class="btn sm" href="#markt">Öffnen</a>${st.briefing_read?'':'<button class="btn sm" data-act="day-mark" data-k="briefing_read">Gelesen</button>'}`},
-   {k:'plan',t:'Tagesplan festlegen',done:!!(dp&&(dp.off||Object.keys(dp.items||{}).length)),sub:dp?planTxt:'Welche Konten handelst du, mit welchem Risiko und welchem Tagesziel?',act:`<button class="btn sm ${dp&&(dp.off||Object.keys(dp.items||{}).length)?'':'pri'}" data-act="heute-plan">${dp&&(dp.off||Object.keys(dp.items||{}).length)?'Ändern':'Planen'}</button>`},
-   {k:'news',t:'News-Zeiten prüfen',done:!!st.news_checked,sub:N.blocks.length?N.blocks.map(x=>`<b>${x.start}–${x.end}</b> ${esc(x.title)}`).join(' · '):'Heute keine wichtigen Termine bekannt.',act:`<button class="btn sm" data-act="news-add">Termin ergänzen</button>${st.news_checked?'':'<button class="btn sm" data-act="day-mark" data-k="news_checked">Geprüft</button>'}`},
-   {k:'session',t:'Session',done:!!st.session_done||E.status==='RED',sub:`${tt.length} Trade${tt.length===1?'':'s'} heute · <span class="pnlv ${cls(sum(tt))}">${money(sum(tt),0)}</span> · Ampel ${ST[E.status].t}`,act:`<button class="btn sm pri" data-act="add-trade">Trade erfassen</button>${st.session_done?'':'<button class="btn sm" data-act="day-mark" data-k="session_done">Session beendet</button>'}`},
-   {k:'import',t:'Tradovate-Export importieren',done:tt.some(t=>t.import_key)||!!st.no_trades,sub:st.no_trades?'Heute nicht gehandelt.':tt.some(t=>t.import_key)?`${tt.filter(t=>t.import_key).length} Trades aus Tradovate`:'Exakte Zahlen und Gebühren nach der Session.',act:`<button class="btn sm" data-act="tv-import">Importieren</button>${tt.length||st.no_trades?'':'<button class="btn sm" data-act="day-mark" data-k="no_trades">Nicht gehandelt</button>'}`},
-   {k:'abend',t:'Abend-Log schreiben',done:!!(j&&j.review),sub:j&&j.review?'Tagesabschluss gespeichert.':'Review, Stimmung am Abend, eine Lektion für morgen.',act:`<button class="btn sm" data-act="heute-journal">${j&&j.review?'Ansehen':'Schreiben'}</button>`},
-   ...(friday?[{k:'woche',t:'Wochen-Review',done:!!(wr&&wr.fokus),sub:wr&&wr.fokus?'Fokus nächste Woche: '+esc(wr.fokus):'Bilanz der Woche und ein Fokus für nächste Woche.',act:'<a class="btn sm" href="#woche">Öffnen</a>'}]:[])];
-  const done=steps.filter(s=>s.done).length,next=steps.find(s=>!s.done);
-  const m=b&&b.instruments?b.instruments.slice(0,3):[];
-  return `<div class="head"><div><h1>${greet}</h1><div class="sub">${dLabel(d)} · ${weekend?'Wochenende: Ruhe, Review, Familie.':'Dein Tag in ${steps.length} Schritten.'.replace('${steps.length}',steps.length)}</div></div></div>
-  ${reminderHTML()}${riskBar()}
-  ${N.active?`<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>News-Sperre bis ${N.active.end}:</b> ${esc(N.active.title)}. Kein neuer Trade.</div></div>`:''}
-  ${mindCard(prePick(d),'Mindset für heute',{cls:'top'})}
-  <div class="grid g-side" style="align-items:start">
-   <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tagesablauf</h2><span class="small muted">${done} von ${steps.length} erledigt</span></div>
-    <div class="bar win" style="margin:10px 0 14px"><i style="width:${done/steps.length*100}%"></i></div>
-    <div class="steps">${steps.map((s,i)=>`<div class="step ${s.done?'done':''} ${next&&next.k===s.k?'next':''}"><span class="step-n">${s.done?'✓':i+1}</span><div style="flex:1;min-width:0"><b>${s.t}</b><div class="small muted">${s.sub}</div></div><div class="row step-a" style="gap:6px">${s.act}</div></div>`).join('')}</div></div>
-   <div class="stack">
-    ${lastWr?`<div class="mind" style="background:var(--brand);color:#fff"><div class="lbl" style="color:rgba(255,255,255,.7)">Fokus dieser Woche</div><p class="mind-t">${esc(lastWr.fokus)}</p></div>`:''}
-    ${m.length?`<a class="card" href="#markt" style="text-decoration:none;color:inherit;display:block"><div class="row" style="justify-content:space-between"><b>Markt</b><span class="chip ${num(b.sentiment?.score)<=-20?'loss':num(b.sentiment?.score)>=20?'win':''}">${esc(b.sentiment?.label||'')}</span></div><div class="stack small" style="margin-top:8px;gap:4px">${m.map(x=>`<div class="row" style="justify-content:space-between"><span>${esc(x.name)}</span><b class="mono ${cls(x.change)}">${sgn(x.change)} (${sgn(x.changePct)} %)</b></div>`).join('')}</div></a>`:''}
-    <div class="card"><b>Werkzeuge</b><div class="row" style="gap:6px;margin-top:10px"><a class="btn sm" href="#risiko">Positionsgröße</a><a class="btn sm" href="#simulator">Simulator</a><a class="btn sm" href="#woche">Wochen-Review</a><a class="btn sm" href="#cockpit">Cockpit</a></div></div>
-   </div>
-  </div>`;
+/* ============ Heute: Startseite im Vorlagen-Layout ============ */
+const ICO2={bolt:'<svg viewBox="0 0 20 20" fill="currentColor"><path d="M11.3 1.8 4 11.2h5l-1.2 7 7.2-9.5h-5z"/></svg>',
+ upload:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13V3.5M6 7.5l4-4 4 4"/><path d="M3.5 13.5v2a1.5 1.5 0 0 0 1.5 1.5h10a1.5 1.5 0 0 0 1.5-1.5v-2"/></svg>',
+ plus:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 4v12M4 10h12"/></svg>',
+ send:'<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 16V4M5 9l5-5 5 5"/></svg>',
+ spark:'<svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 1.5l1.6 4.9 4.9 1.6-4.9 1.6L10 14.5l-1.6-4.9L3.5 8l4.9-1.6z"/><circle cx="16" cy="15.5" r="1.6"/></svg>'};
+function heuteSteps(d){const ci=CI(d),st=DS(d),dp=DP(d),E=ENGINE(),N=NEWS(d),tt=S.trades.filter(t=>t.date===d),j=S.journal.find(x=>x.id===d);
+  const b=S.briefings.find(x=>x.id===d),wk=RS.weekStart(d),wr=S.weekly_reviews.find(x=>x.id===wk),friday=parseD(d).getDay()===5;
+  const planned=!!(dp&&(dp.off||Object.keys(dp.items||{}).length));
+  const planTxt=planned?(dp.off?'Pausentag':Object.entries(dp.items||{}).map(([id,it])=>`${esc(AC(id)?.name||'Konto')}: Risiko ${money(it.risk||0,0)}, Ziel ${money(it.target||0,0)}`).join(' · ')):'';
+  return [
+   {k:'checkin',t:'Daily Check-in',done:!!ci,go:'#checkin',sub:ci?`${LEVEL[ci.level].t} · ${ci.score}/100${ci.intention?' · „'+esc(ci.intention)+'“':''}`:'Herz und Kopf prüfen, bevor du den Chart öffnest.',act:ci?'<a class="btn sm" href="#checkin">Ansehen</a>':'<a class="btn sm pri" href="#checkin">Starten</a>'},
+   {k:'briefing',t:'Markt-Briefing lesen',done:!!st.briefing_read,go:'#markt',sub:b?esc((b.summary||'').split(/(?<=[.!?])\s+/)[0]):'Kommt werktags um 07:16 Uhr.',act:`<a class="btn sm" href="#markt">Öffnen</a>${st.briefing_read?'':'<button class="btn sm" data-act="day-mark" data-k="briefing_read">Gelesen</button>'}`},
+   {k:'plan',t:'Tagesplan festlegen',done:planned,act2:'heute-plan',sub:planned?planTxt:'Welche Konten handelst du, mit welchem Risiko und welchem Tagesziel?',act:`<button class="btn sm ${planned?'':'pri'}" data-act="heute-plan">${planned?'Ändern':'Planen'}</button>`},
+   {k:'news',t:'News-Zeiten prüfen',done:!!st.news_checked,act2:'news-add',sub:N.blocks.length?N.blocks.map(x=>`<b>${x.start}–${x.end}</b> ${esc(x.title)}`).join(' · '):'Heute keine wichtigen Termine bekannt.',act:`<button class="btn sm" data-act="news-add">Termin ergänzen</button>${st.news_checked?'':'<button class="btn sm" data-act="day-mark" data-k="news_checked">Geprüft</button>'}`},
+   {k:'session',t:'Session',done:!!st.session_done||E.status==='RED',act2:'add-trade',sub:`${tt.length} Trade${tt.length===1?'':'s'} heute · <span class="pnlv ${cls(sum(tt))}">${money(sum(tt),0)}</span> · Ampel ${ST[E.status].t}`,act:`<button class="btn sm pri" data-act="add-trade">Trade erfassen</button>${st.session_done?'':'<button class="btn sm" data-act="day-mark" data-k="session_done">Session beendet</button>'}`},
+   {k:'import',t:'Tradovate-Export importieren',done:tt.some(t=>t.import_key)||!!st.no_trades,act2:'tv-import',sub:st.no_trades?'Heute nicht gehandelt.':tt.some(t=>t.import_key)?`${tt.filter(t=>t.import_key).length} Trades aus Tradovate`:'Exakte Zahlen und Gebühren nach der Session.',act:`<button class="btn sm" data-act="tv-import">Importieren</button>${tt.length||st.no_trades?'':'<button class="btn sm" data-act="day-mark" data-k="no_trades">Nicht gehandelt</button>'}`},
+   {k:'abend',t:'Abend-Log schreiben',done:!!(j&&j.review),act2:'heute-journal',sub:j&&j.review?'Tagesabschluss gespeichert.':'Review, Stimmung am Abend, eine Lektion für morgen.',act:`<button class="btn sm" data-act="heute-journal">${j&&j.review?'Ansehen':'Schreiben'}</button>`},
+   ...(friday?[{k:'woche',t:'Wochen-Review',done:!!(wr&&wr.fokus),go:'#woche',sub:wr&&wr.fokus?'Fokus nächste Woche: '+esc(wr.fokus):'Bilanz der Woche und ein Fokus für nächste Woche.',act:'<a class="btn sm" href="#woche">Öffnen</a>'}]:[])];
 }
+function hzRange(d){const z=UI.hz||'woche';if(z==='tag')return [d,d,'Heute'];if(z==='monat')return [d.slice(0,7)+'-01',d.slice(0,7)+'-31','Monat'];const ws=RS.weekStart(d);return [ws,RS.addDaysStr(ws,6),'Woche']}
+function ringSvg(a,b){const arc=(r,p,col,w)=>{const p2=clamp(p,0,1),a0=Math.PI,a1=Math.PI+Math.PI*p2;const x0=110+r*Math.cos(a0),y0=150+r*Math.sin(a0),x1=110+r*Math.cos(a1),y1=150+r*Math.sin(a1);
+   return `<path d="M${x0} ${y0} A${r} ${r} 0 0 1 ${x1} ${y1}" fill="none" stroke="${col}" stroke-width="${w}" stroke-linecap="round"/>`};
+  return `<svg viewBox="0 0 220 160" width="100%" style="max-width:220px;position:absolute;left:4px;bottom:-6px" aria-hidden="true">${arc(92,1,'rgba(0,0,0,.07)',14)}${arc(66,1,'rgba(0,0,0,.07)',14)}${a>0?arc(92,a,'var(--accent)',14):''}${b>0?arc(66,b,'#151515',14):''}</svg>`}
+function vHeute(){const d=TODAY(),h=+RS.berlinTime().slice(0,2),greet=h<11?'Guten Morgen.':h<18?'Bleib fokussiert.':'Guten Abend.';
+  const steps=heuteSteps(d),done=steps.filter(s=>s.done).length,next=steps.find(s=>!s.done),pct=Math.round(done/steps.length*100);
+  const E=ENGINE(),u0=E.units[0],N=NEWS(d),ci=CI(d),dp=DP(d),lastWr=S.weekly_reviews.filter(x=>x.id<RS.weekStart(d)&&x.fokus).sort((a,b)=>b.id.localeCompare(a.id))[0];
+  const tileDone=k=>steps.find(s=>s.k===k)?.done;
+  const tiles=[['checkin','Check-in','heart','#checkin'],['session','Trade','plus',null,'add-trade'],['risk','Risiko','gauge','#risiko'],['import','Import','upload',null,'tv-import'],['abend','Abend-Log','journal',null,'heute-journal']];
+  const ic=k=>ICON[k]||ICO2[k];
+  // Coach-Panel: kurzer Status als Antwort-Blase
+  const ans=ci?`Check-in ${ci.score}/100 (${LEVEL[ci.level].t}). Ampel ${ST[E.status].t}: ${money(u0?.r.riskPerTrade||0,0)} pro Trade, ${u0?.r.tradesLeft??0} Trades übrig, Stop bei −${money(u0?.r.dailyStop||0,0).replace('$','$')}.`:'Mach zuerst deinen Check-in. Danach sage ich dir, mit welchem Risiko du heute handeln solltest.';
+  // Zusammenfassung
+  const [f,t,lab]=hzRange(d),tr=S.trades.filter(x=>!x.demo&&x.date>=f&&x.date<=t);const ok=tr.filter(x=>RS.ruleBreakCount(x)===0).length;
+  let wd=0;for(let x=f;x<=t&&x<=d;x=addDays(x,1)){const g=parseD(x).getDay();if(g&&g<6)wd++}
+  const cin=S.checkins.filter(c=>c.id>=f&&c.id<=t).length;
+  const byD=RS.dailyPnl(tr),bars=(UI.hz==='tag'?tr.slice().sort(byDT).map(x=>num(x.pnl)):byD.map(x=>x.pnl)),mx=Math.max(1,...bars.map(Math.abs)),tot=tr.reduce((s,x)=>s+num(x.pnl),0);
+  const slots=Math.max(10,bars.length);
+  const barsSvg=`<svg viewBox="0 0 ${slots*16} 120" width="58%" style="position:absolute;right:20px;top:22px;bottom:22px;height:calc(100% - 44px)" preserveAspectRatio="none" aria-hidden="true">${Array.from({length:slots},(_,i)=>{const v=bars[i-(slots-bars.length)];const x=i*16+5;if(v==null)return `<rect x="${x}" y="8" width="5" height="104" rx="2.5" fill="rgba(0,0,0,.06)"/>`;const hh=Math.max(8,Math.abs(v)/mx*104);return `<rect x="${x}" y="8" width="5" height="104" rx="2.5" fill="rgba(0,0,0,.06)"/><rect x="${x}" y="${112-hh}" width="5" height="${hh}" rx="2.5" fill="${v>=0?'#151515':'var(--loss)'}"/>`}).join('')}</svg>`;
+  const acc=S.accounts.map(EA).filter(RS.isActive)[0],am=acc?acctM(acc):null;
+  const eq=am?(()=>{let c=0;return [0,...am.dates.map(x=>c+=am.days[x].pnl)]})():[];
+  const line=eq.length>1?(()=>{const mn=Math.min(...eq),mxx=Math.max(...eq),rg=mxx-mn||1;return eq.map((v,i)=>`${i?'L':'M'}${(i/(eq.length-1)*150+6).toFixed(1)},${(70-(v-mn)/rg*56).toFixed(1)}`).join('')})():'M6,60 L40,48 L70,56 L110,30 L156,22';
+  return `<div class="grid g-2 hero" style="gap:26px;align-items:stretch;margin-bottom:22px">
+    <div class="stack" style="gap:18px">
+     <h1>${greet}<br>${ci?'Lass uns sauber traden.':'Erst Herz, dann Chart.'}</h1>
+     <div class="goal"><div class="goal-t">Du hast ${pct} % deines Tagesablaufs geschafft${next?`. Als Nächstes: ${esc(next.t)}`:'. Stark.'}</div>
+      ${next?`<button class="goal-go" type="button" data-act="heute-next" data-k="${next.k}" aria-label="Nächster Schritt: ${esc(next.t)}">${ICO2.bolt}</button>`:''}
+      <div class="goal-bar"><i style="width:calc(${Math.max(8,pct)}% - 10px)"></i><span>${done}<em>/${steps.length} Schritte</em></span></div></div>
+     <div class="tiles">${tiles.map(([k,l,i,href,act])=>{const dn=k==='risk'?false:tileDone(k);return href?`<a class="tile ${dn?'done':''}" href="${href}"><span class="ti">${ic(i)}</span>${l}</a>`:`<button type="button" class="tile ${dn?'done':''}" data-act="${act}"><span class="ti">${ic(i)}</span>${l}</button>`}).join('')}</div>
+    </div>
+    <div class="coachp"><a class="coach-pill" href="#coach">${ICO2.spark} Strategix Coach</a>
+     <div class="stack" style="gap:12px;margin-top:22px;position:relative">
+      <div class="bub q">Bin ich heute bereit?</div><div class="bub-meta">${dLabel(d)}</div>
+      <div class="bub a">${esc(ans)}</div>
+      <div class="minis">${u0?`<div class="mini"><div><span class="muted">Risiko/Trade</span><b>${money(u0.r.riskPerTrade,0)}</b></div>${miniRing(u0.r.riskPerTrade/Math.max(1,u0.r.baseRisk))}</div><div class="mini"><div><span class="muted">Bis Stop</span><b>${money(u0.r.remainingToStop,0)}</b></div>${miniRing(u0.r.remainingToStop/Math.max(1,u0.r.dailyStop))}</div>`:''}${N.blocks.length?`<div class="mini"><div><span class="muted">News</span><b>${N.blocks[0].time}</b></div></div>`:''}</div>
+     </div>
+     <form id="heuteAsk" class="ask" style="margin-top:18px"><input type="text" id="heuteQ" placeholder="Frag deinen Coach…" autocomplete="off" aria-label="Frage an den Coach"><button type="submit" aria-label="Senden">${ICO2.send}</button></form>
+    </div>
+   </div>
+   ${reminderHTML()}${riskBar()}
+   ${N.active?`<div class="alert stop" style="margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>News-Sperre bis ${N.active.end}:</b> ${esc(N.active.title)}. Kein neuer Trade.</div></div>`:''}
+   <div class="row" style="justify-content:space-between;margin:28px 0 14px"><h2 style="font-size:26px;margin:0">Zusammenfassung</h2><div class="seg">${[['tag','Heute'],['woche','Woche'],['monat','Monat']].map(([v,l])=>`<button type="button" class="${(UI.hz||'woche')===v?'on':''}" data-act="hz" data-v="${v}">${l}</button>`).join('')}</div></div>
+   <div class="sumrow" style="margin-bottom:28px">
+    <div class="sum grey">${ringSvg(tr.length?ok/tr.length:0,wd?cin/wd:0)}<div class="legend"><div><span class="lb"><span class="dot" style="background:var(--accent)"></span>Plan befolgt</span><br><b>${ok}<small>/${tr.length} Trades</small></b></div><div><span class="lb"><span class="dot" style="background:#151515"></span>Check-ins</span><br><b>${cin}<small>/${wd} Tage</small></b></div></div></div>
+    <div class="sum white">${barsSvg}<div style="position:absolute;left:22px;bottom:22px"><div class="lb">P&amp;L ${lab}</div><div class="big pnlv ${cls(tot)}">${money(tot,0)}</div><div class="small muted">${tr.length} Trades</div></div></div>
+    <a class="sum dark" href="#prop" style="text-decoration:none"><svg viewBox="0 0 162 80" width="80%" style="position:absolute;left:18px;top:18px" aria-hidden="true"><path d="${line}" fill="none" stroke="#3fb39d" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+     <div style="position:absolute;left:22px;bottom:22px"><div class="lb">${acc?'Drawdown frei':'Prop-Konto'}</div><div class="big">${acc?money(am.ddLeft,0):'anlegen'}</div></div></a>
+   </div>
+   <div class="grid g-side" style="align-items:start">
+    <div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Tagesablauf</h2><span class="small muted">${done} von ${steps.length} erledigt</span></div>
+     <div class="steps" style="margin-top:14px">${steps.map((s,i)=>`<div class="step ${s.done?'done':''} ${next&&next.k===s.k?'next':''}"><span class="step-n">${s.done?'✓':i+1}</span><div style="flex:1;min-width:0"><b>${s.t}</b><div class="small muted">${s.sub}</div></div><div class="row step-a" style="gap:6px">${s.act}</div></div>`).join('')}</div></div>
+    <div class="stack">
+     ${mindCard(prePick(d),'Mindset für heute')}
+     ${lastWr?`<div class="mind dark"><div class="lbl">Fokus dieser Woche</div><p class="mind-t">${esc(lastWr.fokus)}</p></div>`:''}
+     <div class="card"><b>Werkzeuge</b><div class="row" style="gap:6px;margin-top:10px"><a class="btn sm" href="#risiko">Positionsgröße</a><a class="btn sm" href="#simulator">Simulator</a><a class="btn sm" href="#woche">Wochen-Review</a><a class="btn sm" href="#cockpit">Cockpit</a></div></div>
+    </div>
+   </div>`;
+}
+function miniRing(p){const r=13,c=2*Math.PI*r,v=clamp(p,0,1);return `<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><circle cx="17" cy="17" r="${r}" fill="none" stroke="rgba(0,0,0,.08)" stroke-width="4"/><circle cx="17" cy="17" r="${r}" fill="none" stroke="var(--accent)" stroke-width="4" stroke-linecap="round" stroke-dasharray="${(c*v).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 17 17)"/></svg>`}
+function railCard(){const d=TODAY(),st=heuteSteps(d),next=st.find(s=>!s.done);const lastWr=S.weekly_reviews.filter(x=>x.fokus).sort((a,b)=>b.id.localeCompare(a.id))[0];
+  if(next)return `<b>Als Nächstes: ${esc(next.t)}</b><p>${st.filter(s=>s.done).length} von ${st.length} Schritten erledigt.</p><a class="btn sm" href="#heute">Zum Tagesablauf</a>`;
+  return `<b>Tag abgeschlossen</b><p>${lastWr?'Fokus: '+esc(lastWr.fokus):'Ruh dich aus. Morgen beginnt neu.'}</p><a class="btn sm" href="#woche">Wochen-Review</a>`}
+
 function newsAdd(){const F=[{k:'time',l:'Uhrzeit (Berlin)',t:'time',req:1},{k:'title',l:'Was?',t:'text',ph:'z. B. FOMC-Protokoll'}];
   openModal('News-Termin für heute',`<div class="form">${formFields(F,{})}</div><p class="small muted">Rund um den Termin gilt eine Sperre von ±${num(PR().news_block_minutes)||5} Minuten.</p>`,async()=>{const v=readFields(F);if(!v.time){toast('Bitte eine Uhrzeit eingeben.');return false}
    const d=TODAY(),dp=DP(d)||{id:d,items:{},off:false,note:''};await put('dayplans',{...dp,id:d,news:[...(dp.news||[]),{time:v.time,title:v.title||'News'}]});armNewsTimer();toast('Termin gespeichert')})}
@@ -1858,6 +2050,8 @@ document.addEventListener('click',async e=>{
   if(b.id==='ov'&&e.target!==b)return;
   switch(a){
    case 'close':closeModal();break;
+   case 'hz':UI.hz=b.dataset.v;render();break;
+   case 'heute-next':{const st=heuteSteps(TODAY()).find(x=>x.k===b.dataset.k);if(!st)break;if(st.go)location.hash=st.go.slice(1);else if(st.act2==='heute-plan')openDayPlan(TODAY(),null);else if(st.act2==='news-add')newsAdd();else if(st.act2==='add-trade')editTrade(null);else if(st.act2==='tv-import')tvImport();else if(st.act2==='heute-journal'){UI.jDate=TODAY();location.hash='journal'}}break;
    case 'day-mark':await markDay(b.dataset.k);toast('Erledigt');break;
    case 'heute-plan':openDayPlan(TODAY(),null);break;
    case 'heute-journal':UI.jDate=TODAY();location.hash='journal';break;
@@ -1950,6 +2144,7 @@ document.addEventListener('change',e=>{const t=e.target;
   else if(t.id==='ptcSetup')renderPTC();else if(t.classList.contains('ptc'))updPTC();
 });
 document.addEventListener('submit',async e=>{const f=e.target;
+  if(f.id==='heuteAsk'){e.preventDefault();const q=$('#heuteQ').value.trim();if(!q)return;location.hash='coach';setTimeout(()=>ask(q),60);return}
   if(f.id==='wkForm'){e.preventDefault();const g=k=>document.getElementById('wk_'+k).value.trim();await put('weekly_reviews',{...(S.weekly_reviews.find(x=>x.id===UI.wk)||{}),id:UI.wk,gut:g('gut'),aendern:g('aendern'),fokus:g('fokus'),dank:g('dank')});toast('Wochen-Review gespeichert');return}
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
   else if(f.id==='setForm'){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
