@@ -65,15 +65,21 @@ Im PRO-Konto wird schneller, größer und häufiger gehandelt. Am 13.02. wurde m
   - FTMO: 0 von 1, −242 €.
 - **Teuerster Tag:** 29.09., zehn 50K-Tests für 898,50 €. Das sind 21 % der Jahresausgaben.
 
-**Abgleich mit der Trade-Historie (bitte prüfen):**
-- März: Laut Trades sind alle fünf Tests im Drawdown gelandet. In der Liste steht bei einem „Passed“ mit dem Payout von 711 €. Der Payout stammt aus der PRO-Gruppe vom Februar.
-- Oktober: Laut Trades gab es zwei bestandene Tests (02.10. und 19.10.). In der Liste steht nur einer. Die Zahl der bestandenen Tests stimmt trotzdem: 12.
-- 50K vom 29.09.: Fünf dieser Konten stehen laut Trades bei nur ca. −700 $. Wurden sie danach noch gehandelt oder aufgegeben?
+**Korrekturen nach Rücksprache (24.11.2026), in der App übernommen:**
+- **März:** Die Copy-Gruppe hat alle fünf Tests im Drawdown verloren. Der Payout von 711 € kommt aus der PRO-Copy-Gruppe vom Februar (Gewinntag 13.02.) und steht jetzt als eigener Eintrag am 13.02.
+- **Oktober:** Der zweite bestandene Test war ein kostenloser Reset mit TPT-Credits. Er steht jetzt mit 0 € in der Liste und zählt als Eval.
+- **50K vom 29./30.09.:** Die Copy-Gruppe war kurz vor dem Bestehen. Dann kam ein Copy-Trade über Tradovate ohne Stop-Loss mit −2.000 $ je Konto. Weil die Konten weit im Plus waren, lag die EOD-Drawdown-Grenze schon bei −700 $. Alle fünf wurden geschlossen.
+
+**Stand nach Korrektur:**
+- Gesamt: 13 von 51 Evals bestanden (25 %), 2 Payouts bei 13 Funded-Konten (15 %), ROI −67,3 %.
+- TPT: 12 von 30 bestanden (40 %).
+- Februar wird damit zum einzigen Monat im Plus (+332 €).
 
 ## Lehren für Dezember (in der App gespeichert)
 
-1. Evals kann ich: bei TPT 12 von 29 bestanden, meist in 8–9 Tagen mit einer Copy-Gruppe von 5 Konten.
+1. Evals kann ich: bei TPT 12 von 30 bestanden, meist in 8–9 Tagen mit einer Copy-Gruppe von 5 Konten.
 2. PRO-Konten habe ich alle nach 1–4 Handelstagen verloren: sofort volle Größe, Nachkaufen, One-Hit-Wonder gesucht.
 3. Mein Vorteil liegt im US-Open 15:30–17:00: im Test +3.523 $ bei 77 % Treffern. Alle anderen Uhrzeiten zusammen sind klar negativ.
 4. Nie mehrere Konten an einem Tag nacheinander verbrennen (14.09. und 30.09.).
 5. Nach einem großen Tag sofort auszahlen und die Größe senken.
+6. Jeder Trade mit Stop-Loss, auch Copy-Trades über Tradovate.

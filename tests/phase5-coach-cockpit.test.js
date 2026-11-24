@@ -123,4 +123,6 @@ test('parseCostCsv: Übersichtszeilen oben, „-   €“ und leere Zeilen; cost
   assert.deepEqual([k.evals, k.passed, k.ddHits, k.payoutCount], [3, 1, 2, 1]);
   assert.equal(k.spend, 802.52); assert.equal(k.payouts, 711); assert.equal(k.activationSpend, 404);
   assert.equal(k.payoutRateFunded, 1); assert.equal(k.byFirm.TPT.evals, 2); assert.equal(k.byMonth['2026-10'].spend, 646);
+  const k2 = RS.costKpis([...r.rows, { account: 'TPT Reset (Credits)', firm: 'TPT', date: '2026-10-19', eval_fee: 0, total_spend: 0, payout: 0, eval_status: 'Passed', credits: true }]);
+  assert.deepEqual([k2.evals, k2.passed, k2.spend], [4, 2, 802.52]);
 });

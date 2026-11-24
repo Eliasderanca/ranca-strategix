@@ -723,12 +723,12 @@
 
   /**
    * Jahres-KPIs aus der Kosten-Historie (Prop-Firm-Ausgaben vs. Payouts, Beträge in €).
-   * Eval = Zeile mit Eval-Gebühr. Bestanden = Eval mit Status „Passed“. Funded-Konten = bestandene Evals.
+   * Eval = Zeile mit Eval-Gebühr oder mit Credits bezahlt. Bestanden = Eval mit Status „Passed“. Funded-Konten = bestandene Evals.
    */
   RS.costKpis = (rows) => {
     const r2 = (x) => Math.round(x * 100) / 100;
     const all = rows || [];
-    const isEval = (x) => num(x.eval_fee) > 0;
+    const isEval = (x) => num(x.eval_fee) > 0 || !!x.credits; // auch kostenlose Evals (z. B. Reset mit TPT-Credits)
     const passed = (x) => isEval(x) && /pass/i.test(x.eval_status || '');
     const ddHit = (x) => isEval(x) && /dd ?hit/i.test(x.eval_status || '');
     const spend = all.reduce((s, x) => s + num(x.total_spend), 0), payouts = all.reduce((s, x) => s + num(x.payout), 0);
