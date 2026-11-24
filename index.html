@@ -1731,25 +1731,33 @@ async function tiltSubmit(){const el=$('#tilt');const t=S.trades.find(x=>x.id===
 
 /* ============ Phase 3: Statistik ============ */
 function vStats(){const f=UI.stF||(UI.stF={days:'90',acct:'all'});
-  let trs=filtAcct(S.trades,f.acct);if(f.days!=='all')trs=trs.filter(t=>t.date>=addDays(TODAY(),-+f.days));
-  const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;const rOf=t=>RS.tradeR(t,usd(t));
-  const head=`<div class="head"><div><h1>Statistik</h1><div class="sub">${trs.length} Trades · Muster aus deinem Journal</div></div><div class="row"><div class="seg">${[['30','30 Tage'],['90','90 Tage'],['all','Alle']].map(([v,l])=>`<button type="button" class="${f.days===v?'on':''}" data-act="st-days" data-v="${v}">${l}</button>`).join('')}</div>${acctSelect('stAcct',f.acct)}</div></div>`;
+  // Quelle: Live-Trades (Journal) oder Archiv der Trade-Historie (getrennt, nie vermischt)
+  const hasArch=S.archive_accounts.length>0;if(!f.src)f.src=hasArch&&S.trades.filter(t=>!t.demo).length<5?'archiv':'live';if(!hasArch)f.src='live';
+  const arch=f.src!=='live';
+  let trs=arch?RS.archiveTrades(S.archive_accounts,f.src==='test'?'TEST':f.src==='pro'?'PRO':null):filtAcct(S.trades,f.acct);if(!arch&&f.days!=='all')trs=trs.filter(t=>t.date>=addDays(TODAY(),-+f.days));
+  const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;const rOf=t=>t.archive?null:RS.tradeR(t,usd(t));
+  const srcSeg=hasArch?`<div class="seg">${[['live','Live'],['archiv','Archiv gesamt'],['test','Archiv Test'],['pro','Archiv PRO']].map(([v,l])=>`<button type="button" class="${f.src===v?'on':''}" data-act="st-src" data-v="${v}">${l}</button>`).join('')}</div>`:'';
+  const head=`<div class="head"><div><h1>Statistik</h1><div class="sub">${trs.length} Trades · ${arch?'Archiv der Trade-Historie (Teilausführungen zusammengefasst, Copy-Trades einmal)':'Muster aus deinem Journal'}</div></div><div class="row">${srcSeg}${arch?'':`<div class="seg">${[['30','30 Tage'],['90','90 Tage'],['all','Alle']].map(([v,l])=>`<button type="button" class="${f.days===v?'on':''}" data-act="st-days" data-v="${v}">${l}</button>`).join('')}</div>${acctSelect('stAcct',f.acct)}`}</div></div>`;
   if(trs.length<5)return head+`<div class="card">${emptyBox('Noch zu wenig Trades','Ab 5 Trades mit Setup und Gefühl siehst du hier, wann du gut tradest und wann nicht. Erfasse jeden Trade mit der Schnelleingabe.')}</div>`;
   const wr=x=>x==null?'–':Math.round(x*100)+' %',rr=x=>x==null?'–':(x>0?'+':'')+fmtN(x,2)+' R',rc=x=>x==null?'':x>0?'pos':x<0?'neg':'';
   const row=(k,x)=>`<tr><td>${esc(k)}</td><td class="num">${x.n}</td><td class="num">${wr(x.winrate)}</td><td class="num ${rc(x.avgR)}"><b>${rr(x.avgR)}</b></td><td class="num ${cls(x.avgPnl)}">${x.avgPnl==null?'–':money(x.avgPnl,0)}</td></tr>`;
   const table=(title,rows,first)=>`<div class="card"><h2>${title}</h2><div class="tbl-wrap"><table><thead><tr><th>${first}</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">Ø R</th><th class="num">Ø $</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
   const emo=RS.statsByEmotion(trs,rOf),al=RS.afterLossStats(trs,rOf),idx=RS.statsByTradeIndex(trs,rOf),wk=RS.ruleBreaksByWeek(trs,TODAY(),8),su=RS.statsBySetup(trs,rOf,t=>PB(t.setupId)?.name);
-  const tile=(t,x,hl)=>`<div class="card" style="${hl?'background:var(--warn-soft)':''}"><div class="lbl">${t}</div><div class="mono ${rc(x.avgR)}" style="font-size:28px;font-weight:700">${rr(x.avgR)}</div><div class="small muted">Winrate ${wr(x.winrate)} · Ø ${x.avgPnl==null?'–':money(x.avgPnl,0)} · ${x.n} Trades</div></div>`;
+  const tile=(t,x,hl)=>`<div class="card" style="${hl?'background:var(--warn-soft)':''}"><div class="lbl">${t}</div>${x.avgR==null&&x.avgPnl!=null?`<div class="mono ${cls(x.avgPnl)}" style="font-size:28px;font-weight:700">Ø ${money(x.avgPnl,0)}</div>`:`<div class="mono ${rc(x.avgR)}" style="font-size:28px;font-weight:700">${rr(x.avgR)}</div>`}<div class="small muted">Winrate ${wr(x.winrate)} · Ø ${x.avgPnl==null?'–':money(x.avgPnl,0)} · ${x.n} Trades</div></div>`;
   const maxB=Math.max(1,...wk.map(w=>w.breaks));
   const bars=`<svg viewBox="0 0 400 170" width="100%" style="max-width:620px;display:block" role="img" aria-label="Regelbrüche pro Woche">${[0,Math.ceil(maxB/2),maxB].map(v=>`<line x1="34" x2="396" y1="${140-v/maxB*120}" y2="${140-v/maxB*120}" stroke="var(--line)"/><text x="28" y="${144-v/maxB*120}" text-anchor="end" font-size="11" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">${v}</text>`).join('')}
     ${wk.map((w,i)=>{const x=40+i*45,h=w.breaks/maxB*120;return `<rect x="${x}" y="${140-h}" width="30" height="${Math.max(h,0)}" rx="5" fill="${i===wk.length-1?'var(--loss)':'var(--warn)'}" opacity="${w.breaks?1:.25}"/><text x="${x+15}" y="160" text-anchor="middle" font-size="10.5" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">KW${w.week.slice(-2)}</text>${w.breaks?`<text x="${x+15}" y="${134-h}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${w.breaks}</text>`:''}`}).join('')}</svg>`;
-  const worse=al.afterLoss.avgR!=null&&al.others.avgR!=null&&al.afterLoss.avgR<al.others.avgR;
+  const worseR=al.afterLoss.avgR!=null&&al.others.avgR!=null&&al.afterLoss.avgR<al.others.avgR,worseP=!worseR&&al.afterLoss.avgR==null&&al.afterLoss.avgPnl!=null&&al.others.avgPnl!=null&&al.afterLoss.avgPnl<al.others.avgPnl,worse=worseR||worseP;
+  // Archiv: Uhrzeit, Instrument, Phase (in $, Archiv hat keine R-Werte)
+  const grp=(keyFn,order)=>{const m=new Map();trs.forEach(t=>{const k=keyFn(t);if(!m.has(k))m.set(k,[]);m.get(k).push(t)});const ks=order?order.filter(k=>m.has(k)):[...m.keys()].sort((a,b)=>m.get(b).length-m.get(a).length);return ks.map(k=>({key:k,...RS.groupStats(m.get(k),rOf),sum:Math.round(m.get(k).reduce((s2,t)=>s2+num(t.pnl),0))}))};
+  const rowS=x=>`<tr><td>${esc(x.key)}</td><td class="num">${x.n}</td><td class="num">${wr(x.winrate)}</td><td class="num ${cls(x.avgPnl)}">${money(x.avgPnl,0)}</td><td class="num ${cls(x.sum)}"><b>${money(x.sum,0)}</b></td></tr>`;
+  const tableS=(title,rows,first)=>`<div class="card"><h2>${title}</h2><div class="tbl-wrap"><table><thead><tr><th>${first}</th><th class="num">Trades</th><th class="num">Winrate</th><th class="num">Ø $</th><th class="num">Summe</th></tr></thead><tbody>${rows.map(rowS).join('')}</tbody></table></div></div>`;
   return head+`
   <div class="tabpane" data-tab="verlust" data-tl="Nach Verlust"><h2>Nach einem Verlust</h2><div class="grid g-2" style="margin-bottom:16px">${tile('Trade direkt nach einem Verlust',al.afterLoss,worse)}${tile('Alle anderen Trades',al.others)}</div>
-  ${worse?`<div class="alert warn" style="margin:-6px 0 16px"><span class="sq" style="background:var(--warn)"></span><div>Deine Trades nach einem Verlust sind im Schnitt ${fmtN(al.others.avgR-al.afterLoss.avgR,2)} R schlechter. Die Pflicht-Pause ist für dich besonders wichtig.</div></div>`:''}
+  ${worse?`<div class="alert warn" style="margin:-6px 0 16px"><span class="sq" style="background:var(--warn)"></span><div>Deine Trades nach einem Verlust sind im Schnitt ${worseR?fmtN(al.others.avgR-al.afterLoss.avgR,2)+' R':money(al.others.avgPnl-al.afterLoss.avgPnl,0)} schlechter. Die Pflicht-Pause ist für dich besonders wichtig.</div></div>`:''}
   </div><div class="tabpane" data-tab="index" data-tl="Trade 1–4"><h2>Trade 1 bis 4 des Tages</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:16px">${idx.map(x=>tile('Trade '+x.label,x)).join('')}</div>
-  </div><div class="tabpane" data-tab="gefuehl" data-tl="Gefühl & Setup"><div class="grid g-2" style="margin-bottom:16px">${table('Nach Gefühl vor dem Trade',emo.map(x=>row(x.key,x)).join(''),'Gefühl')}${table('Ø R je Setup',su.map(x=>row(x.key,x)).join(''),'Setup')}</div>
-  </div><div class="tabpane" data-tab="regeln" data-tl="Regelbrüche"><div class="card"><h2>Regelbrüche pro Woche</h2>${bars}<div class="small muted">Letzte 8 Kalenderwochen. Gezählt werden „Plan nicht befolgt“ und markierte Regelbrüche.</div></div></div>`;
+  </div>${arch?`<div class="tabpane" data-tab="zeit" data-tl="Uhrzeit & Instrument"><div class="grid g-2" style="align-items:start">${tableS('Nach Uhrzeit (Berlin)',grp(t=>RS.tradeWindow(t.time),RS.WINDOWS),'Zeitfenster')}<div class="stack">${tableS('Nach Instrument',grp(t=>t.symbol),'Instrument')}${f.src==='archiv'?tableS('Nach Phase',grp(t=>t.phase==='PRO'?'PRO (Funded)':'Test (Eval)'),'Phase'):''}</div></div></div>`:`<div class="tabpane" data-tab="gefuehl" data-tl="Gefühl & Setup"><div class="grid g-2" style="margin-bottom:16px">${table('Nach Gefühl vor dem Trade',emo.map(x=>row(x.key,x)).join(''),'Gefühl')}${table('Ø R je Setup',su.map(x=>row(x.key,x)).join(''),'Setup')}</div>
+  </div><div class="tabpane" data-tab="regeln" data-tl="Regelbrüche"><div class="card"><h2>Regelbrüche pro Woche</h2>${bars}<div class="small muted">Letzte 8 Kalenderwochen. Gezählt werden „Plan nicht befolgt“ und markierte Regelbrüche.</div></div></div>`}`;
 }
 
 /* ============ Phase 4: Mindset ============ */
@@ -2309,6 +2317,7 @@ document.addEventListener('click',async e=>{
    case 'tilt-a':TQ.a_setup=b.dataset.v==='1';renderTilt(true);break;
    case 'tilt-submit':tiltSubmit();break;
    case 'tilt-close':{const el=$('#tilt');if(el)el.remove();clearInterval(tiltTimer);render()}break;
+   case 'st-src':UI.stF.src=b.dataset.v;render();break;
    case 'st-days':UI.stF.days=b.dataset.v;render();break;
    case 'calc-instr':UI.calc.instr=id;try{localStorage.setItem('rs-instr',id)}catch(e){}$('#calcCard').innerHTML='<h2>Positionsgröße</h2>'+calcInner();break;
    case 'add-rule':editRule(null);break;
