@@ -84,9 +84,10 @@
         "eval_daily_profit_soft_cap": 550,
         "eval_daily_profit_hard_warning": 700
       },
-      "notes": "Neuer EOD-Plan ab 23.11.2026. Drawdown 1.000 $ EOD-trailing (Tagesschluss 17:00 ET), stoppt bei 25.000 $; offene Verluste zählen sofort. Tageslimit 500 $ in Echtzeit: über 25.000 $ nur Pause bis 18:00 ET, darunter Konto verloren. Test: Konsistenz 50 % (sonst Ziel = 2× bester Tag), mind. 3 Tage, News erlaubt. PRO: Auszahlung täglich ab Tag 1 über 26.000 $ Kontostand, keine Gewinntage nötig, 80 % (PRO+ 90 %), News ±1 Min. flat (FOMC, NFP, CPI), Tagesgewinn-Limit 5.000 $. Auto-Flat 16:55 ET = 22:55 Berlin.",
+      "notes": "Neuer EOD-Plan ab 23.11.2026. Drawdown 1.000 $ EOD-trailing (Tagesschluss 17:00 ET), stoppt bei 25.000 $; offene Verluste zählen sofort. Tageslimit 500 $ in Echtzeit: über 25.000 $ nur Pause bis 18:00 ET, darunter Konto verloren. Test: Konsistenz 50 % (sonst Ziel = 2× bester Tag), mind. 3 Tage, News erlaubt. PRO: Auszahlung täglich ab Tag 1 über 26.000 $ Kontostand, keine Gewinntage nötig, 80 % (PRO+ 90 %), News ±1 Min. flat (FOMC, NFP, CPI), Tagesgewinn-Limit 5.000 $. Nach einem Payout liegt die Drawdown-Grenze fest bei 25.000 $. Auto-Flat 16:55 ET = 22:55 Berlin.",
       "source": "https://takeprofittraderhelp.zendesk.com/hc/en-us/articles/40866438043037-EOD-Plan-Overview-Specifications",
-      "verified": "2026-11-24"
+      "verified": "2026-11-24",
+      "drawdown_after_payout": "start_balance"
     }
   ],
   "personal_rules": {

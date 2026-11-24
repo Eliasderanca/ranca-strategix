@@ -27,6 +27,8 @@ const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
   console.log('Leiste:', await p.evaluate(() => document.querySelector('.riskbar')?.innerText.replace(/\s+/g, ' ')));
   await p.evaluate(async () => { const a = AC('tpt1'); await put('accounts', { ...a, stage: 'FUNDED' }); location.hash = 'prop'; }); await p.waitForTimeout(300);
   console.log('Funded:', await p.evaluate(() => { const m = acctM(AC('tpt1')); return JSON.stringify({ w: m.withdrawable, amt: m.payoutAmt, date: m.payoutDate }); }), '| Chip:', /Auszahlbar ab \$26\.000/.test(await p.evaluate(() => document.querySelector('#main').innerText)));
+  await p.evaluate(async () => { const a = AC('tpt1'); await put('accounts', { ...a, payouts: [{ date: TODAY(), amount: 100 }] }); });
+  console.log('Nach Payout:', await p.evaluate(() => { const m = acctM(AC('tpt1')); return JSON.stringify({ ddLeft: m.ddLeft, locked: m.ddLocked, w: m.withdrawable, engineDD: ENGINE().units[0].r.ddRemaining }); }));
   await p.evaluate(() => { location.hash = 'simulator'; }); await p.waitForTimeout(300);
   console.log('Simulator-Regelsatz:', await p.evaluate(() => SIMRULE().id));
   await p.evaluate(() => { UI.sim = simDefaults(); UI.sim.runs = 500; simRun(); }); await p.waitForTimeout(300);

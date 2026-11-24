@@ -104,6 +104,7 @@
       payoutBufferUsd: fundedStage && !acc.plus && rule.payout_buffer != null ? num(rule.payout_buffer) : null,
       fundedDailyProfitCap: fundedStage ? rule.funded_daily_profit_cap || null : null,
       flatByEt: rule.flat_by_et || null,
+      ddAfterPayout: rule.drawdown_after_payout || null,
       payoutMinDays: fundedStage ? rule.payout_qualifying_days_required : null,
       minDayProfit: fundedStage ? rule.payout_qualifying_day_min : null,
       maxPayout: fundedStage ? rule.payout_cap : null,
@@ -243,8 +244,10 @@
     let ddRemaining = null;
     if (o.account && o.account.maxDrawdown) {
       const dd = num(o.account.maxDrawdown);
+      const paid = (o.account.payouts || []).filter((p) => p.date <= date).reduce((x, p) => x + num(p.amount), 0);
       let floor = -dd;
-      if (o.account.ddType !== 'static') {
+      if (paid > 0 && o.account.ddAfterPayout === 'start_balance') floor = paid; // Grenze fest beim Startkapital; Gewinn-Konto zählt ohne Auszahlungen
+      else if (o.account.ddType !== 'static') {
         const closes = {}; let bal = 0; before.forEach((t) => { bal += num(t.pnl); closes[t.date] = bal; });
         const peak = Math.max(0, ...Object.values(closes));
         floor = peak - dd; if (o.account.ddLock) floor = Math.min(floor, 0);

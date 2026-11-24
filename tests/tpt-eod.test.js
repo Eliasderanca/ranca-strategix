@@ -69,3 +69,13 @@ test('simDay: Tageslimit über dem Start ist kein Kontoverlust', () => {
   const hard = RS.simDay({ profit: 0, redDays: 0 }, { ...PR, daily_stop_phase1: -9999, max_losing_trades_per_day: 9 }, TPT, 'EVAL', always(-1), Math.random, { riskOverride: 250 });
   assert.equal(hard.breach, 'DAILY');
 });
+
+test('Nach einem Payout liegt die Drawdown-Grenze fest beim Startkapital', () => {
+  const acc = RS.effectiveAccount({ id: 'a', name: 'TPT PRO', stage: 'FUNDED', payouts: [{ date: '2026-12-08', amount: 600 }] }, TPT);
+  assert.equal(acc.ddAfterPayout, 'start_balance');
+  // +1.700 verdient, 600 ausgezahlt -> Kontostand 26.100, Grenze 25.000 -> 1.100 Rest; heute -300 -> 800
+  const trades = [{ date: '2026-12-07', time: '15:40', pnl: 1700 }, { date: '2026-12-09', time: '15:40', pnl: -300 }];
+  const r = RS.riskEngine({ date: '2026-12-09', trades, pr: PR, account: acc });
+  assert.equal(r.ddRemaining, 800);
+  assert.equal(RS.withdrawable(1400, 600, 1000), 0); // nach dem Verlust nichts mehr über 26.000
+});
