@@ -574,8 +574,8 @@ const DEF_SET={maxDailyLoss:500,maxTrades:4,maxConsec:2,revengeMin:10,cooldownMi
  rules:'Nur A-Setups aus dem Playbook\nStop vor dem Entry gesetzt\nNach 2 Verlusten in Folge: Tag beenden\nKein Trade 5 Min vor/nach High-Impact-News\nPre-Market-Plan geschrieben und gebetet'};
 
 /* ============ store ============ */
-const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log','cost_history','day_status','weekly_reviews'];
-const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[],cost_history:[],day_status:[],weekly_reviews:[]};
+const COLS=['trades','playbooks','accounts','journal','settings','briefings','dayplans','checkins','account_rules','personal_rules','instruments','tilt_checks','trading_days','app_config','psych_profile','mindset_messages','mindset_log','cost_history','day_status','weekly_reviews','archive_accounts','coach_sessions'];
+const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],dayplans:[],checkins:[],account_rules:[],personal_rules:[],instruments:[],tilt_checks:[],trading_days:[],app_config:[],psych_profile:[],mindset_messages:[],mindset_log:[],cost_history:[],day_status:[],weekly_reviews:[],archive_accounts:[],coach_sessions:[]};
 /* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
 let SEED={account_rules:[],personal_rules:null};
 fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
@@ -745,6 +745,11 @@ function alerts(){
   if(tdays.length&&noReview>=2)out.push({a:'habit',lv:'warn',tx:`${noReview} Handelstage ohne Abend-Review. Lernen passiert im Review.`});
   const rev=revengeIds(tt,st.revengeMin);
   if(rev.size)out.push({a:'mind',lv:'stop',tx:`${rev.size} Trade(s) heute innerhalb von ${st.revengeMin} Min nach einem Verlust. Das sieht nach Revenge aus. ${st.cooldownMin} Min Pause empfohlen.`});
+  // Archiv-Wissen: was die eigene Historie über PRO-Start und Uhrzeiten sagt
+  if(S.archive_accounts.length){const A=ASTATS();
+    S.accounts.map(EA).filter(RS.isActive).filter(a=>a.stage==='FUNDED'&&acctM(a).tradingDays<3).forEach(a=>out.push({a:'mind',lv:'warn',tx:`${a.name}: Deine PRO-Konten im Archiv hielten im Median ${A.pro.daysToEnd[Math.floor(A.pro.daysToEnd.length/2)]||1} Tag(e). Die ersten 3 PRO-Tage: halbe Größe, höchstens 2 Trades, kein Nachkaufen.`}));
+    const off=tt.filter(x=>x.time&&RS.tradeWindow(x.time)!=='US-Open (15:30–17)'),bad=RS.WINDOWS.filter(w=>w!=='US-Open (15:30–17)').reduce((s2,w)=>s2+(A.test.byWindow[w]?.pnl||0),0),good=A.test.byWindow['US-Open (15:30–17)'];
+    if(off.length&&bad<0&&good&&good.pnl>0)out.push({a:'habit',lv:'warn',tx:`${off.length} Trade(s) heute außerhalb von 15:30–17:00. Im Archiv: dort ${money(bad,0)}, im US-Open ${money(good.pnl,0)} bei ${Math.round(good.winrate*100)} % Treffern.`});}
   const neg=tt.filter(x=>isNegEmo(x.emotion));
   if(neg.length)out.push({a:'mind',lv:neg.length>=2?'stop':'warn',tx:`Heute ${neg.length} Trade(s) mit ${[...new Set(neg.map(x=>x.emotion))].join(', ')} markiert. Atme durch, bevor du weitermachst.`});
   if(j&&num(j.mood)&&num(j.mood)<=2)out.push({a:'mind',lv:'warn',tx:'Deine Stimmung heute ist niedrig (≤ 2/5). Heute nur mit halber Size oder gar nicht.'});
@@ -1216,6 +1221,67 @@ function acctCard(a,m){a=EA(a);
 }
 
 /* ============ VIEW: coach ============ */
+/* ============ Archiv (Trade-Historie) ============ */
+let _ast=null,_astKey='';
+function ASTATS(){const k=S.archive_accounts.map(a=>a.id+a.updatedAt).join();if(k!==_astKey){_astKey=k;_ast=RS.archiveStats(S.archive_accounts)}return _ast}
+/* Kompakte Archiv-Daten für den Coach. full: zusätzlich alle Trades (für die Interview-Session) */
+function archiveContext(full){if(!S.archive_accounts.length)return null;const A=ASTATS(),strip=p=>({konten:p.accounts,bestanden:p.passed,trades:p.trades,entscheidungenOhneKopien:p.decisions,alle:p.all,proZeitfensterOhneKopien:p.byWindow,oMenge:p.avgQty,anteilMinis:p.minisShare,medianHaltedauerSek:p.medianHoldSec,tradesProTag:p.tradesPerDay,oTag:p.avgDay,schlechtesterTag:p.worstDay,besterTag:p.bestDay,tageBisEnde:p.daysToEnd,pnl:p.pnl});
+  const o={zeitraum:[A.from,A.to],hinweis:'P&L netto nach Kommission in $. Zeiten Berlin. TEST = Eval, PRO = Funded (2026 noch Intraday-Trailing im PRO). Copy-Gruppen = gleiche Einstiege.',test:strip(A.test),pro:strip(A.pro),copyGruppen:A.groups,tageMitMehrerenVerlorenenKonten:A.hopping,
+    konten:S.archive_accounts.slice().sort((a,b)=>a.first.localeCompare(b.first)).map(a=>({konto:a.account.slice(-6),phase:a.phase,gruppe:a.group||null,von:a.first,bis:a.last,tage:a.days,pnl:a.pnl,ergebnis:a.outcome,maxMenge:a.maxQ,tagesPnl:a.dayPnl}))};
+  if(full)o.trades={spalten:['konto','datum','zeit','symbol','richtung','menge','pnl','kommission','sekunden'],zeilen:S.archive_accounts.flatMap(a=>a.trades.map(t=>[a.account.slice(-6),...t]))};
+  return o}
+function archiveHTML(){const has=S.archive_accounts.length,A=has?ASTATS():null,pc=x=>x==null?'–':Math.round(x*100)+' %';
+  const imp=`<div class="row" style="gap:8px"><label class="btn sm" for="archFile" style="cursor:pointer">Trade-Historie importieren (CSV)</label><input type="file" id="archFile" accept=".csv,text/csv" hidden>${has?`<span class="small muted">${S.archive_accounts.length} Konten · ${dLabel(A.from)} bis ${dLabel(A.to)}</span>`:''}</div>`;
+  if(!has)return `<div class="card">${emptyBox('Noch kein Archiv','Importiere den Trade-Export deines Journals (Spalten tradeAccount, symbol, position, entryDate, pnlDollars …). Strategix erkennt Test- und PRO-Konten, Copy-Gruppen und wertet nach Uhrzeit aus. Coach und Agenten nutzen das Archiv danach.',imp)}</div>`;
+  const row=(l,f)=>`<tr><td>${l}</td><td class="num">${f(A.test)}</td><td class="num">${f(A.pro)}</td></tr>`;
+  return `<div class="grid g-2" style="align-items:start">
+   <div class="card"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2 style="margin:0">Test und PRO</h2>${imp}</div>
+    <div class="tbl-wrap"><table><thead><tr><th></th><th class="num">Test</th><th class="num">PRO</th></tr></thead><tbody>
+     ${row('Konten (bestanden)',p=>`${p.accounts}${p.passed?' ('+p.passed+')':''}`)}${row('Ergebnis',p=>`<span class="${cls(p.pnl)}">${money(p.pnl,0)}</span>`)}${row('Trefferquote',p=>pc(p.all.winrate))}${row('Profit Factor',p=>p.all.pf??'–')}
+     ${row('Ø Gewinn / Ø Verlust',p=>`${money(p.all.avgWin||0,0)} / ${money(p.all.avgLoss||0,0)}`)}${row('Ø Menge · Anteil Minis',p=>`${p.avgQty} · ${pc(p.minisShare)}`)}${row('Trades pro Tag · Haltedauer',p=>`${p.tradesPerDay} · ${p.medianHoldSec} s`)}
+     ${row('Handelstage bis Ende (Median)',p=>p.daysToEnd[Math.floor(p.daysToEnd.length/2)]||'–')}</tbody></table></div></div>
+   <div class="stack">
+    <div class="card"><h2>Nach Uhrzeit (Test, ohne Kopien)</h2><div class="tbl-wrap"><table><tbody>${RS.WINDOWS.map(w=>{const x=A.test.byWindow[w];return `<tr><td>${w}</td><td class="num">${x.n} Tr.</td><td class="num">${pc(x.winrate)}</td><td class="num ${cls(x.pnl)}"><b>${money(x.pnl,0)}</b></td></tr>`}).join('')}</tbody></table></div></div>
+    <div class="card"><h2>Copy-Gruppen und Verlusttage</h2><div class="stack small" style="gap:6px">${A.groups.map(g=>`<div class="row" style="justify-content:space-between"><span>${esc(g.name)} · ${g.accounts} Konten${g.passed?' · '+g.passed+' bestanden':''}</span><b class="mono ${cls(g.pnl)}">${money(g.pnl,0)}</b></div>`).join('')}
+     ${A.hopping.map(h=>`<div class="alert warn" style="padding:8px 12px"><span class="sq" style="background:var(--warn)"></span><div>${dLabel(h.date)}: ${h.accounts} Konten an einem Tag verloren (${money(h.pnl,0)})</div></div>`).join('')}</div></div>
+   </div></div>`}
+async function archiveImport(file){const text=await file.text();const t=RS.parseJournalExport(text);if(!t.length){toast('Keine Trades erkannt. Erwartet wird ein Journal-Export mit tradeAccount, entryDate und pnlDollars.');return}
+  const A=RS.buildArchive(t,{target:1500});for(const a of A)await put('archive_accounts',{...a,source:'csv'});toast(`${t.length} Trades in ${A.length} Konten importiert`)}
+/* ============ Interview-Session ============ */
+const IV_TOPICS=[['pro','PRO-Phase & Ungeduld'],['copy','Copy-Trading & Konto-Hopping'],['zeit','Uhrzeiten & Setups'],['frei','Ganze Historie']];
+function interviewHTML(){const iv=UI.iv||(UI.iv={topic:'pro',chat:[],busy:false});const has=S.archive_accounts.length;
+  if(!has)return `<div class="card">${emptyBox('Erst das Archiv importieren','Für die Interview-Session braucht der Coach deine Trade-Historie (Tab „Archiv“).')}</div>`;
+  return `<div class="card chatcard"><div class="row" style="justify-content:space-between;margin-bottom:8px"><div class="seg">${IV_TOPICS.map(([k,l])=>`<button type="button" class="${iv.topic===k?'on':''}" data-act="iv-topic" data-v="${k}" ${iv.chat.length?'disabled':''}>${l}</button>`).join('')}</div>
+    <div class="row">${iv.chat.length?`<button class="btn sm" data-act="iv-finish" ${iv.busy||iv.chat.length<3?'disabled':''}>Session abschließen & speichern</button><button class="btn sm ghost" data-act="iv-reset">Neu</button>`:`<button class="btn pri sm" data-act="iv-start" ${iv.busy?'disabled':''}>Session starten</button>`}</div></div>
+   <div class="chat" id="ivBox">${iv.chat.filter(m=>!m.hidden).map(m=>`<div class="msg ${m.role==='user'?'u':'a'}">${esc(m.content)}</div>`).join('')||'<div class="muted small">Der Coach kennt alle Konten und Trades aus dem Archiv. Er stellt dir eine Frage nach der anderen, um zu verstehen, was hinter den Zahlen steckt. Am Ende werden die Erkenntnisse gespeichert. Coach und Agenten nutzen sie danach.</div>'}${iv.busy?'<div class="msg a" id="ivLive">Denkt nach…</div>':''}</div>
+   <form id="ivForm" class="row" style="flex-wrap:nowrap;margin-top:10px"><input type="text" id="ivIn" placeholder="${iv.chat.length?'Deine Antwort…':'Erst „Session starten“'}" style="flex:1" autocomplete="off" ${iv.chat.length?'':'disabled'}><button class="btn pri" type="submit" ${iv.busy||!iv.chat.length?'disabled':''}>Antworten</button></form></div>`}
+const IV_FOCUS={pro:'Fokus: die PRO-Phase. Warum gingen die PRO-Konten so schnell verloren (Größe, Nachkaufen, Ungeduld, Intraday-Trailing, der Wunsch nach dem schnellen Payout)?',
+  copy:'Fokus: Copy-Trading und Tage, an denen mehrere Konten nacheinander verloren gingen (z. B. 14.09., 30.09.). Was lief in diesen Momenten innerlich ab?',
+  zeit:'Fokus: Uhrzeiten und Instrumente. Warum wird außerhalb des US-Opens gehandelt, was passiert in Asien, Europa und vor 15:30?',frei:'Fokus: die ganze Historie. Wähle selbst die wichtigsten Auffälligkeiten.'};
+function ivPrompt(){return (CC().system_prompt||'')+`\n\nMODUS: AUSWERTUNGS-INTERVIEW zur Trade-Historie.\nDu führst ein Gespräch, um zu verstehen, was hinter den Zahlen steckt. Regeln:\n- Pro Nachricht genau EINE Frage. Davor höchstens zwei Sätze Beobachtung mit konkreten Daten (Datum, Uhrzeit Berlin, Konto oder Gruppe, Betrag).\n- Frag nach Auslöser, Gedanken, Gefühl, Erwartung und was er sich in dem Moment gesagt hat. Hak nach, wenn die Antwort vage ist.\n- Noch keine Ratschläge. Erst verstehen.\n- Nach 6 bis 8 Fragen oder wenn er „fertig“ schreibt: kurze Zusammenfassung in 3 Sätzen und Hinweis auf „Session abschließen“.\n- Deutsch, du-Form, ehrlich und warm, wie ein Bruder. Keine Zahlen erfinden.\n${IV_FOCUS[UI.iv.topic]}\n\nDATEN (JSON):\n`+JSON.stringify({archiv:archiveContext(true),bisherigeErkenntnisse:S.coach_sessions.map(x=>({thema:x.topic,erkenntnisse:x.insights})),lehren:(S.app_config.find(x=>x.id==='jahr2026')||{}).lessons||[],profil:PROFILE()?{scores:PROFILE().scores,topRisiken:PROFILE().top_risks}:null})}
+async function ivSend(q){const iv=UI.iv;if(iv.busy||!q.trim())return;let sample=null;try{sample=window.claude&&await window.claude.use('sample')}catch(e){}
+  iv.chat.push({role:'user',content:q.trim(),hidden:q==='__start__'});if(q==='__start__')iv.chat[iv.chat.length-1].content='Starte die Session mit deiner ersten Beobachtung und Frage.';
+  if(!sample){iv.chat.push({role:'assistant',content:'Die Interview-Session läuft nur in claude.ai. Öffne Ranca Strategix dort.'});render();return}
+  iv.busy=true;render();const turns=[{role:'user',content:ivPrompt()},{role:'assistant',content:'Verstanden. Ich stelle eine Frage nach der anderen.'},...iv.chat.slice(-20).map(m=>({role:m.role,content:m.content}))];
+  try{const{text}=await sample(turns,{cache:false,onText:({text})=>{const m=$('#ivLive');if(m)m.textContent=text;const c=$('#ivBox');if(c)c.scrollTop=c.scrollHeight}});iv.chat.push({role:'assistant',content:text})}
+  catch(e){iv.chat.push({role:'assistant',content:e.code==='not_granted'?'Du hast dem Coach den Zugriff nicht erlaubt.':'Die Antwort wurde unterbrochen. Bitte noch einmal senden.'})}
+  iv.busy=false;render();const c=$('#ivBox');if(c)c.scrollTop=c.scrollHeight}
+async function ivFinish(){const iv=UI.iv;let sample=null;try{sample=window.claude&&await window.claude.use('sample')}catch(e){}if(!sample){toast('Nur in claude.ai möglich.');return}
+  iv.busy=true;render();
+  try{const conv=iv.chat.filter(m=>!m.hidden).map(m=>(m.role==='user'?'TRADER: ':'COACH: ')+m.content).join('\n\n');
+    const{text}=await sample([{role:'user',content:`Hier ist ein Auswertungs-Interview zwischen Coach und Trader:\n\n${conv}\n\nFasse es zusammen. Antworte NUR mit JSON in genau dieser Form: {"erkenntnisse":["3 bis 6 kurze Sätze: was der Trader über sich verstanden hat, mit Zahlen"],"regeln":["1 bis 3 konkrete, prüfbare Regeln für Dezember"],"offen":["0 bis 3 offene Fragen"]}. Deutsch, du-Form.`}],{cache:false});
+    const j=JSON.parse(String(text).replace(/^[\s\S]*?\{/,'{').replace(/\}[^}]*$/,'}'));
+    await put('coach_sessions',{date:TODAY(),topic:(IV_TOPICS.find(t=>t[0]===iv.topic)||[])[1],insights:j.erkenntnisse||[],rules:j.regeln||[],open:j.offen||[],transcript:iv.chat.filter(m=>!m.hidden).slice(-40).map(m=>({role:m.role,content:m.content}))});
+    UI.iv={topic:iv.topic,chat:[],busy:false};UI.sub.coach='erkenntnisse';toast('Session gespeichert');render()}
+  catch(e){iv.busy=false;toast('Zusammenfassung fehlgeschlagen. Bitte noch einmal.');render()}}
+function insightsHTML(){const L=S.coach_sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))),rules=PR().rules||'';
+  if(!L.length)return `<div class="card">${emptyBox('Noch keine Erkenntnisse','Starte im Tab „Interview“ eine Session. Danach stehen hier deine Erkenntnisse und Regeln.')}</div>`;
+  const per=2,pages=Math.ceil(L.length/per);UI.insPage=clamp(UI.insPage||0,0,pages-1);
+  return `<div class="grid g-2" style="align-items:start">${L.slice(UI.insPage*per,UI.insPage*per+per).map(x=>`<div class="card"><div class="row" style="justify-content:space-between"><h2 style="margin:0">${esc(x.topic||'Session')}</h2><span class="small muted">${dLabel(x.date)}</span></div>
+    <ul class="clean small" style="margin-top:8px">${(x.insights||[]).map(i=>`<li>${esc(i)}</li>`).join('')}</ul>
+    ${(x.rules||[]).length?`<div class="sep"></div><div class="lbl">Regeln für Dezember</div><div class="stack" style="gap:6px;margin-top:6px">${x.rules.map(r=>`<div class="row" style="justify-content:space-between;flex-wrap:nowrap;gap:8px"><span class="small">${esc(r)}</span>${rules.includes(r)?'<span class="chip win">übernommen</span>':`<button class="btn sm" data-act="iv-rule" data-r="${esc(r)}">In meine Regeln</button>`}</div>`).join('')}</div>`:''}
+    ${(x.open||[]).length?`<div class="small muted" style="margin-top:8px">Offen: ${x.open.map(esc).join(' · ')}</div>`:''}</div>`).join('')}</div>
+   ${pages>1?`<div class="row" style="justify-content:center;margin-top:10px"><button class="btn sm" data-act="ins-page" data-d="-1" ${UI.insPage?'':'disabled'}>‹ Neuer</button><span class="small muted">Seite ${UI.insPage+1} von ${pages}</span><button class="btn sm" data-act="ins-page" data-d="1" ${UI.insPage<pages-1?'':'disabled'}>Älter ›</button></div>`:''}`}
 function vCoach(){
   const from=addDays(TODAY(),-90),trs=S.trades.filter(t=>t.date>=from),pats=patterns(trs);
   const Q=CC().quick_questions||[];const red=ENGINE().status==='RED';
@@ -1229,8 +1295,12 @@ function vCoach(){
     <form id="chatForm" class="row" style="flex-wrap:nowrap"><input type="text" id="chatIn" placeholder="Frag deinen Coach…" style="flex:1" autocomplete="off"><button class="btn pri" type="submit" ${UI.chatBusy?'disabled':''}>Senden</button>${UI.chatBusy?'<button class="btn" type="button" data-act="stop-chat">Stopp</button>':''}${UI.chat.length&&!UI.chatBusy?'<button class="btn ghost" type="button" data-act="clear-chat">Neu</button>':''}</form>
     <div class="small muted" id="chatNote" style="margin-top:6px"></div>
    </div>
-   </div><div class="tabpane" data-tab="muster" data-tl="Muster"><div class="card"><div class="lbl">Mustererkennung · letzte 90 Tage</div><h2 style="margin-top:6px">Muster, die du selbst nicht siehst</h2>
-    <div class="stack">${pats.length?pats.map(p=>`<div class="pattern"><span class="sq" style="background:${p.c}"></span><div class="k">${p.k}</div><span></span><div>${p.tx}</div></div>`).join(''):'<div class="muted small">Ab etwa 10 Trades mit Uhrzeit, Setup und Emotion erkennt Strategix hier Muster: Tageszeit, Revenge-Trades, stärkstes Setup, Wochentag, Emotionen, Regelbrüche.</div>'}</div>
+   </div>
+   <div class="tabpane fill" data-tab="interview" data-tl="Interview">${interviewHTML()}</div>
+   <div class="tabpane" data-tab="erkenntnisse" data-tl="Erkenntnisse">${insightsHTML()}</div>
+   <div class="tabpane" data-tab="archiv" data-tl="Archiv">${archiveHTML()}</div>
+   <div class="tabpane" data-tab="muster" data-tl="Muster"><div class="card"><div class="lbl">Mustererkennung · letzte 90 Tage</div><h2 style="margin-top:6px">Muster, die du selbst nicht siehst</h2>
+    <div class="stack">${pats.length?pats.slice(0,Math.max(3,Math.floor((innerHeight-330)/78))).map(p=>`<div class="pattern"><span class="sq" style="background:${p.c}"></span><div class="k">${p.k}</div><span></span><div>${p.tx}</div></div>`).join(''):'<div class="muted small">Ab etwa 10 Trades mit Uhrzeit, Setup und Emotion erkennt Strategix hier Muster: Tageszeit, Revenge-Trades, stärkstes Setup, Wochentag, Emotionen, Regelbrüche.</div>'}</div>
    </div>
   </div>`;
 }
@@ -1244,6 +1314,8 @@ function coachContext(){
    tagesplanHeute:(()=>{const dp=DP(TODAY());return dp?{pause:!!dp.off,notiz:dp.note||'',konten:Object.entries(dp.items||{}).map(([id,it])=>({konto:AC(id)?.name||id,risiko:it.risk,ziel:it.target}))}:null})(),
    tiltChecksHeute:S.tilt_checks.filter(c=>c.date===TODAY()).map(c=>({drang:c.urge,aSetup:c.a_setup,ampel:c.level})),
    erkannteMuster:patterns(trs).map(p=>p.k+': '+p.tx.replace(/<[^>]+>/g,'')),
+   archiv:archiveContext(false),
+   sessionErkenntnisse:S.coach_sessions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,5).map(x=>({datum:x.date,thema:x.topic,erkenntnisse:x.insights,regeln:x.rules})),
    propFirmJahr:(()=>{const y=TODAY().slice(0,4),h=S.cost_history.filter(x=>String(x.date).startsWith(y));if(!h.length)return null;const k=RS.costKpis(h);return {ausgabenEur:k.spend,payoutsEur:k.payouts,roiPct:k.roiPct,evals:k.evals,bestanden:k.passed,passRate:k.passRate,payoutQuoteFunded:k.payoutRateFunded,lehren:(S.app_config.find(x=>x.id==='jahr'+y)||{}).lessons||[]}})(),
    trades:trs.slice(-60).map(t=>[t.date,t.time||'',t.instrument||t.symbol||'',t.direction||t.side||'',t.contracts??'',+num(t.pnl).toFixed(2),t.setup||PB(t.setupId)?.name||'-',RS.emotionBefore(t)||'',t.followed_plan===false?'nein':'ja',RS.tradeR(t,(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2)]),
    tradeSpalten:['datum','zeit','instrument','richtung','kontrakte','pnl','setup','gefuehlVorher','planBefolgt','R']});
@@ -2232,6 +2304,12 @@ document.addEventListener('click',async e=>{
    case 'del-acct':if(b.dataset.confirm){await del('accounts',id);closeModal();toast('Konto gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
    case 'payout':payoutModal(AC(id));break;
    case 'subtab':setSubTab(b.dataset.v);break;
+   case 'iv-topic':UI.iv.topic=b.dataset.v;render();break;
+   case 'iv-start':ivSend('__start__');break;
+   case 'iv-reset':UI.iv={topic:UI.iv.topic,chat:[],busy:false};render();break;
+   case 'iv-finish':ivFinish();break;
+   case 'ins-page':UI.insPage=(UI.insPage||0)+(+b.dataset.d);render();break;
+   case 'iv-rule':{const p=PR(),r=b.dataset.r;await put('personal_rules',{...p,id:'main',rules:((p.rules||'').trim()+'\n'+r).trim()});toast('In deine Handelsregeln übernommen');break}
    case 'hpage':UI.hPage=(UI.hPage||0)+(+b.dataset.d);render();break;
    case 'jpage':UI.jPage=(UI.jPage||0)+(+b.dataset.d);render();break;
    case 'tpage':UI.tPage=(UI.tPage||0)+(+b.dataset.d);render();break;
@@ -2268,12 +2346,14 @@ document.addEventListener('change',e=>{const t=e.target;
   else if(t.id==='tplSel')applyTpl(t.value);
   else if(t.id==='f_rule_id')syncAcctForm();
   else if(t.id==='sim_rule'){simRead();UI.sim.res=null;render()}
+  else if(t.id==='archFile'&&t.files&&t.files[0])archiveImport(t.files[0]);
   else if(t.id==='ptcSetup')renderPTC();else if(t.classList.contains('ptc'))updPTC();
 });
 document.addEventListener('submit',async e=>{const f=e.target;
   if(f.id==='heuteAsk'){e.preventDefault();const q=$('#heuteQ').value.trim();if(!q)return;location.hash='coach';setTimeout(()=>ask(q),60);return}
   if(f.id==='wkForm'){e.preventDefault();const g=k=>document.getElementById('wk_'+k).value.trim();await put('weekly_reviews',{...(S.weekly_reviews.find(x=>x.id===UI.wk)||{}),id:UI.wk,gut:g('gut'),aendern:g('aendern'),fokus:g('fokus'),dank:g('dank')});toast('Wochen-Review gespeichert');return}
   if(f.id==='chatForm'){e.preventDefault();const v=$('#chatIn').value;$('#chatIn').value='';ask(v)}
+  if(f.id==='ivForm'){e.preventDefault();const v=$('#ivIn').value;$('#ivIn').value='';ivSend(v)}
   else if(f.classList.contains('set-form')){e.preventDefault();const v=readFields(PR_FIELDS);await put('personal_rules',{...PR(),...v,id:'main'});toast('Regeln gespeichert')}
   else if(f.id==='jForm'){e.preventDefault();const g=k=>document.getElementById('j_'+k);
     await put('journal',{id:UI.jDate,premarket:g('premarket').value.trim(),mood:g('mood').value?+g('mood').value:null,sleep:g('sleep').value===''?null:+g('sleep').value,review:g('review').value.trim(),lessons:g('lessons').value.trim(),heart:g('heart').value.trim(),followedPlan:g('followed').checked,mood_evening:g('mood_evening').value?+g('mood_evening').value:null});

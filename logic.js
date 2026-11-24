@@ -1022,6 +1022,97 @@
       expectedNet: Math.round(avg * (ok / runs)), medianDays: daysTo.length ? daysTo[Math.floor(daysTo.length / 2)] : null };
   };
 
+  /* ---------- Archiv: Trade-Historie aus einem Journal-Export (z. B. TPT 2026) ---------- */
+
+  /** Komma-CSV mit Anführungszeichen -> Zeilen als Objekte (Spaltennamen aus Kopfzeile) */
+  const csvObjects = (text) => {
+    const rows = []; let row = [], cur = '', q = false; const t = String(text || '').replace(/^﻿/, '');
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      if (q) { if (ch === '"') { if (t[i + 1] === '"') { cur += '"'; i++; } else q = false; } else cur += ch; continue; }
+      if (ch === '"') q = true; else if (ch === ',') { row.push(cur); cur = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(cur); cur = ''; if (row.some((x) => x !== '')) rows.push(row); row = []; } else cur += ch;
+    }
+    row.push(cur); if (row.some((x) => x !== '')) rows.push(row);
+    const head = rows.shift() || [];
+    return rows.map((r) => Object.fromEntries(head.map((h, i) => [h.trim(), r[i]])));
+  };
+
+  /**
+   * Journal-Export (Spalten tradeAccount, symbol, position, entryDate, exitDate, maxQuantity, pnlDollars, commission).
+   * pnlDollars ist netto nach Kommission. Zeiten werden nach Berlin umgerechnet.
+   * Rückgabe: [{ account, sym, side:'Long'|'Short', q, pnl, fee, date, time, dur }]
+   */
+  RS.parseJournalExport = (text) => csvObjects(text).filter((r) => r.tradeAccount && r.entryDate).map((r) => {
+    const e = new Date(r.entryDate), x = new Date(r.exitDate || r.entryDate);
+    return { account: r.tradeAccount, sym: r.symbol, side: /^s/i.test(r.position) ? 'Short' : 'Long', q: num(r.maxQuantity), pnl: num(r.pnlDollars), fee: num(r.commission),
+      date: RS.berlinDate(e), time: new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(e), dur: Math.max(0, Math.round((x - e) / 1000)) };
+  });
+
+  /** Zeitfenster (Berlin) für die Auswertung nach Uhrzeit */
+  RS.tradeWindow = (time) => {
+    const [h, m] = String(time).split(':').map(Number), mins = h * 60 + m;
+    return mins < 480 ? 'Asien (vor 08:00)' : mins < 720 ? 'Europa (08–12)' : mins < 930 ? 'Vor US-Open (12–15:30)' : mins < 1020 ? 'US-Open (15:30–17)' : 'Abend (ab 17)';
+  };
+  RS.WINDOWS = ['Asien (vor 08:00)', 'Europa (08–12)', 'Vor US-Open (12–15:30)', 'US-Open (15:30–17)', 'Abend (ab 17)'];
+
+  /**
+   * Konten aus Archiv-Trades bilden. Phase aus dem Kontonamen (PRO im Namen = funded), Copy-Gruppen über gleiche
+   * Einstiege (Minute, Symbol, Richtung), bestanden = Test mit Gewinn ≥ target. o: { target, proPattern }
+   */
+  RS.buildArchive = (trades, o = {}) => {
+    const target = num(o.target) || 1500, proRe = o.proPattern || /PRO\d/i;
+    const by = {}; (trades || []).forEach((t) => (by[t.account] || (by[t.account] = [])).push(t));
+    const sig = (t) => `${t.date} ${t.time.slice(0, 5)}|${t.sym}|${t.side}`;
+    const accs = Object.entries(by).map(([account, ts]) => {
+      ts.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+      const days = {}; ts.forEach((t) => { days[t.date] = Math.round(((days[t.date] || 0) + t.pnl) * 100) / 100; });
+      const pnl = Math.round(ts.reduce((s, t) => s + t.pnl, 0) * 100) / 100, phase = proRe.test(account) ? 'PRO' : 'TEST';
+      return { id: account, account, phase, first: ts[0].date, last: ts[ts.length - 1].date, days: Object.keys(days).length, dayPnl: days, n: ts.length, pnl,
+        fees: Math.round(ts.reduce((s, t) => s + t.fee, 0) * 100) / 100, maxQ: Math.max(...ts.map((t) => t.q)),
+        outcome: phase === 'TEST' && pnl >= target ? 'bestanden' : 'verloren', trades: ts.map((t) => [t.date, t.time, t.sym, t.side, t.q, t.pnl, t.fee, t.dur]), _sig: new Set(ts.map(sig)) };
+    }).sort((a, b) => a.first.localeCompare(b.first) || a.account.localeCompare(b.account));
+    let g = 0; const done = new Set();
+    accs.forEach((a) => {
+      if (done.has(a.id)) return;
+      // Copy-Gruppe: an den gemeinsamen Handelstagen stimmt mindestens die Hälfte der Einstiege überein
+      const same = (b) => { const dA = new Set([...a._sig].map((x) => x.slice(0, 10))), common = [...b._sig].filter((x) => dA.has(x.slice(0, 10))), dB = new Set(common.map((x) => x.slice(0, 10)));
+        const sa = [...a._sig].filter((x) => dB.has(x.slice(0, 10))); if (!sa.length) return false;
+        return sa.filter((x) => b._sig.has(x)).length >= 0.5 * Math.max(sa.length, common.length); };
+      const mates = accs.filter((b) => b !== a && !done.has(b.id) && b.phase === a.phase && same(b));
+      done.add(a.id);
+      if (mates.length) { const base = `${a.phase === 'PRO' ? 'PRO' : 'Test'}-Gruppe ${a.first.slice(5).split('-').reverse().join('.')}`; const n = accs.filter((x) => x.group && x.group.startsWith(base)).length ? ' B' : '';
+        g++; [a, ...mates].forEach((x) => { x.group = base + n; done.add(x.id); }); }
+    });
+    accs.forEach((a) => { delete a._sig; });
+    return accs;
+  };
+
+  /** Kennzahlen aus Archiv-Konten für Coach, Agenten und Ansicht */
+  RS.archiveStats = (accs) => {
+    const list = accs || [];
+    const part = (phase) => {
+      const A = list.filter((a) => a.phase === phase), T = A.flatMap((a) => a.trades.map((t) => ({ acc: a.id, date: t[0], time: t[1], sym: t[2], side: t[3], q: t[4], pnl: t[5], fee: t[6], dur: t[7] })));
+      // Entscheidungen: Copy-Trades derselben Minute nur einmal (erstes Konto) zählen
+      const seen = new Map(); T.forEach((t) => { const k = `${t.date} ${t.time.slice(0, 5)}|${t.sym}|${t.side}`; const cur = seen.get(k); if (!cur) seen.set(k, { ...t, accs: new Set([t.acc]) }); else if (cur.acc === t.acc) cur.pnl += t.pnl; else cur.accs.add(t.acc); });
+      const D = [...seen.values()];
+      const win = (arr) => { const w = arr.filter((t) => t.pnl > 0), l = arr.filter((t) => t.pnl <= 0), gw = w.reduce((s, t) => s + t.pnl, 0), gl = -l.reduce((s, t) => s + t.pnl, 0);
+        return { n: arr.length, pnl: Math.round(arr.reduce((s, t) => s + t.pnl, 0)), winrate: arr.length ? w.length / arr.length : null, avgWin: w.length ? Math.round(gw / w.length) : null, avgLoss: l.length ? -Math.round(gl / l.length) : null, pf: gl ? Math.round((gw / gl) * 100) / 100 : null }; };
+      const byWindow = Object.fromEntries(RS.WINDOWS.map((w) => [w, win(D.filter((t) => RS.tradeWindow(t.time) === w))]));
+      const durs = T.map((t) => t.dur).sort((a, b) => a - b);
+      const days = A.flatMap((a) => Object.values(a.dayPnl));
+      return { accounts: A.length, passed: A.filter((a) => a.outcome === 'bestanden').length, trades: T.length, decisions: D.length, all: win(T), decisionsStats: win(D), byWindow,
+        avgQty: T.length ? Math.round((T.reduce((s, t) => s + t.q, 0) / T.length) * 10) / 10 : null, minisShare: T.length ? T.filter((t) => /^(NQ|ES|GC|YM|RTY|CL)$/.test(t.sym)).length / T.length : null,
+        medianHoldSec: durs.length ? durs[Math.floor(durs.length / 2)] : null, tradesPerDay: days.length ? Math.round((T.length / days.length) * 10) / 10 : null,
+        avgDay: days.length ? Math.round(days.reduce((s, x) => s + x, 0) / days.length) : null, worstDay: days.length ? Math.min(...days) : null, bestDay: days.length ? Math.max(...days) : null,
+        daysToEnd: A.map((a) => a.days).sort((a, b) => a - b), pnl: Math.round(A.reduce((s, a) => s + a.pnl, 0)) };
+    };
+    // Tage, an denen mehrere Konten nacheinander verloren gingen (nicht als Copy-Gruppe)
+    const lostByDay = {}; list.filter((a) => a.outcome === 'verloren').forEach((a) => { (lostByDay[a.last] || (lostByDay[a.last] = [])).push(a); });
+    const hopping = Object.entries(lostByDay).filter(([, A]) => new Set(A.map((a) => a.group || a.id)).size >= 3).map(([date, A]) => ({ date, accounts: A.length, pnl: Math.round(A.reduce((s, a) => s + a.pnl, 0)) }));
+    const groups = {}; list.filter((a) => a.group).forEach((a) => { const g = groups[a.group] || (groups[a.group] = { name: a.group, phase: a.phase, accounts: 0, passed: 0, pnl: 0, first: a.first, last: a.last }); g.accounts++; g.passed += a.outcome === 'bestanden' ? 1 : 0; g.pnl += a.pnl; if (a.last > g.last) g.last = a.last; });
+    return { test: part('TEST'), pro: part('PRO'), hopping, groups: Object.values(groups).map((g) => ({ ...g, pnl: Math.round(g.pnl) })), from: list.length ? list.map((a) => a.first).sort()[0] : null, to: list.length ? list.map((a) => a.last).sort().pop() : null };
+  };
+
   /* ---------- News-Sperre ---------- */
 
   /**

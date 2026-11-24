@@ -18,6 +18,8 @@ Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboa
 | `scripts/noscroll-check.js` | Prüft je Seite und Tab, dass am Desktop nichts scrollt (`W=1440 H=800 node scripts/noscroll-check.js`) |
 | `desktop/` | Mac-App (Electron-Fenster um die Live-App) |
 
+**Archiv und Interview:** Unter Coach → Archiv lässt sich ein Journal-Export (CSV mit `tradeAccount`, `entryDate`, `pnlDollars` …) importieren. Er landet in `archive_accounts`, getrennt von den Live-Trades. Strategix erkennt Test- und PRO-Konten, Copy-Gruppen und Verlusttage und wertet nach Uhrzeit aus. Coach, Agenten und die Interview-Session (Coach → Interview) nutzen das Archiv. Erkenntnisse aus Sessions stehen in `coach_sessions`.
+
 **Ohne Scrollen:** Am Desktop hat jede Seite eine feste Bildschirmhöhe. Längere Seiten teilen sich in Tabs (`<div class="tabpane" data-tab="…" data-tl="…">`), die `applyTabs()` als Tab-Leiste in den Seitenkopf setzt. Der zuletzt gewählte Tab pro Seite bleibt gespeichert. Lange Listen (Trades, Journal) sind in Seiten aufgeteilt.
 
 Daten liegen in der Datenbank des Artifacts. Außerhalb von claude.ai speichert die App in localStorage.
