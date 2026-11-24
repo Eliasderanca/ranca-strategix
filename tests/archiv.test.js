@@ -40,3 +40,27 @@ test('tradeWindow: Grenzen', () => {
   assert.equal(RS.tradeWindow('17:00'), 'Abend (ab 17)');
   assert.equal(RS.tradeWindow('07:59'), 'Asien (vor 08:00)');
 });
+
+test('archiveTrades: Teilausführungen zusammengefasst, Copy-Trades nur einmal', () => {
+  const acc = (id, trades) => ({ id, account: id, phase: 'TEST', first: trades[0][0], trades });
+  const A = [acc('A1', [['2026-02-02', '15:31:05', 'MNQ', 'Long', 10, -50, 1], ['2026-02-02', '15:31:05', 'MNQ', 'Long', 5, -25, 1], ['2026-02-02', '15:40:00', 'MNQ', 'Long', 10, 120, 1]]),
+    acc('A2', [['2026-02-02', '15:31:06', 'MNQ', 'Long', 15, -75, 2]])];
+  const T = RS.archiveTrades(A);
+  assert.equal(T.length, 2);
+  assert.deepEqual([T[0].pnl, T[0].contracts, T[0].account], [-75, 15, 'A1']);
+});
+
+test('realityCheck mit Archiv: Revenge, Größe nach Verlust in $, Payout-Druck aus Test vs. PRO', () => {
+  const tr = [];
+  for (let d = 1; d <= 8; d++) {
+    const date = `2026-03-${String(d).padStart(2, '0')}`;
+    tr.push({ date, time: '15:30', pnl: -100, contracts: 2 }, { date, time: '15:35', pnl: -150, contracts: 4 }, { date, time: '16:30', pnl: 120, contracts: 2 });
+  }
+  const pc = { test: { all: { pf: 1.2 }, avgQty: 5, medianHoldSec: 120, minisShare: 0, daysToEnd: [5] }, pro: { trades: 10, all: { pf: 0.5 }, avgQty: 8, medianHoldSec: 40, minisShare: 0.2, daysToEnd: [1, 1, 2] } };
+  const r = RS.realityCheck({ scores: { loss_tilt: 10, revenge: 10, payout: 10 }, levels: { loss_tilt: 'GREEN', revenge: 'GREEN', payout: 'GREEN' }, trades: tr, rOf: () => null, revengeMin: 15, phaseCompare: pc });
+  const by = Object.fromEntries(r.items.map((x) => [x.key, x]));
+  assert.equal(by.loss_tilt.facts.afterLossPnl, -15); assert.equal(by.loss_tilt.facts.sizeRatio, 1.5); // nach Verlust: −150 und +120, mit 4 und 2 Kontrakten assert.equal(by.loss_tilt.verdict, 'overrated');
+  assert.equal(by.revenge.facts.n, 8); assert.equal(by.revenge.verdict, 'overrated');
+  assert.equal(by.payout.facts.pfPro, 0.5); assert.equal(by.payout.verdict, 'overrated'); assert.equal(by.payout.facts.proDays, 1);
+  assert.equal(by.discipline, undefined); // keine Regel-Angaben im Archiv
+});

@@ -121,6 +121,7 @@ test('bibleUrl: Leerzeichen raus, Gedankenstrich zu Bindestrich, Link zu biblese
 });
 
 test('realityCheck: erst ab 20 Trades, dann Abweichungen erkennen', () => {
+  // Disziplin wird nur geprüft, wenn Trades Regel-Angaben (followed_plan / ruleBreaks) haben
   const rOf = (t) => t.result_r;
   const scores = { loss_tilt: 20, overconfidence: 30, discipline: 80 };
   const levels = { loss_tilt: 'GREEN', overconfidence: 'GREEN', discipline: 'RED' };
@@ -135,7 +136,7 @@ test('realityCheck: erst ab 20 Trades, dann Abweichungen erkennen', () => {
     tr.push({ date, time: '15:40', pnl: -100, result_r: -1, contracts: 2 });
     tr.push({ date, time: '15:50', pnl: 200, result_r: 2, contracts: 1 });
     tr.push({ date, time: '16:00', pnl: 200, result_r: 2, contracts: 1 });
-    tr.push({ date, time: '16:10', pnl: 50, result_r: 0.5, contracts: 1 });
+    tr.push({ date, time: '16:10', pnl: 50, result_r: 0.5, contracts: 1, followed_plan: true });
   }
   const r = RS.realityCheck({ scores, levels, trades: tr, rOf, winnersStop: true });
   assert.equal(r.ready, true);

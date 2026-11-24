@@ -181,7 +181,7 @@
 
   /* ---------- Phase 2: Risk-Engine ---------- */
   const num = (v) => { const n = Number(v); return Number.isFinite(n) ? n : 0; };
-  const byTime = (a, b) => (a.date + (a.time || '')).localeCompare(b.date + (b.time || ''));
+  const byTime = (a, b) => (a.date + (a.sec || a.time || '')).localeCompare(b.date + (b.sec || b.time || ''));
 
   /** Gehört ein Trade zu einem Konto? (alt: accountId, neu: account_ids als Liste) */
   RS.tradeHasAccount = (t, id) => t.accountId === id || (Array.isArray(t.account_ids) && t.account_ids.includes(id));
@@ -537,9 +537,30 @@
       const ca = avgC(after), co = avgC(other);
       const sizeUp = ca != null && co != null && co > 0 ? ca / co : null;
       const rDiff = al.afterLoss.avgR != null && al.others.avgR != null ? al.afterLoss.avgR - al.others.avgR : null;
-      const bad = (rDiff != null && rDiff <= -0.3) || (sizeUp != null && sizeUp >= 1.2);
+      // Ohne R-Werte (z. B. Archiv ohne Stopweite): Vergleich in $
+      const avgP = (a) => (a.length ? Math.round(a.reduce((s, t) => s + num(t.pnl), 0) / a.length) : null);
+      const pa = avgP(after), po = avgP(other);
+      const pnlBad = rDiff == null && pa != null && po != null && pa < 0 && pa < po;
+      const bad = (rDiff != null && rDiff <= -0.3) || pnlBad || (sizeUp != null && sizeUp >= 1.2);
       items.push({ key: 'loss_tilt', score: o.scores.loss_tilt, level: o.levels.loss_tilt, bad, verdict: verdict(o.levels.loss_tilt, bad),
-        facts: { afterLossR: al.afterLoss.avgR, othersR: al.others.avgR, afterLossN: al.afterLoss.n, sizeRatio: sizeUp != null ? Math.round(sizeUp * 100) / 100 : null } });
+        facts: { afterLossR: al.afterLoss.avgR, othersR: al.others.avgR, afterLossN: after.length, afterLossPnl: pa, othersPnl: po, sizeRatio: sizeUp != null ? Math.round(sizeUp * 100) / 100 : null } });
+    }
+    // Revenge: neuer Trade kurz nach einem Verlusttrade (gleicher Tag)
+    if (o.scores.revenge != null) {
+      const win = num(o.revengeMin) || 15, mins = (t) => { const [h, m] = String(t.time || '00:00').split(':').map(Number); return h * 60 + m; };
+      const quick = [], rest = [];
+      for (const [, day] of groupBy(trades, (t) => t.date)) day.forEach((t, i) => { if (i === 0) return; const prev = day[i - 1]; (num(prev.pnl) < 0 && mins(t) - mins(prev) <= win ? quick : rest).push(t); });
+      const avgP = (a) => (a.length ? Math.round(a.reduce((s, t) => s + num(t.pnl), 0) / a.length) : null);
+      const share = trades.length ? quick.length / trades.length : 0, qa = avgP(quick);
+      const bad = share >= 0.15 && qa != null && qa < 0;
+      items.push({ key: 'revenge', score: o.scores.revenge, level: o.levels.revenge, bad, verdict: verdict(o.levels.revenge, bad), facts: { n: quick.length, share: Math.round(share * 100) / 100, avgPnl: qa, restPnl: avgP(rest), minutes: win } });
+    }
+    // Payout-Druck: Verhalten im Funded-Konto gegenüber der Evaluation (aus dem Archiv)
+    if (o.scores.payout != null && o.phaseCompare && o.phaseCompare.pro && o.phaseCompare.pro.trades) {
+      const T = o.phaseCompare.test, P = o.phaseCompare.pro;
+      const bad = (P.all.pf != null && T.all.pf != null && P.all.pf < T.all.pf * 0.75) || (P.avgQty != null && T.avgQty != null && P.avgQty > T.avgQty * 1.1);
+      items.push({ key: 'payout', score: o.scores.payout, level: o.levels.payout, bad, verdict: verdict(o.levels.payout, bad),
+        facts: { pfTest: T.all.pf, pfPro: P.all.pf, qtyTest: T.avgQty, qtyPro: P.avgQty, holdTest: T.medianHoldSec, holdPro: P.medianHoldSec, minisTest: T.minisShare, minisPro: P.minisShare, proDays: P.daysToEnd[Math.floor(P.daysToEnd.length / 2)] || null } });
     }
     // Overconfidence: Trades nach Erreichen des Tagesziels (oder nach 2 Gewinnern)
     if (o.scores.overconfidence != null) {
@@ -553,8 +574,8 @@
       const bad = afterTarget >= 2;
       items.push({ key: 'overconfidence', score: o.scores.overconfidence, level: o.levels.overconfidence, bad, verdict: verdict(o.levels.overconfidence, bad), facts: { tradesAfterTarget: afterTarget, daysReached } });
     }
-    // Disziplin: Regelbrüche pro Woche
-    if (o.scores.discipline != null) {
+    // Disziplin: Regelbrüche pro Woche (nur wenn die Trades Regel-Angaben haben, sonst wäre 0 irreführend)
+    if (o.scores.discipline != null && trades.some((t) => t.followed_plan != null || (t.ruleBreaks || []).length || t.rule_breaks != null)) {
       const weeks = groupBy(trades, (t) => RS.isoWeek(t.date));
       const total = trades.reduce((s, t) => s + RS.ruleBreakCount(t), 0);
       const perWeek = weeks.size ? Math.round((total / weeks.size) * 10) / 10 : 0;
@@ -562,6 +583,23 @@
       items.push({ key: 'discipline', score: o.scores.discipline, level: o.levels.discipline, bad, verdict: verdict(o.levels.discipline, bad), facts: { breaksPerWeek: perWeek, weeks: weeks.size } });
     }
     return { ready: true, need: 0, items };
+  };
+
+  /**
+   * Archiv-Trades für Auswertungen wie den Realitätscheck: Copy-Trades derselben Minute nur einmal (erstes Konto),
+   * Teilausführungen dieses Kontos bleiben erhalten. Rückgabe im Trade-Format der App.
+   */
+  RS.archiveTrades = (accs, phase) => {
+    const owner = new Map(), merged = new Map();
+    (accs || []).filter((a) => !phase || a.phase === phase).slice().sort((a, b) => a.first.localeCompare(b.first) || a.account.localeCompare(b.account)).forEach((a) => a.trades.forEach((t) => {
+      const k = `${t[0]} ${String(t[1]).slice(0, 5)}|${t[2]}|${t[3]}`;
+      if (owner.has(k) && owner.get(k) !== a.id) return; owner.set(k, a.id); // Copy-Trade eines anderen Kontos
+      const f = `${a.id}|${t[0]} ${t[1]}|${t[2]}|${t[3]}`; // Teilausführungen derselben Sekunde = ein Trade
+      const m = merged.get(f);
+      if (m) { m.pnl = Math.round((m.pnl + num(t[5])) * 100) / 100; m.contracts += num(t[4]); m.fees += num(t[6]); return; }
+      merged.set(f, { date: t[0], time: String(t[1]).slice(0, 5), sec: String(t[1]), symbol: t[2], side: t[3], contracts: num(t[4]), pnl: num(t[5]), fees: num(t[6]), account: a.account, phase: a.phase, archive: true });
+    }));
+    return [...merged.values()].sort((x, y) => (x.date + x.sec).localeCompare(y.date + y.sec));
   };
 
   /* ---------- Phase 4: Mindset ---------- */
