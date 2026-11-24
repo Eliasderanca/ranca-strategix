@@ -726,5 +726,135 @@
         "hint": "vor der Verlängerung"
       }
     ]
+  },
+  "benchmarks": {
+    "stand": "2026-11-24",
+    "hinweis": "Firmenangaben sind selbst veröffentlicht und nicht geprüft. Profit-Factor-Werte sind Faustregeln aus der Trading-Praxis, kein offizieller Standard.",
+    "items": [
+      {
+        "key": "eval_pass_rate",
+        "label": "Eval-Pass-Rate (pro Versuch)",
+        "fmt": "pct",
+        "avg": 0.1,
+        "good": 0.17,
+        "ref": "Branche ca. 10 % (5–15 %). Topstep 2025: 16,8 %, Tradeify: 17,2 %, MyFundedFutures: 20 %",
+        "sources": [
+          [
+            "Prop Firm Pass Rates 2026",
+            "https://thepropjournalist.com/analysis/prop-firm-pass-rates/"
+          ],
+          [
+            "Topstep 2025",
+            "https://tradecovex.com/guides/how-many-combines-passed-express-topstep-2025"
+          ],
+          [
+            "Tradeify 2026",
+            "https://tradeify.co/post/futures-prop-firm-statistics-2026"
+          ]
+        ]
+      },
+      {
+        "key": "tpt_pass_rate",
+        "label": "Pass-Rate bei TakeProfitTrader",
+        "fmt": "pct",
+        "avg": 0.3622,
+        "good": 0.45,
+        "ref": "TakeProfitTrader 2025: 36,2 % aller Tests bestanden (Firmenangabe, 2024: 16,9 %)",
+        "sources": [
+          [
+            "TPT-Review mit Pass-Rate",
+            "https://www.alphaexcapital.com/prop-trading/take-profit-trader-review"
+          ]
+        ]
+      },
+      {
+        "key": "payout_rate_funded",
+        "label": "Payout-Quote der Funded-Konten",
+        "fmt": "pct",
+        "avg": 0.333,
+        "good": 0.392,
+        "ref": "Topstep 2025: 33,3 % der Funded-Trader mit Payout, MyFundedFutures: 39,2 %",
+        "sources": [
+          [
+            "Topstep-Statistik 2025",
+            "https://tradecovex.com/guides/how-many-combines-passed-express-topstep-2025"
+          ],
+          [
+            "Prop Firm Statistics 2026",
+            "https://www.propfirmbacktester.com/prop-firm-statistics"
+          ]
+        ]
+      },
+      {
+        "key": "cost_per_pass",
+        "label": "Kosten je bestandener Eval",
+        "fmt": "eur",
+        "lower": true,
+        "derive": "avg_eval_cost_over_pass_rate",
+        "ref": "Ø Eval-Preis geteilt durch die Branchen-Pass-Rate (10 % Durchschnitt, 17 % gut)"
+      },
+      {
+        "key": "pf_test",
+        "label": "Profit Factor im Test",
+        "fmt": "num",
+        "avg": 1.0,
+        "good": 1.5,
+        "ref": "Faustregel Daytrading: ab 1,0 profitabel, 1,5–2,0 gut",
+        "sources": [
+          [
+            "NexusFi: Performance-Kennzahlen",
+            "https://nexusfi.com/a/risk-management/trading-performance-metrics"
+          ],
+          [
+            "TradeZella: Profit Factor",
+            "https://www.tradezella.com/blog/profit-factor"
+          ]
+        ]
+      },
+      {
+        "key": "pf_pro",
+        "label": "Profit Factor im PRO",
+        "fmt": "num",
+        "avg": 1.0,
+        "good": 1.5,
+        "ref": "Faustregel Daytrading: ab 1,0 profitabel, 1,5–2,0 gut"
+      },
+      {
+        "key": "pf_usopen",
+        "label": "Profit Factor im US-Open (Test)",
+        "fmt": "num",
+        "avg": 1.0,
+        "good": 1.5,
+        "ref": "Faustregel Daytrading: ab 1,0 profitabel, 1,5–2,0 gut"
+      },
+      {
+        "key": "winrate_test",
+        "label": "Trefferquote im Test",
+        "fmt": "pct",
+        "derive": "breakeven_winrate",
+        "ref": "Break-even-Trefferquote aus deinem Ø Gewinn und Ø Verlust: Ø Verlust ÷ (Ø Gewinn + Ø Verlust)"
+      },
+      {
+        "key": "pro_days",
+        "label": "PRO-Konto hält (Median Tage, eigenes Ziel)",
+        "fmt": "days",
+        "avg": 5,
+        "good": 10,
+        "ref": "Eigene Zielmarke, kein Branchenwert: Ein PRO-Konto sollte mindestens bis zum ersten Payout halten (EOD-Plan: ab Tag 1, realistisch 5–10 Tage)"
+      }
+    ],
+    "kontext": {
+      "text": "Studien zu Daytradern: In Brasilien verdienten nur 1,1 % von 1.551 Daytradern mehr als den Mindestlohn, in Taiwan waren 19 % der Futures-Trader profitabel.",
+      "sources": [
+        [
+          "Bloomberg: Day Traders in Brazil",
+          "https://www.bloomberg.com/news/articles/2020-08-15/day-traders-in-brazil-study-would-ve-done-better-with-9-to-5-job"
+        ],
+        [
+          "Quantpedia: Retail Day Trading",
+          "https://quantpedia.com/retail-day-trading-is-an-uphill-battle/"
+        ]
+      ]
+    }
   }
 }

@@ -752,6 +752,23 @@
   };
 
   /**
+   * Eigene Werte gegen Branchen-Benchmarks einordnen. mine: { key: Wert }, ctx: { avgEvalCost, avgWin, avgLoss }.
+   * Ergebnis je Benchmark: { key, label, value, avg, good, level: 'stark'|'solide'|'aufholen'|null }.
+   */
+  RS.rateBenchmarks = (cfg, mine, ctx = {}) => (cfg && cfg.items || []).map((b) => {
+    let avg = b.avg, good = b.good;
+    if (b.derive === 'avg_eval_cost_over_pass_rate' && ctx.avgEvalCost) { avg = Math.round(ctx.avgEvalCost / 0.10); good = Math.round(ctx.avgEvalCost / 0.17); }
+    if (b.derive === 'breakeven_winrate' && ctx.avgWin && ctx.avgLoss) { avg = Math.abs(ctx.avgLoss) / (ctx.avgWin + Math.abs(ctx.avgLoss)); good = avg + 0.05; }
+    const v = mine[b.key];
+    let level = null;
+    if (v != null && avg != null) {
+      if (b.lower) level = v <= (good != null ? good : avg) ? 'stark' : v <= avg ? 'solide' : 'aufholen';
+      else level = good != null && v >= good ? 'stark' : v >= avg ? 'solide' : 'aufholen';
+    }
+    return { key: b.key, label: b.label, fmt: b.fmt, value: v == null ? null : v, avg, good, level, ref: b.ref, sources: b.sources || [] };
+  });
+
+  /**
    * Budget-Übersicht. Kosten in €, Payouts der Konten in $ (brutto, vor Split).
    * o: { costs: [{date,total_spend}], payoutsUsd: [{date,amount}], budgetEur, fxUsdPerEur, split, from, to }
    */

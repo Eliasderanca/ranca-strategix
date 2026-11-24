@@ -126,3 +126,15 @@ test('parseCostCsv: Übersichtszeilen oben, „-   €“ und leere Zeilen; cost
   const k2 = RS.costKpis([...r.rows, { account: 'TPT Reset (Credits)', firm: 'TPT', date: '2026-10-19', eval_fee: 0, total_spend: 0, payout: 0, eval_status: 'Passed', credits: true }]);
   assert.deepEqual([k2.evals, k2.passed, k2.spend], [4, 2, 802.52]);
 });
+
+test('rateBenchmarks: Stärke, Schnitt, Aufholen; niedriger-ist-besser und abgeleitete Werte', () => {
+  const cfg = require('../config/seed.json').benchmarks;
+  const r = Object.fromEntries(RS.rateBenchmarks(cfg, { eval_pass_rate: 0.25, tpt_pass_rate: 0.4, payout_rate_funded: 0.15, cost_per_pass: 334, pf_test: 0.92, pf_usopen: 4.02, winrate_test: 0.397 }, { avgEvalCost: 72, avgWin: 264, avgLoss: -189 }).map((x) => [x.key, x]));
+  assert.equal(r.eval_pass_rate.level, 'stark');
+  assert.equal(r.tpt_pass_rate.level, 'solide');
+  assert.equal(r.payout_rate_funded.level, 'aufholen');
+  assert.equal(r.cost_per_pass.avg, 720); assert.equal(r.cost_per_pass.level, 'stark');
+  assert.equal(r.pf_test.level, 'aufholen'); assert.equal(r.pf_usopen.level, 'stark');
+  assert.ok(Math.abs(r.winrate_test.avg - 189 / 453) < 1e-9); assert.equal(r.winrate_test.level, 'aufholen');
+  assert.equal(r.pf_pro.level, null); // kein eigener Wert -> keine Einordnung
+});
