@@ -4,6 +4,7 @@ Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboa
 
 - **Live-App:** https://claude.ai/artifact/S7DArUyTrmaRwN8Urm3uwv (claude.ai-Artifact)
 - **Spezifikation Dezember:** [docs/dezember-spec.md](docs/dezember-spec.md)
+- **TakeProfitTrader 25K EOD (Dezember-Konto):** Regelsatz `tpt-eod-25k` in `config/seed.json`, Recherche in [reports/TakeProfitTrader 25K EOD Regeln.md](reports/TakeProfitTrader%2025K%20EOD%20Regeln.md). Neue Regelsätze aus `seed.json` erscheinen automatisch, auch wenn die Datenbank schon Regelsätze hat. Ein Regelsatz kann eigenes Risiko mitbringen (`personal_overrides`).
 
 ## Aufbau
 

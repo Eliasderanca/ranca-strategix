@@ -23,7 +23,7 @@ const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
   console.log('Prompt beginnt mit:', (await p.evaluate(() => coachPrompt())).slice(0, 70));
   await p.evaluate(() => (location.hash = 'cockpit')); await p.waitForTimeout(200);
   console.log('Abo-Erinnerung sichtbar:', await p.isVisible('.alert.stop'));
-  await p.click('[data-act=cp-add]'); await p.fill('#f_account', 'FTMO Pro 50K #1'); await p.fill('#f_eval_fee', '129'); await p.click('#mForm button[type=submit]'); await p.waitForTimeout(200);
+  await p.click('[data-act=cp-add]'); await p.fill('#f_account', 'FTMO Pro 50K #1'); await p.fill('#f_eval_fee', '129'); await p.click('#mForm button[type=submit]'); await p.waitForTimeout(500);
   await p.click('[data-act=cp-import]'); await p.waitForTimeout(100);
   await p.fill('#cpCsv', 'Account;Firm;Date;Eval Fee;Reset;Eval Status;Activation Fee;Total Spend;Payout;Net;Status;Notes\nApex 50K #1;Apex;03.07.2026;35,00 €;;Bestanden;85,00 €;120,00 €;1.250,00 €;1.130,00 €;Ausgezahlt;Juli\nTPT 50K;TPT;15.08.2026;150,00 €;99,00 €;Nicht bestanden;;;;;Verloren;\nKaputt;X;irgendwann;1;;;;;;;;');
   await p.waitForTimeout(100); console.log('Import-Vorschau:', (await p.textContent('#cpPrev')).replace(/\s+/g, ' ').trim());

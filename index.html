@@ -579,10 +579,13 @@ const S={trades:[],playbooks:[],accounts:[],journal:[],settings:[],briefings:[],
 /* Konfiguration: Datenbank zuerst, sonst Startwerte aus config/seed.json */
 let SEED={account_rules:[],personal_rules:null};
 fetch('config/seed.json').then(r=>r.ok?r.json():null).then(j=>{if(j){SEED=j;scheduleRender()}}).catch(()=>{});
-const RULES=()=>S.account_rules.length?S.account_rules:SEED.account_rules;
+/* Regelsätze: Datenbank zuerst, neue Startwerte aus seed.json (z. B. TakeProfitTrader 25K EOD) kommen automatisch dazu */
+const RULES=()=>{const db=S.account_rules;return [...db,...(SEED.account_rules||[]).filter(r=>!db.some(x=>x.id===r.id))]};
 const RULE=id=>id?RULES().find(r=>r.id===id):null;
 const PR=()=>({...(SEED.personal_rules||{}),...(S.personal_rules.find(x=>x.id==='main')||{})});
 const EA=a=>a&&a.rule_id?RS.effectiveAccount(a,RULE(a.rule_id)):a;
+/* Eigene Regeln je Konto: persönliche Regeln, überschrieben vom eigenen Risiko des Regelsatzes (z. B. kleineres Risiko beim 25K) */
+const PRU=acc=>({...PR(),...((acc&&RULE(acc.rule_id)?.personal_overrides)||{})});
 const JC=()=>({...(SEED.journal_config||{}),...(S.app_config.find(x=>x.id==='journal')||{})});
 const isNegEmo=e=>!!e&&(NEG_EMO.includes(e)||(JC().negative_emotions||[]).includes(e));
 const INSTR=()=>S.instruments.length?S.instruments:(SEED.instruments||[]);
@@ -594,7 +597,7 @@ function UNITS(){const act=S.accounts.map(EA).filter(RS.isActive);const g=RS.gro
   return u}
 const unitTradesOf=u=>u.ids.length?RS.unitTrades(S.trades,u.ids):S.trades.filter(t=>!t.accountId&&!(t.account_ids||[]).length);
 const TILT=u=>RS.tiltFor(S.tilt_checks,TODAY(),u.ids);
-function ENGINE(){const d=TODAY(),now=new Date();const units=UNITS().map(u=>({...u,r:RS.riskEngine({date:d,trades:unitTradesOf(u),pr:PR(),account:u.account,tilt:TILT(u),now})}));
+function ENGINE(){const d=TODAY(),now=new Date();const units=UNITS().map(u=>({...u,r:RS.riskEngine({date:d,trades:unitTradesOf(u),pr:PRU(u.account),account:u.account,tilt:TILT(u),now})}));
   const status=RS.worstStatus(units.map(u=>u.r));return {units,status,red:units.filter(u=>u.r.status==='RED')}}
 const CI=d=>S.checkins.find(x=>x.id===d);
 const DP=d=>S.dayplans.find(x=>x.id===d);
@@ -676,10 +679,11 @@ function acctM(a){a=EA(a);
   const todayP=days[today]?.pnl||0,dailyLeft=a.maxDailyLoss?a.maxDailyLoss+Math.min(0,todayP):null;
   const best=dates.length?Math.max(...dates.map(d=>days[d].pnl)):0;
   const cons=profit>0?best/profit:null,consOk=!a.consistencyPct||cons==null||cons*100<=a.consistencyPct;
-  const m={...m0,trs,days,dates,profit,ddUsed,ddLeft,todayP,dailyLeft,tradingDays:dates.length,best,cons,consOk,progress:a.profitTarget?profit/a.profitTarget:null};
+  const tgt=a.profitTarget?RS.effectiveTarget(a.profitTarget,best,a.consistencyPct,a.consistencyMode):null;
+  const m={...m0,trs,days,dates,profit,ddUsed,ddLeft,todayP,dailyLeft,tradingDays:dates.length,best,cons,consOk,target:tgt,targetRaised:tgt!=null&&tgt>a.profitTarget,progress:tgt?profit/tgt:null};
   const startFrom=days[today]?addDays(today,1):today;
   if(a.phase!=='funded'){
-    const remaining=Math.max(0,(a.profitTarget||0)-profit),minLeft=Math.max(0,(a.minDays||0)-dates.length);
+    const remaining=Math.max(0,(tgt||0)-profit),minLeft=Math.max(0,(a.minDays||0)-dates.length);
     const daily=num(a.dailyTarget)||(()=>{const pos=dates.map(d=>days[d].pnl);return pos.length?Math.max(0,pos.reduce((x,y)=>x+y,0)/pos.length):0})();
     let need=Math.max(minLeft,remaining>0?(daily>0?Math.ceil(remaining/daily):NaN):0);
     m.remaining=remaining;m.dailyUsed=daily;
@@ -697,6 +701,11 @@ function acctM(a){a=EA(a);
     if(date&&a.processingDays)date=addDays(date,a.processingDays);
     m.payoutDate=a.payoutOverride||date;m.qualDays=q;m.needQ=needQ;m.profitSince=profitSince;
     m.payoutAmt=Math.max(0,profitSince-num(a.payoutBuffer))*(num(a.payoutShare)||100)/100*(num(a.profitSplit)||100)/100;
+    if(a.payoutBufferUsd!=null&&!a.plus){/* Puffer-Modell (TakeProfitTrader): täglich auszahlbar, was über Start + Puffer liegt */
+      const paid=(a.payouts||[]).reduce((x,p)=>x+num(p.amount),0),w=RS.withdrawable(profit,paid,a.payoutBufferUsd);m.withdrawable=w;m.qualDays=null;
+      m.payoutAmt=w*(num(a.profitSplit)||100)/100;
+      if(w>0)m.payoutDate=a.payoutOverride||today;else{const missing=a.payoutBufferUsd-(profit-paid)+1,daily=num(a.dailyTarget)||(()=>{const pos=dates.map(d=>days[d].pnl);return pos.length?Math.max(0,pos.reduce((x,y)=>x+y,0)/pos.length):0})();
+        m.payoutDate=a.payoutOverride||(daily>0?futureDays(a,startFrom,Math.ceil(missing/daily)):null);m.bufferMissing=missing}}
     if(a.maxPayout)m.payoutAmt=Math.min(m.payoutAmt,num(a.maxPayout));
   }
   return m;
@@ -893,7 +902,8 @@ function riskBar(inModal){const E=ENGINE();const u=E.units.slice().sort((a,b)=>(
   return `<a href="#risiko" class="riskbar" style="background:${S0.bg}" ${inModal?'data-act="close"':''}><span class="rb-dot" style="background:${S0.c}"></span><b style="color:${S0.c}">${S0.t}</b>
    <span class="rb-item"><span class="muted">Risiko/Trade</span> <b class="mono">${money(r.riskPerTrade,0)}</b></span>
    <span class="rb-item"><span class="muted">bis Stop</span> <b class="mono">${money(r.remainingToStop,0)}</b></span>
-   ${r.firmRemaining!=null?`<span class="rb-item"><span class="muted">bis FTMO-Limit</span> <b class="mono">${money(r.firmRemaining,0)}</b></span>`:''}
+   ${r.firmRemaining!=null?`<span class="rb-item"><span class="muted">bis ${esc(r.firmName)}-Limit</span> <b class="mono">${money(r.firmRemaining,0)}</b></span>`:''}
+   ${r.ddRemaining!=null?`<span class="rb-item"><span class="muted">bis Drawdown</span> <b class="mono">${money(r.ddRemaining,0)}</b></span>`:''}
    <span class="rb-item"><span class="muted">Trades übrig</span> <b class="mono">${r.tradesLeft}${r.maxTrades?' / '+r.maxTrades:''}</b></span>
    ${(()=>{const n=NEWS();return n.active?`<span class="chip loss">News-Sperre bis ${n.active.end}</span>`:n.blocks.filter(b=>b.end>=RS.berlinTime()).slice(0,1).map(b=>`<span class="rb-item muted small">News ${b.time} · ${esc(b.title)}</span>`).join('')})()}
    ${E.units.length>1?`<span class="rb-item muted small">${esc(u.name)}</span>`:''}${hidePnlNow()?'<span class="rb-item muted small">PnL ausgeblendet bis '+esc(PR().sessionEnd||'')+'</span>':''}</a>`}
@@ -905,9 +915,9 @@ function vRisk(){const E=ENGINE(),S0=ST[E.status];
      <div><div class="lbl">Erlaubtes Risiko pro Trade</div><div class="mono" style="font-size:26px;font-weight:700">${money(r.riskPerTrade,0)}</div><div class="small muted">${RISK_PHASE[r.riskPhase]}${r.halfSize?' · halbe Größe':''}${r.riskPerTrade<r.baseRisk&&!r.halfSize&&r.status!=='RED'?' · begrenzt durch Tages-Stop':''}</div></div>
      <div><div class="lbl">P&amp;L heute</div><div class="mono pnlv ${cls(r.dayPnl)}" style="font-size:26px;font-weight:700">${money(r.dayPnl,0)}</div><div class="small muted">${r.wins} Gewinner · ${r.losses} Verlierer</div></div>
      <div><div class="lbl">Bis zu deinem Tages-Stop</div><div class="mono" style="font-size:20px;font-weight:700">${money(r.remainingToStop,0)}</div><div class="bar ${r.remainingToStop<r.dailyStop*.5?'warn':'win'}" style="margin-top:6px"><i style="width:${r.dailyStop?clamp(r.remainingToStop/r.dailyStop*100):0}%"></i></div><div class="small muted">Stop −${money(r.dailyStop,0).replace('$','$')}</div></div>
-     <div><div class="lbl">Bis zum harten FTMO-Limit</div><div class="mono" style="font-size:20px;font-weight:700">${r.firmRemaining!=null?money(r.firmRemaining,0):'–'}</div>${r.firmLimit?`<div class="bar ${r.firmRemaining<r.firmLimit*.5?'loss':'win'}" style="margin-top:6px"><i style="width:${clamp(r.firmRemaining/r.firmLimit*100)}%"></i></div><div class="small muted">Limit −${money(r.firmLimit,0)}</div>`:'<div class="small muted">kein Firmenkonto</div>'}</div>
+     <div><div class="lbl">Bis zum ${esc(r.firmName)}-Tageslimit${r.ddRemaining!=null?' · Drawdown '+money(r.ddRemaining,0):''}</div><div class="mono" style="font-size:20px;font-weight:700">${r.firmRemaining!=null?money(r.firmRemaining,0):'–'}</div>${r.firmLimit?`<div class="bar ${r.firmRemaining<r.firmLimit*.5?'loss':'win'}" style="margin-top:6px"><i style="width:${clamp(r.firmRemaining/r.firmLimit*100)}%"></i></div><div class="small muted">Limit −${money(r.firmLimit,0)}</div>`:'<div class="small muted">kein Firmenkonto</div>'}</div>
      <div><div class="lbl">Trades übrig</div><div class="mono" style="font-size:20px;font-weight:700">${r.tradesLeft}${r.maxTrades?' von '+r.maxTrades:''}</div><div class="small muted">${r.tradesTaken} heute genommen</div></div>
-     <div><div class="lbl">Kontogewinn zu Tagesbeginn</div><div class="mono ${cls(r.profitAtOpen)}" style="font-size:20px;font-weight:700">${money(r.profitAtOpen,0)}</div><div class="small muted">Phase 2 ab ${money(PR().phase2_from_profit||0,0)}</div></div>
+     <div><div class="lbl">Kontogewinn zu Tagesbeginn</div><div class="mono ${cls(r.profitAtOpen)}" style="font-size:20px;font-weight:700">${money(r.profitAtOpen,0)}</div><div class="small muted">Phase 2 ab ${money(PRU(u.account).phase2_from_profit||0,0)}${u.account&&RULE(u.account.rule_id)?.personal_overrides?' · eigenes Risiko für '+esc(RULE(u.account.rule_id).name):''}</div></div>
     </div>
     ${r.reasons.length||r.notices.length?`<div class="stack" style="margin-top:14px">${r.reasons.map(x=>`<div class="alert ${r.status==='RED'?'stop':'warn'}"><span class="sq" style="background:${c.c}"></span><div>${esc(x)}</div></div>`).join('')}${r.notices.map(x=>`<div class="alert ${x.level==='warn'?'warn':''}"><span class="sq" style="background:var(--info)"></span><div>${esc(x.text)}</div></div>`).join('')}</div>`:''}</div>`};
   const ins=INSTR(),ui=UI.calc||(UI.calc={unit:E.units[0]?.key,instr:(()=>{try{return localStorage.getItem('rs-instr')}catch(e){return null}})()||ins[0]?.id,stop:''});
@@ -1181,7 +1191,7 @@ function acctCard(a,m){a=EA(a);
    <div class="row" style="justify-content:space-between"><div><div class="row"><h2 style="margin:0">${esc(a.name)}</h2>${a.stage?'':`<span class="chip ${fund?'win':'info'}">${fund?'Funded':'Challenge'}</span>`}<span class="chip ${a.stage==='FUNDED'?'win':a.stage==='EVAL'?'info':stChip}">${esc(stLabel)}</span>${a.demo?'<span class="chip">Demo</span>':''}${a.copy_group?`<span class="chip info">Copy: ${esc(a.copy_group)}</span>`:''}</div><div class="small muted">${a.ruleName?esc(a.ruleName)+' · ':''}${esc(a.firm||'')} · ${money(a.size||0,0)} · Start ${a.startDate?dLabel(a.startDate):'–'}${a.endDate?' · Frist '+dLabel(a.endDate):''}</div></div>
    <div class="row"><button class="btn sm" data-act="edit-acct" data-id="${a.id}">Regeln</button>${fund?`<button class="btn sm" data-act="payout" data-id="${a.id}">Payout erfassen</button>`:''}</div></div>
    <div class="stack" style="margin-top:12px">
-    ${!fund&&a.profitTarget?`<div class="meter-row"><span>Profitziel</span><span class="mono pnlv"><b class="${cls(m.profit)}">${money(m.profit,0)}</b> / ${money(a.profitTarget,0)}</span><div class="bar win"><i style="width:${clamp((m.progress||0)*100)}%"></i></div></div>`:''}
+    ${!fund&&a.profitTarget?`<div class="meter-row"><span>Profitziel${m.targetRaised?' <span class="chip warn">erhöht wegen Konsistenz</span>':''}</span><span class="mono pnlv"><b class="${cls(m.profit)}">${money(m.profit,0)}</b> / ${money(m.target,0)}</span><div class="bar win"><i style="width:${clamp((m.progress||0)*100)}%"></i></div></div>`:''}
     ${fund?`<div class="meter-row"><span>Gewinn seit letztem Payout</span><span class="mono pnlv ${cls(m.profitSince)}"><b>${money(m.profitSince,0)}</b></span></div>`:''}
     ${a.maxDrawdown?`<div class="meter-row"><span>Drawdown (${{static:'statisch','trailing-eod':'Trailing EOD','trailing-intraday':'Trailing intraday'}[a.ddType]||'trailing'})</span><span class="mono">${money(m.ddUsed,0)} genutzt · <b>${money(m.ddLeft,0)}</b> frei</span><div class="bar ${ddP>70?'loss':ddP>45?'warn':''}"><i style="width:${ddP}%"></i></div></div>`:''}
     ${a.maxDailyLoss?`<div class="meter-row"><span>Tagesverlust heute${a.dllSoft?' (soft)':''}</span><span class="mono">${money(m.todayP,0)} · <b>${money(m.dailyLeft,0)}</b> frei</span><div class="bar ${dlP>70?'loss':dlP>40?'warn':''}"><i style="width:${dlP}%"></i></div></div>`:''}
@@ -1192,6 +1202,7 @@ function acctCard(a,m){a=EA(a);
     ${a.maxContracts?`<span class="chip">Max. ${a.maxContracts} Kontrakte</span>`:''}
     ${(()=>{const r=RULE(a.rule_id);if(!r||a.stage!=='FUNDED')return '';const sc=RS.scalingFor(r,m.profit);return sc?`<span class="chip gold">Scaling: ${sc.minis} Minis / ${sc.micros} Micros</span>`:''})()}
     ${a.monthlyFee?`<span class="chip">Abo ${money(a.monthlyFee,0)}/Monat${a.renewal_date?' · Verlängerung '+dLabel(a.renewal_date):''}</span>`:''}
+    ${fund&&a.payoutBufferUsd!=null&&!a.plus?`<span class="chip ${m.withdrawable>0?'win':''}">Auszahlbar ab ${money((a.startBalance||a.size||0)+a.payoutBufferUsd,0)} Kontostand${m.withdrawable>0?' · jetzt '+money(m.withdrawable,0):' · fehlen '+money(m.bufferMissing||0,0)}</span>`:''}
     ${fund&&a.payoutMinDays?`<span class="chip">Qual. Tage ${m.qualDays} / ${a.payoutMinDays}${a.minDayProfit?' (≥ '+money(a.minDayProfit,0)+')':''}</span>`:''}
     ${fund&&a.profitSplit?`<span class="chip">Split ${a.profitSplit}%</span>`:''}
    </div>
@@ -1335,20 +1346,37 @@ const RULE_FIELDS=[
  {k:'drawdown_type',l:'Drawdown-Art',t:'select',o:[['EOD_TRAILING','Trailing am Tagesschluss (EOD)'],['INTRADAY_TRAILING','Trailing intraday'],['STATIC','Statisch']]},
  {k:'drawdown_lock',l:'Drawdown lockt bei',t:'select',o:[['start_balance','Startkapital'],['','nie']]},
  {k:'daily_loss_limit',l:'Tagesverlust-Limit ($)',t:'number'},
- {k:'daily_loss_type',l:'Tagesverlust-Art',t:'select',o:[['HARD','Hart: Konto verloren'],['SOFT','Weich: nur der Tag endet']]},
+ {k:'daily_loss_type',l:'Tagesverlust-Art',t:'select',o:[['HARD','Hart: Konto verloren'],['SOFT','Weich: nur der Tag endet'],['SOFT_ABOVE_START','Weich über Startkapital, darunter hart (TakeProfitTrader)']]},
  {k:'eval_consistency_max_pct',l:'Eval-Konsistenz: bester Tag max. (%)',t:'number'},
+ {k:'consistency_mode',l:'Bei verletzter Konsistenz',t:'select',o:[['','Ziel erst erreicht, wenn die Regel stimmt'],['RAISE_TARGET','Ziel steigt auf bester Tag ÷ Prozent (TakeProfitTrader)']]},
+ {k:'eval_min_days',l:'Eval: Mindest-Handelstage',t:'number'},
  {k:'scaling_text',l:'Funded-Scaling (Gewinn:Minis)',t:'text',h:'z. B. 0:2, 1000:3, 2000:5'},
  {k:'micros_per_mini',l:'Micros pro Mini',t:'number'},
  {k:'eval_max_minis',l:'Eval: max. Minis',t:'number',h:'leer lassen, wenn es in der Eval kein Limit gibt'},
  {k:'payout_qualifying_day_min',l:'Payout: Mindestgewinn pro Tag ($)',t:'number'},
  {k:'payout_qualifying_days_required',l:'Payout: benötigte Tage',t:'number'},
  {k:'payout_cap',l:'Payout-Obergrenze ($)',t:'number'},
+ {k:'payout_buffer',l:'Payout-Puffer über Startkapital ($)',t:'number',h:'nur der Gewinn darüber ist auszahlbar, z. B. 1000 bei TPT 25K'},
  {k:'profit_split',l:'Profit-Split (0–1)',t:'number',h:'z. B. 0.9 für 90 %'},
- {k:'monthly_fee',l:'Abo-Gebühr pro Monat ($)',t:'number',h:'endet nach Bestehen der Eval'}
+ {k:'profit_split_plus',l:'Profit-Split im Live-Konto (0–1)',t:'number',h:'z. B. 0.9 bei TPT PRO+'},
+ {k:'funded_daily_profit_cap',l:'Funded: Tagesgewinn-Limit ($)',t:'number',h:'danach schließt die Firma den Tag'},
+ {k:'flat_by_et',l:'Automatisch glattgestellt um (New York)',t:'time',h:'z. B. 16:55, wird in Berliner Zeit angezeigt'},
+ {k:'monthly_fee',l:'Abo-Gebühr pro Monat ($)',t:'number',h:'endet nach Bestehen der Eval'},
+ {k:'activation_fee',l:'Aktivierungsgebühr Funded ($)',t:'number'},
+ {k:'ov_risk_per_trade_phase1',l:'Eigenes Risiko pro Trade, Phase 1 ($)',t:'number',h:'leer = deine allgemeinen Regeln'},
+ {k:'ov_risk_per_trade_phase2',l:'Eigenes Risiko pro Trade, Phase 2 ($)',t:'number'},
+ {k:'ov_phase2_from_profit',l:'Eigene Phase 2 ab Kontogewinn ($)',t:'number'},
+ {k:'ov_daily_stop_phase1',l:'Eigener Tages-Stop Phase 1 ($)',t:'number',h:'negativ, z. B. -250'},
+ {k:'ov_daily_stop_phase2',l:'Eigener Tages-Stop Phase 2 ($)',t:'number'},
+ {k:'ov_after_two_red_days_risk',l:'Eigenes Risiko nach 2 roten Tagen ($)',t:'number'},
+ {k:'ov_eval_daily_profit_soft_cap',l:'Eval: Feierabend ab Tagesgewinn ($)',t:'number',h:'wegen der Konsistenzregel'},
+ {k:'ov_eval_daily_profit_hard_warning',l:'Eval: deutliche Warnung ab Tagesgewinn ($)',t:'number'},
+ {k:'notes',l:'Weitere Regeln',t:'textarea',full:1}
 ];
-function editRule(r){const v={...(r||{name:'Neuer Regelsatz',micros_per_mini:10,drawdown_type:'EOD_TRAILING',drawdown_lock:'start_balance',daily_loss_type:'HARD'})};v.scaling_text=RS.formatScaling(v.funded_contract_scaling||[]);
+function editRule(r){const v={...(r||{name:'Neuer Regelsatz',micros_per_mini:10,drawdown_type:'EOD_TRAILING',drawdown_lock:'start_balance',daily_loss_type:'HARD'})};v.scaling_text=RS.formatScaling(v.funded_contract_scaling||[]);Object.entries(v.personal_overrides||{}).forEach(([k,x])=>{v['ov_'+k]=x});
   openModal(r?'Regelsatz bearbeiten':'Regelsatz anlegen',`<div class="form">${formFields(RULE_FIELDS,v)}</div>`,async()=>{const x=readFields(RULE_FIELDS);if(!x.name){toast('Bitte einen Namen eingeben.');return false}
     let sc;try{sc=RS.parseScaling(x.scaling_text)}catch(e){toast(e.message);return false}delete x.scaling_text;
+    const ov={};Object.keys(x).filter(k=>k.startsWith('ov_')).forEach(k=>{if(x[k]!=null)ov[k.slice(3)]=x[k];delete x[k]});x.personal_overrides=Object.keys(ov).length?ov:null;
     if(x.profit_split!=null&&(x.profit_split<=0||x.profit_split>1)){toast('Profit-Split bitte als Anteil zwischen 0 und 1 eingeben, z. B. 0.9.');return false}
     const id=r?.id||x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||uid();
     await put('account_rules',{...(r||{}),...x,funded_contract_scaling:sc,id});toast('Regelsatz gespeichert')},
@@ -1358,7 +1386,7 @@ const PR_GROUPS=[['risiko','Risiko-Regeln',['risk_per_trade_phase1','risk_per_tr
  ['ziele','Ziele & Handelsregeln',['goalMonth','monthGoal','maxRedDays','rules']]];
 function vRules(){
   const st=PR(),demo=S.trades.filter(t=>t.demo).length+S.playbooks.filter(t=>t.demo).length+S.accounts.filter(t=>t.demo).length;
-  const grp=([k,l,keys])=>`<div class="tabpane" data-tab="${k}" data-tl="${l}"><div class="${k==='ziele'?'grid g-side':''}" style="align-items:start"><div class="card"><h2>${l}</h2><p class="small muted" style="margin-top:-6px">Strenger als die Firma. Die Risk-Engine und die Agenten rechnen mit diesen Werten.</p><form class="form f3 set-form">${formFields(PR_FIELDS.filter(f=>keys.includes(f.k)),st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>${k==='ziele'?`
+  const grp=([k,l,keys])=>`<div class="tabpane" data-tab="${k}" data-tl="${l}"><div class="${k==='ziele'?'grid g-side':''}" style="align-items:start"><div class="card"><h2>${l}</h2><p class="small muted" style="margin-top:-6px">Strenger als die Firma. Die Risk-Engine und die Agenten rechnen mit diesen Werten.${k==='risiko'&&RULES().some(r=>r.personal_overrides)?` Ausnahme: ${RULES().filter(r=>r.personal_overrides).map(r=>`<b>${esc(r.name)}</b> (${money(r.personal_overrides.risk_per_trade_phase1,0)} pro Trade, Tages-Stop ${money(r.personal_overrides.daily_stop_phase1,0)})`).join(', ')} hat ein eigenes, kleineres Risiko im Regelsatz.`:''}</p><form class="form f3 set-form">${formFields(PR_FIELDS.filter(f=>keys.includes(f.k)),st)}<div class="full"><button class="btn pri" type="submit">Regeln speichern</button></div></form></div>${k==='ziele'?`
     <div class="card"><h2>Dezember-Plan</h2><ul class="clean small"><li>Ein Monat mit vielen kleinen grünen Tagen schlägt einen mit zwei großen.</li><li>Tageslimit ist heilig: erreicht heißt Plattform zu, nicht „noch einer“.</li><li>Nur Setups aus dem Playbook. Alles andere ist Glücksspiel.</li><li>Jeden Abend Review, jeden Freitag Wochen-Auswertung mit dem Coach.</li></ul>
      <p class="verse" style="margin-top:10px"><b>Sprüche 13,11</b> · „Schnell erworbener Reichtum zerrinnt; wer aber Stück für Stück sammelt, vermehrt ihn.“</p></div>`:''}</div></div>`;
   return `<div class="head"><div><h1>Regeln &amp; Ziele</h1><div class="sub">Deine Leitplanken für den Dezember. Die Agenten prüfen dagegen.</div></div></div>
@@ -1413,6 +1441,7 @@ function editPB(p){openModal(p?'Setup bearbeiten':'Setup anlegen',`<div class="f
 const AC_FIELDS=[
  {k:'name',l:'Kontoname',t:'text',req:1,ph:'z. B. FTMO Pro 50K #1'},
  {k:'rule_id',l:'Regelsatz',t:'select',o:()=>[['','Eigene Regeln (ohne Regelsatz)'],...RULES().map(r=>[r.id,r.name])]},
+ {k:'plus',l:'Live-Konto (z. B. TPT PRO+): höherer Split, kein Puffer',t:'checkbox',def:false},
  {k:'stage',l:'Phase',t:'select',o:RS.STAGES.map(x=>[x,{EVAL:'EVAL · Evaluation',FUNDED:'FUNDED · finanziert',BREACHED:'BREACHED · verloren',PAYOUT:'PAYOUT · ausgezahlt'}[x]])},
  {k:'copy_group',l:'Copy-Gruppe',t:'text',ph:'z. B. Gruppe A',h:'Konten mit gleichem Namen werden zusammen angezeigt und gemeinsam gehandelt'},
  {k:'renewal_date',l:'Abo-Verlängerung am',t:'date',h:'für die Kündigungs-Erinnerung'},
@@ -1455,9 +1484,12 @@ function editAcct(a){openModal(a?'Konto & Regeln bearbeiten':'Prop-Konto anlegen
   const err=RS.validateAccount({...(a||{}),...v},S.accounts,PR().max_active_accounts);if(err){toast(err);return false}
   const saved=await put('accounts',{plan:{},payouts:[],...(a||{}),...v});if(!a){UI.propAcct=saved.id;saveUI()}toast('Konto gespeichert')},a?`<button class="btn danger" type="button" data-act="del-acct" data-id="${a.id}">Löschen</button>`:'');syncAcctForm()}
 const RULE_KEYS=['firm','phase','status','size','profitTarget','maxDailyLoss','maxDrawdown','ddType','minDays','consistencyPct','maxContracts','payoutMinDays','minDayProfit','payoutCycleDays','processingDays','profitSplit','payoutBuffer','maxPayout','payoutShare','ddLock','dllSoft'];
-function ruleSummary(r){const sc=RS.parseScaling(r.funded_contract_scaling||[]);return `<b>${esc(r.name)}</b> · Start ${money(r.start_balance,0)} · Eval-Ziel ${money(r.profit_target_eval,0)} · Tagesverlust ${money(r.daily_loss_limit,0)} (${r.daily_loss_type==='HARD'?'hart':'weich'}) · Drawdown ${money(r.max_drawdown,0)} (${r.drawdown_type==='EOD_TRAILING'?'Tagesschluss-Trailing':r.drawdown_type}${r.drawdown_lock==='start_balance'?', Lock beim Start':''}) · Konsistenz ≤ ${r.eval_consistency_max_pct} % · Payout ${r.payout_qualifying_days_required} Tage ≥ ${money(r.payout_qualifying_day_min,0)}, max. ${money(r.payout_cap,0)}, Split ${Math.round(r.profit_split*100)} % · Funded-Scaling ${sc.map(x=>x.minis).join(' / ')} Minis · Abo ${money(r.monthly_fee,0)}/Monat<div class="muted" style="margin-top:4px">Ändern unter Regeln &amp; Ziele → Firmen-Regelsätze.</div>`}
+function ruleSummary(r){const sc=RS.parseScaling(r.funded_contract_scaling||[]),ov=r.personal_overrides;
+  const dll=r.daily_loss_limit?`${money(r.daily_loss_limit,0)} (${r.daily_loss_type==='HARD'?'hart':r.daily_loss_type==='SOFT_ABOVE_START'?'weich über Start, darunter hart':'weich'})`:'keins';
+  const pay=r.payout_buffer!=null?`täglich ab Tag 1, auszahlbar über ${money((r.start_balance||0)+num(r.payout_buffer),0)} Kontostand, keine Gewinntage nötig`:`${r.payout_qualifying_days_required} Tage ≥ ${money(r.payout_qualifying_day_min,0)}${r.payout_cap?', max. '+money(r.payout_cap,0):''}`;
+  return `<b>${esc(r.name)}</b> · Start ${money(r.start_balance,0)} · Eval-Ziel ${money(r.profit_target_eval,0)}${r.eval_min_days?' · mind. '+r.eval_min_days+' Tage':''} · Tagesverlust ${dll} · Drawdown ${money(r.max_drawdown,0)} (${r.drawdown_type==='EOD_TRAILING'?'Tagesschluss-Trailing':r.drawdown_type}${r.drawdown_lock==='start_balance'?', Lock beim Start':''}) · Konsistenz ≤ ${r.eval_consistency_max_pct} %${r.consistency_mode==='RAISE_TARGET'?' (sonst steigt das Ziel)':''} · Payout ${pay}, Split ${Math.round(r.profit_split*100)} %${r.profit_split_plus?' / live '+Math.round(r.profit_split_plus*100)+' %':''}${r.funded_daily_profit_cap?' · Funded-Tagesgewinn max. '+money(r.funded_daily_profit_cap,0):''} · Max. ${sc.map(x=>x.minis).join(' / ')} Minis · Abo ${money(r.monthly_fee,0)}/Monat${r.activation_fee?' · Aktivierung '+money(r.activation_fee,0):''}${r.flat_by_et?' · Auto-Flat '+RS.etToBerlin(TODAY(),r.flat_by_et)+' Uhr Berlin':''}${ov?`<div style="margin-top:4px">Eigenes Risiko: ${money(ov.risk_per_trade_phase1,0)} pro Trade, Tages-Stop ${money(ov.daily_stop_phase1,0)}</div>`:''}${r.verified?`<div class="muted" style="margin-top:4px">Geprüft am ${dLabel(r.verified)}${r.source?` · <a href="${esc(r.source)}" target="_blank" rel="noopener">Quelle</a>`:''}</div>`:''}<div class="muted" style="margin-top:4px">Ändern unter Regeln &amp; Ziele → Firmen-Regelsätze.</div>`}
 function syncAcctForm(){const sel=$('#f_rule_id');if(!sel)return;const r=RULE(sel.value);const show=(k,on)=>{const el=document.getElementById('f_'+k);const w=el&&el.closest('.field');if(w)w.hidden=!on};
-  RULE_KEYS.forEach(k=>show(k,!r));show('stage',!!r);const tb=$('#tplBox');if(tb)tb.hidden=!!r;const ri=$('#ruleInfo');if(ri){ri.hidden=!r;ri.innerHTML=r?ruleSummary(r):''}}
+  RULE_KEYS.forEach(k=>show(k,!r));show('stage',!!r);show('plus',!!(r&&r.profit_split_plus));const tb=$('#tplBox');if(tb)tb.hidden=!!r;const ri=$('#ruleInfo');if(ri){ri.hidden=!r;ri.innerHTML=r?ruleSummary(r):''}}
 function payoutModal(a){const F=[{k:'date',l:'Datum',t:'date',def:TODAY()},{k:'amount',l:'Ausgezahlter Betrag ($)',t:'number',req:1}];
   openModal('Payout erfassen · '+a.name,`<div class="form">${formFields(F,{})}</div>${(a.payouts||[]).length?`<div class="sep"></div><div class="small muted">Bisher: ${(a.payouts||[]).map(p=>dLabel(p.date)+' '+money(p.amount,0)).join(' · ')}</div>`:''}`,async()=>{const v=readFields(F);if(!v.amount){toast('Betrag eingeben.');return false}await put('accounts',{...a,payouts:[...(a.payouts||[]),v],lastPayoutDate:v.date,payoutOverride:''});toast('Payout erfasst. Glückwunsch, und denk an den Zehnten.')})}
 function dayModal(d){const dt=S.trades.filter(t=>t.date===d).sort(byDT),j=S.journal.find(x=>x.id===d),s=stats(dt);
@@ -1738,9 +1770,9 @@ const CC=()=>({...(SEED.coach_config||{}),...(S.app_config.find(x=>x.id==='coach
 const CP=()=>({...(SEED.cockpit_config||{}),...(S.app_config.find(x=>x.id==='cockpit')||{})});
 const eur=(n,d=2)=>{n=num(n);return (n<0?'-':'')+Math.abs(n).toLocaleString('de-DE',{minimumFractionDigits:d,maximumFractionDigits:d})+' €'};
 function reminders(){return RS.renewalReminders(S.accounts.map(EA),TODAY(),CP().reminder_days_before??3)}
-function reminderHTML(){return reminders().map(r=>`<a href="#cockpit" class="alert stop" style="text-decoration:none;color:inherit;margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>FTMO-Abo kündigen, falls die Eval nicht bestanden ist.</b><div class="small">${esc(r.name)}: Verlängerung am ${dLabel(r.renewal_date)} (${r.daysLeft===0?'heute':'in '+r.daysLeft+' Tag'+(r.daysLeft===1?'':'en')}).</div></div></a>`).join('')}
+function reminderHTML(){return reminders().map(r=>`<a href="#cockpit" class="alert stop" style="text-decoration:none;color:inherit;margin-bottom:16px"><span class="sq" style="background:var(--loss)"></span><div><b>${esc(EA(AC(r.id))?.firm||'Prop-Firm')}-Abo kündigen, falls die Eval nicht bestanden ist.</b><div class="small">${esc(r.name)}: Verlängerung am ${dLabel(r.renewal_date)} (${r.daysLeft===0?'heute':'in '+r.daysLeft+' Tag'+(r.daysLeft===1?'':'en')}).</div></div></a>`).join('')}
 function cockpitData(){const c=CP();const payouts=S.accounts.flatMap(a=>(a.payouts||[]).map(p=>({date:p.date,amount:p.amount,account:a.name})));
-  const sum=RS.cockpitSummary({costs:S.cost_history,payoutsUsd:payouts,budgetEur:c.budget_eur,fxUsdPerEur:c.fx_usd_per_eur,split:(RULES()[0]?.profit_split)??0.9,from:c.period_from,to:c.period_to});
+  const sum=RS.cockpitSummary({costs:S.cost_history,payoutsUsd:payouts,budgetEur:c.budget_eur,fxUsdPerEur:c.fx_usd_per_eur,split:(RULE(S.accounts.map(EA).filter(RS.isActive).find(a=>a.rule_id)?.rule_id)||RULES()[0])?.profit_split??0.9,from:c.period_from,to:c.period_to});
   return {c,payouts,sum}}
 function vCockpit(){const {c,payouts,sum}=cockpitData(),today=TODAY();
   if(!c.period_from||!c.period_to)return `<div class="head"><div><h1>Dezember-Cockpit</h1><div class="sub">Konfiguration wird geladen…</div></div></div>`;
@@ -1949,19 +1981,20 @@ function simDefaults(){const c=CP(),ms=(c.milestones||[]);const ev=ms.find(m=>m.
 function simSource(o){if(o.src==='trades'){const usd=t=>(INSTR().find(i=>i.id===(t.instrument||t.symbol))||{}).usd_per_point||2;
    const list=S.trades.filter(t=>!t.demo&&(o.setup==='all'||(t.setup||PB(t.setupId)?.name)===o.setup)).map(t=>RS.tradeR(t,usd(t))).filter(r=>r!=null);return {list}}
   return {winrate:num(o.winrate)/100,avgWin:num(o.avgWin),avgLoss:num(o.avgLoss)}}
-function simRun(){const o=UI.sim,rule=RULES()[0];if(!rule){toast('Kein Regelsatz gefunden.');return}const src=simSource(o);
+const SIMRULE=()=>RULE(UI.sim?.rule)||RULE(S.accounts.map(EA).filter(RS.isActive).find(a=>a.rule_id)?.rule_id)||RULES()[0];
+function simRun(){const o=UI.sim,rule=SIMRULE();if(!rule){toast('Kein Regelsatz gefunden.');return}const src=simSource(o);
   if(o.src==='trades'&&!src.list.length){toast('Keine Trades mit R-Wert gefunden. Nutze vorerst „Annahme“.');return}
-  const sample=RS.rSampler(src),pr=PR(),runs=+o.runs||5000;
-  const ev=RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs,seed:'e',minDays:2});
+  const sample=RS.rSampler(src),pr=PRU({rule_id:rule.id}),runs=+o.runs||5000,minDays=num(rule.eval_min_days)||2;
+  const ev=RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs,seed:'e',minDays});
   const fu=RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs,seed:'f'});
-  const cmp=[null,100,150,200,250].map(r=>({risk:r,ev:RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs:2000,seed:'c'+r,minDays:2,riskOverride:r}),fu:RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs:2000,seed:'g'+r,riskOverride:r})}));
+  const cmp=[null,100,150,200,250].map(r=>({risk:r,ev:RS.simulateEval({pr,rule,sample,days:+o.evalDays,runs:2000,seed:'c'+r,minDays,riskOverride:r}),fu:RS.simulateFunded({pr,rule,sample,days:+o.fundedDays,runs:2000,seed:'g'+r,riskOverride:r})}));
   o.res={ev,fu,cmp,n:src.list?src.list.length:null,fee:num(rule.monthly_fee)};UI.sub.simulator='ergebnis';render()}
 function vSim(){const o=UI.sim||(UI.sim=simDefaults()),r=o.res;const setups=JC().setups||[];
   const nTr=o.src==='trades'?simSource(o).list.length:null;
   const pctB=(v,c)=>`<div class="sim-big"><div class="mono" style="color:${c}">${Math.round(v*100)} %</div></div>`;
   const hist=(arr)=>{const mx=Math.max(1,...arr);return `<svg viewBox="0 0 ${arr.length*34+20} 120" width="100%" style="max-width:520px;display:block" role="img" aria-label="Tag des Bestehens">${arr.map((v,i)=>{const h=v/mx*66;return `<rect x="${12+i*34}" y="${92-h}" width="24" height="${h}" rx="4" fill="var(--accent)" opacity="${v?1:.15}"/><text x="${24+i*34}" y="110" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="-apple-system,Inter,sans-serif">T${i+1}</text>${v?`<text x="${24+i*34}" y="${86-h}" text-anchor="middle" font-size="10" fill="var(--fg)" font-family="-apple-system,Inter,sans-serif">${Math.round(v/ (r.ev.runs)*100)}%</text>`:''}`}).join('')}</svg>`};
   const ev=r&&r.ev,fu=r&&r.fu,decEV=r?ev.pPass*fu.expectedNet:0;
-  return `<div class="head"><div><h1>Challenge- & Payout-Simulator</h1><div class="sub">Tausende mögliche Dezember-Verläufe nach den FTMO-Regeln und deinen eigenen Regeln.</div></div></div>
+  return `<div class="head"><div><h1>Challenge- & Payout-Simulator</h1><div class="sub">Tausende mögliche Dezember-Verläufe nach den Firmenregeln und deinen eigenen Regeln.</div></div></div>
   <div class="tabpane" data-tab="annahmen" data-tl="Annahmen"><div class="card" style="max-width:860px"><h2>Annahmen</h2>
     <div class="lbl" style="margin-bottom:6px">Woher kommen die Trade-Ergebnisse?</div>
     <div class="seg" style="margin-bottom:14px"><button type="button" class="${o.src==='manual'?'on':''}" data-act="sim-src" data-v="manual">Annahme</button><button type="button" class="${o.src==='trades'?'on':''}" data-act="sim-src" data-v="trades">Meine Trades</button></div>
@@ -1969,7 +2002,7 @@ function vSim(){const o=UI.sim||(UI.sim=simDefaults()),r=o.res;const setups=JC()
      <p class="small muted">Ehrliche Schätzung: Bei VWAP- und Value-Area-Setups sind 40–55 % Trefferquote bei 1,5–2 R typisch. Sobald du 30+ eigene Trades hast, nimm „Meine Trades“.</p>`
     :`<div class="field"><label for="sim_setup">Setup</label><select id="sim_setup"><option value="all">Alle Setups</option>${setups.map(x=>`<option ${o.setup===x?'selected':''}>${esc(x)}</option>`).join('')}</select></div><p class="small ${nTr<30?'neg':'muted'}">${nTr} Trades mit R-Wert.${nTr<30?' Unter 30 Trades ist das Ergebnis noch sehr unsicher.':''}</p>`}
     <div class="form" style="grid-template-columns:repeat(3,minmax(0,1fr));margin-top:6px"><div class="field"><label for="sim_evalDays">Eval-Handelstage</label><input type="number" id="sim_evalDays" value="${o.evalDays}" min="1" max="40"></div><div class="field"><label for="sim_fundedDays">Funded-Tage bis Payout</label><input type="number" id="sim_fundedDays" value="${o.fundedDays}" min="1" max="40"></div><div class="field"><label for="sim_runs">Durchläufe</label><input type="number" id="sim_runs" value="${o.runs}" min="500" max="20000" step="500"></div></div>
-    <p class="small muted">Gerechnet mit: Regelsatz ${esc(RULES()[0]?.name||'')}, deinem Risiko (${money(PR().risk_per_trade_phase1,0)} / ${money(PR().risk_per_trade_phase2,0)}), Tages-Stop, max. ${PR().max_trades_per_day} Trades, Schluss nach 2 Gewinnern, 100 $ nach 2 roten Tagen, Eval-Feierabend ab ${money(PR().eval_daily_profit_soft_cap,0)}. Ohne Slippage und Gebühren. Annahme: Du hältst dich an deine Regeln.</p>
+    <p class="small muted">Gerechnet mit: Regelsatz <select id="sim_rule">${RULES().map(r=>`<option value="${esc(r.id)}" ${SIMRULE()?.id===r.id?'selected':''}>${esc(r.name)}</option>`).join('')}</select>, deinem Risiko (${money(PRU({rule_id:SIMRULE()?.id}).risk_per_trade_phase1,0)} / ${money(PRU({rule_id:SIMRULE()?.id}).risk_per_trade_phase2,0)}), Tages-Stop, max. ${PR().max_trades_per_day} Trades, Schluss nach 2 Gewinnern, 100 $ nach 2 roten Tagen, Eval-Feierabend ab ${money(PR().eval_daily_profit_soft_cap,0)}. Ohne Slippage und Gebühren. Annahme: Du hältst dich an deine Regeln.</p>
     <button class="btn pri" data-act="sim-run" style="width:100%;justify-content:center;padding:12px">Simulieren</button></div></div>
    <div class="tabpane" data-tab="ergebnis" data-tl="Ergebnis">${!r?`<div class="card">${emptyBox('Noch keine Simulation','Stell im Tab „Annahmen“ deine Werte ein und tippe auf „Simulieren“. Das dauert ein bis zwei Sekunden.')}</div>`:`<div class="grid g-2" style="align-items:start">
     <div class="card"><div class="lbl">Eval in ${o.evalDays} Handelstagen</div><div class="grid" style="grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:8px">
@@ -2021,7 +2054,7 @@ async function wkAi(){let sample=null;try{sample=window.claude&&await window.cla
   UI.wkBusy=false;render()}
 
 /* ============ Simulator-Eingaben ============ */
-function simRead(){const o=UI.sim;if(!o)return;['winrate','avgWin','avgLoss','evalDays','fundedDays','runs'].forEach(k=>{const el=document.getElementById('sim_'+k);if(el&&el.value!=='')o[k]=+el.value});const su=$('#sim_setup');if(su)o.setup=su.value}
+function simRead(){const o=UI.sim;if(!o)return;['winrate','avgWin','avgLoss','evalDays','fundedDays','runs'].forEach(k=>{const el=document.getElementById('sim_'+k);if(el&&el.value!=='')o[k]=+el.value});const su=$('#sim_setup');if(su)o.setup=su.value;const sr=$('#sim_rule');if(sr)o.rule=sr.value}
 
 /* ============ Chart-Screenshots ============ */
 let ASSETS=null;(async()=>{try{if(window.claude&&window.claude.use)ASSETS=await window.claude.use('assets')}catch(e){ASSETS=null}})();
@@ -2211,6 +2244,7 @@ document.addEventListener('change',e=>{const t=e.target;
   else if(t.id==='jDate'&&t.value){UI.jDate=t.value;pending=false;render()}
   else if(t.id==='tplSel')applyTpl(t.value);
   else if(t.id==='f_rule_id')syncAcctForm();
+  else if(t.id==='sim_rule'){simRead();UI.sim.res=null;render()}
   else if(t.id==='ptcSetup')renderPTC();else if(t.classList.contains('ptc'))updPTC();
 });
 document.addEventListener('submit',async e=>{const f=e.target;

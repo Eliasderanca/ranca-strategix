@@ -1,0 +1,39 @@
+// Rauchtest TakeProfitTrader 25K EOD: Konto anlegen, Karte, Risiko, Simulator
+const { chromium } = require('playwright');
+const fs = require('fs'), path = require('path');
+const ROOT = path.join(__dirname, '..'); const OUT = process.argv[2] || '/tmp';
+(async () => {
+  const b = await chromium.launch(); const errs = [];
+  const c = await b.newContext({ viewport: { width: 1440, height: 900 } }); const p = require('./tabs-helper.js')(await c.newPage()); p.on('pageerror', (e) => errs.push(e.message));
+  await p.route('http://rs.test/**', (r) => { const u = new URL(r.request().url()); const f = u.pathname === '/' ? 'index.html' : u.pathname.slice(1); const fp = path.join(ROOT, f);
+    if (!fs.existsSync(fp)) return r.fulfill({ status: 404, body: '' }); let body = fs.readFileSync(fp, 'utf8');
+    if (f === 'index.html') body = '<!doctype html><html><head><meta charset=utf8></head><body>' + body + '</body></html>';
+    r.fulfill({ contentType: f.endsWith('.json') ? 'application/json' : f.endsWith('.js') ? 'text/javascript' : 'text/html', body }); });
+  await p.goto('http://rs.test/'); await p.waitForTimeout(800);
+  console.log('Regelsätze:', await p.evaluate(() => RULES().map((r) => r.id).join(', ')));
+  await p.evaluate(async () => { await put('account_rules', { ...SEED.account_rules[0] }); }); // DB hat nur FTMO -> TPT kommt trotzdem dazu
+  console.log('Mit FTMO in DB:', await p.evaluate(() => RULES().map((r) => r.id).join(', ')));
+  await p.evaluate(async () => { const D = TODAY();
+    await put('accounts', { id: 'tpt1', name: 'TPT 25K EOD #1', rule_id: 'tpt-eod-25k', stage: 'EVAL', startDate: RS.addDaysStr(D, -3), plan: {}, payouts: [] });
+    await put('trades', { date: RS.addDaysStr(D, -2), time: '15:40', pnl: 900, accountId: 'tpt1' });
+    await put('trades', { date: RS.addDaysStr(D, -1), time: '15:40', pnl: 200, accountId: 'tpt1' });
+    location.hash = 'prop'; });
+  await p.waitForTimeout(400);
+  const card = await p.evaluate(() => document.querySelector('#main').innerText);
+  console.log('Karte: Ziel erhöht:', /erhöht wegen Konsistenz/.test(card), '| Ziel 1.800:', /\$1\.800/.test(card), '| Mindesttage:', /Handelstage 2 \/ 3/.test(card));
+  await p.evaluate(() => { location.hash = 'risiko'; }); await p.waitForTimeout(300);
+  const E = await p.evaluate(() => { const u = ENGINE().units[0]; return { risk: u.r.riskPerTrade, dd: u.r.ddRemaining, firm: u.r.firmName, notes: u.r.notices.map((n) => n.text) }; });
+  console.log('Risiko:', JSON.stringify(E));
+  console.log('Leiste:', await p.evaluate(() => document.querySelector('.riskbar')?.innerText.replace(/\s+/g, ' ')));
+  await p.evaluate(async () => { const a = AC('tpt1'); await put('accounts', { ...a, stage: 'FUNDED' }); location.hash = 'prop'; }); await p.waitForTimeout(300);
+  console.log('Funded:', await p.evaluate(() => { const m = acctM(AC('tpt1')); return JSON.stringify({ w: m.withdrawable, amt: m.payoutAmt, date: m.payoutDate }); }), '| Chip:', /Auszahlbar ab \$26\.000/.test(await p.evaluate(() => document.querySelector('#main').innerText)));
+  await p.evaluate(() => { location.hash = 'simulator'; }); await p.waitForTimeout(300);
+  console.log('Simulator-Regelsatz:', await p.evaluate(() => SIMRULE().id));
+  await p.evaluate(() => { UI.sim = simDefaults(); UI.sim.runs = 500; simRun(); }); await p.waitForTimeout(300);
+  console.log('Sim:', await p.evaluate(() => JSON.stringify({ pass: UI.sim.res.ev.pPass, payout: UI.sim.res.fu.pPayout, net: UI.sim.res.fu.avgPayoutNet, fee: UI.sim.res.fee })));
+  await p.evaluate(() => { location.hash = 'regeln'; setSubTab('firma'); }); await p.waitForTimeout(200);
+  await p.screenshot({ path: OUT + '/tpt-regeln.png' });
+  await p.evaluate(() => editRule(RULE('tpt-eod-25k'))); await p.waitForTimeout(200);
+  console.log('Formular eigenes Risiko:', await p.inputValue('#f_ov_risk_per_trade_phase1'), await p.inputValue('#f_daily_loss_type'));
+  console.log('JS-Fehler:', errs.length ? errs : 'keine'); await b.close();
+})();

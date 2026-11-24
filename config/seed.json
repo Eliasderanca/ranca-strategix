@@ -35,6 +35,58 @@
       "monthly_fee": 139,
       "fee_currency": "USD",
       "eval_max_minis": null
+    },
+    {
+      "id": "tpt-eod-25k",
+      "name": "TakeProfitTrader 25K EOD",
+      "firm": "TakeProfitTrader",
+      "start_balance": 25000,
+      "profit_target_eval": 1500,
+      "max_drawdown": 1000,
+      "drawdown_type": "EOD_TRAILING",
+      "drawdown_lock": "start_balance",
+      "daily_loss_limit": 500,
+      "daily_loss_type": "SOFT_ABOVE_START",
+      "eval_consistency_max_pct": 50,
+      "consistency_mode": "RAISE_TARGET",
+      "eval_min_days": 3,
+      "funded_contract_scaling": [
+        {
+          "min_profit": 0,
+          "minis": 3
+        }
+      ],
+      "micros_per_mini": 10,
+      "eval_max_minis": 3,
+      "payout_qualifying_day_min": 0,
+      "payout_qualifying_days_required": 0,
+      "payout_cap": null,
+      "payout_buffer": 1000,
+      "profit_split": 0.8,
+      "profit_split_plus": 0.9,
+      "funded_daily_profit_cap": 5000,
+      "monthly_fee": 160,
+      "activation_fee": 130,
+      "reset_fee_eval": 89,
+      "reset_fee_funded": 579,
+      "fee_currency": "USD",
+      "withdrawal_fee": 50,
+      "withdrawal_fee_below": 250,
+      "flat_by_et": "16:55",
+      "news_flat_minutes_funded": 1,
+      "personal_overrides": {
+        "risk_per_trade_phase1": 100,
+        "risk_per_trade_phase2": 125,
+        "phase2_from_profit": 500,
+        "daily_stop_phase1": -250,
+        "daily_stop_phase2": -300,
+        "after_two_red_days_risk": 75,
+        "eval_daily_profit_soft_cap": 550,
+        "eval_daily_profit_hard_warning": 700
+      },
+      "notes": "Neuer EOD-Plan ab 23.11.2026. Drawdown 1.000 $ EOD-trailing (Tagesschluss 17:00 ET), stoppt bei 25.000 $; offene Verluste zählen sofort. Tageslimit 500 $ in Echtzeit: über 25.000 $ nur Pause bis 18:00 ET, darunter Konto verloren. Test: Konsistenz 50 % (sonst Ziel = 2× bester Tag), mind. 3 Tage, News erlaubt. PRO: Auszahlung täglich ab Tag 1 über 26.000 $ Kontostand, keine Gewinntage nötig, 80 % (PRO+ 90 %), News ±1 Min. flat (FOMC, NFP, CPI), Tagesgewinn-Limit 5.000 $. Auto-Flat 16:55 ET = 22:55 Berlin.",
+      "source": "https://takeprofittraderhelp.zendesk.com/hc/en-us/articles/40866438043037-EOD-Plan-Overview-Specifications",
+      "verified": "2026-11-24"
     }
   ],
   "personal_rules": {

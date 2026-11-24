@@ -97,13 +97,42 @@
       maxDailyLoss: rule.daily_loss_limit,
       dllSoft: rule.daily_loss_type !== 'HARD',
       consistencyPct: evalStage ? rule.eval_consistency_max_pct : null,
+      consistencyMode: rule.consistency_mode || null,
+      minDays: evalStage && rule.eval_min_days != null ? rule.eval_min_days : acc.minDays,
+      dllMode: rule.daily_loss_type || null,
+      startBalance: rule.start_balance,
+      payoutBufferUsd: fundedStage && !acc.plus && rule.payout_buffer != null ? num(rule.payout_buffer) : null,
+      fundedDailyProfitCap: fundedStage ? rule.funded_daily_profit_cap || null : null,
+      flatByEt: rule.flat_by_et || null,
       payoutMinDays: fundedStage ? rule.payout_qualifying_days_required : null,
       minDayProfit: fundedStage ? rule.payout_qualifying_day_min : null,
       maxPayout: fundedStage ? rule.payout_cap : null,
-      profitSplit: rule.profit_split != null ? rule.profit_split * 100 : acc.profitSplit,
+      profitSplit: acc.plus && rule.profit_split_plus != null ? rule.profit_split_plus * 100 : rule.profit_split != null ? rule.profit_split * 100 : acc.profitSplit,
       payoutShare: 100,
       monthlyFee: evalStage ? rule.monthly_fee : 0,
     };
+  };
+
+  /**
+   * Profitziel unter Konsistenzregel. Modus RAISE_TARGET (z. B. TakeProfitTrader): Ist der beste Tag zu groß,
+   * steigt das Ziel auf bestDay ÷ pct (bei 50 %: doppelter bester Tag). Sonst bleibt das Ziel.
+   */
+  RS.effectiveTarget = (target, bestDay, pct, mode) => {
+    target = num(target); if (!pct || mode !== 'RAISE_TARGET' || !(bestDay > 0)) return target;
+    return Math.max(target, Math.ceil(bestDay / (num(pct) / 100)));
+  };
+
+  /** Bricht ein Tagesverlust-Limit das Konto? HARD: immer. SOFT: nie. SOFT_ABOVE_START: nur, wenn der Kontostand unter dem Start liegt. */
+  RS.dllIsHard = (mode, profitAfter) => mode === 'HARD' || (mode === 'SOFT_ABOVE_START' && num(profitAfter) < 0);
+
+  /** Auszahlbarer Betrag mit Puffer (TakeProfitTrader): Gewinn minus bisherige Auszahlungen minus Puffer, nie negativ. */
+  RS.withdrawable = (profit, paidOut, buffer) => Math.max(0, Math.round((num(profit) - num(paidOut) - num(buffer)) * 100) / 100);
+
+  /** Uhrzeit in New York (HH:MM) für ein Datum in Berliner Zeit umrechnen, z. B. 16:55 ET -> 22:55 */
+  RS.etToBerlin = (date, hhmm) => {
+    const [y, mo, d] = String(date).split('-').map(Number), [h, mi] = String(hhmm).split(':').map(Number);
+    const ms = RS.zonedToMs(y, mo, d, h, mi, 0, 'America/New_York');
+    return new Intl.DateTimeFormat('de-DE', { timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(ms));
   };
 
   /** Prüft ein Konto vor dem Speichern. Gibt eine deutsche Fehlermeldung oder null zurück. */
@@ -209,6 +238,19 @@
 
     const remainingToStop = Math.max(0, dailyStop + dayPnl);
     const firmLimit = o.account && o.account.maxDailyLoss ? num(o.account.maxDailyLoss) : null;
+    const firmName = (o.account && o.account.firm) || 'Firma';
+    // Drawdown-Rest: EOD-Trailing über die Tagesschlüsse vor heute, mit Lock beim Start
+    let ddRemaining = null;
+    if (o.account && o.account.maxDrawdown) {
+      const dd = num(o.account.maxDrawdown);
+      let floor = -dd;
+      if (o.account.ddType !== 'static') {
+        const closes = {}; let bal = 0; before.forEach((t) => { bal += num(t.pnl); closes[t.date] = bal; });
+        const peak = Math.max(0, ...Object.values(closes));
+        floor = peak - dd; if (o.account.ddLock) floor = Math.min(floor, 0);
+      }
+      ddRemaining = Math.max(0, Math.round(profitAtOpen + dayPnl - floor));
+    }
     const firmRemaining = firmLimit != null ? Math.max(0, firmLimit + dayPnl) : null;
 
     // Trades
@@ -224,7 +266,11 @@
     let status = 'GREEN';
     const red = (r) => { status = 'RED'; reasons.push(r); };
     if (dailyStop && dayPnl <= -dailyStop) red(`Tages-Stop von −${dailyStop} $ erreicht (${dayPnl.toFixed(0)} $).`);
-    if (firmLimit != null && dayPnl <= -firmLimit) red(`FTMO-Tageslimit von −${firmLimit} $ erreicht. Konto prüfen.`);
+    if (firmLimit != null && dayPnl <= -firmLimit) {
+      const mode = o.account.dllMode || (o.account.dllSoft ? 'SOFT' : 'HARD');
+      red(RS.dllIsHard(mode, profitAtOpen + dayPnl) ? `${firmName}-Tageslimit von −${firmLimit} $ erreicht. Das Konto ist nach den Firmenregeln verloren. Konto prüfen.` : `${firmName}-Tageslimit von −${firmLimit} $ erreicht. Handel pausiert bis zur nächsten Session.`);
+    }
+    if (ddRemaining != null && ddRemaining <= 0) red(`Drawdown-Grenze von ${firmName} erreicht. Konto prüfen.`);
     if (losses >= maxLosers) red(`${losses} Verlusttrades heute. Maximum ist ${maxLosers}.`);
     if (pr.stop_after_two_winners && wins >= 2) red('2 Gewinner heute. Deine Regel: dann ist Schluss.');
     if (Number.isFinite(maxTrades) && taken >= maxTrades) red(`${taken} von ${maxTrades} Trades genutzt.`);
@@ -242,6 +288,7 @@
     let riskPerTrade = halfSize ? baseRisk / 2 : baseRisk;
     if (dailyStop) riskPerTrade = Math.min(riskPerTrade, remainingToStop);
     if (firmRemaining != null) riskPerTrade = Math.min(riskPerTrade, firmRemaining);
+    if (ddRemaining != null) riskPerTrade = Math.min(riskPerTrade, ddRemaining);
     if (status === 'RED') riskPerTrade = 0;
     riskPerTrade = Math.floor(riskPerTrade);
 
@@ -250,12 +297,14 @@
       if (pr.eval_daily_profit_hard_warning != null && dayPnl >= num(pr.eval_daily_profit_hard_warning)) notices.push({ level: 'warn', text: `Tagesgewinn ${dayPnl.toFixed(0)} $: Die Konsistenzregel wird gefährlich. Jetzt aufhören.` });
       else if (pr.eval_daily_profit_soft_cap != null && dayPnl >= num(pr.eval_daily_profit_soft_cap)) notices.push({ level: 'info', text: `Tagesgewinn ${dayPnl.toFixed(0)} $: Feierabend. Ein zu großer Tag schadet der Konsistenzregel.` });
     }
+    if (o.account && o.account.fundedDailyProfitCap && dayPnl >= num(o.account.fundedDailyProfitCap) * 0.8) notices.push({ level: 'warn', text: `Tagesgewinn ${dayPnl.toFixed(0)} $: Bei ${o.account.fundedDailyProfitCap} $ schließt ${firmName} alle Positionen und pausiert den Tag.` });
+    if (o.account && o.account.flatByEt) notices.push({ level: 'info', text: `${firmName} stellt um ${RS.etToBerlin(date, o.account.flatByEt)} Uhr (Berlin) automatisch glatt.` });
     if (riskPhase === 'RED_DAYS') notices.push({ level: 'info', text: `Nach 2 roten Tagen gilt heute ${baseRisk} $ Risiko pro Trade.` });
 
     return {
       date, status, reasons, notices,
       riskPerTrade, baseRisk, riskPhase, halfSize,
-      dailyStop, dayPnl, remainingToStop, firmLimit, firmRemaining,
+      dailyStop, dayPnl, remainingToStop, firmLimit, firmRemaining, ddRemaining, firmName,
       tradesTaken: taken, tradesLeft, maxTrades: Number.isFinite(maxTrades) ? maxTrades : null,
       wins, losses, profitAtOpen,
       lockedUntilMs: status === 'RED' && o.now ? o.now.getTime() + RS.msUntilBerlinMidnight(o.now) : null,
@@ -855,7 +904,7 @@
       const res = sample(rnd) * risk;
       pnl += res; n++; if (res > 0) w++; else if (res < 0) l++;
       minP = Math.min(minP, state.profit + pnl);
-      if (pnl <= -firm) { breach = 'DAILY'; break; }
+      if (pnl <= -firm) { if (RS.dllIsHard(rule.daily_loss_type || 'HARD', state.profit + pnl)) breach = 'DAILY'; break; }
       if (state.ddLevel != null && state.profit + pnl <= state.ddLevel) { breach = 'DRAWDOWN'; break; }
     }
     return { pnl: Math.round(pnl * 100) / 100, trades: n, wins: w, losses: l, breach, minProfit: minP };
@@ -908,9 +957,10 @@
     const runs = o.runs || 5000, rnd = RS.seededRandom(o.seed || 'funded');
     const need = num(o.rule.payout_qualifying_days_required) || 0, qmin = num(o.rule.payout_qualifying_day_min) || 0;
     const cap = num(o.rule.payout_cap) || Infinity, split = o.rule.profit_split != null ? num(o.rule.profit_split) : 0.9;
+    const buffer = o.rule.payout_buffer != null ? num(o.rule.payout_buffer) : null;
     let ok = 0, breach = 0; const payouts = [], daysTo = [];
     for (let r = 0; r < runs; r++) {
-      const st = { profit: 0, redDays: 0, peak: 0 }; let q = 0, res = 'OPEN', d;
+      const st = { profit: 0, redDays: 0, peak: 0 }; let q = 0, res = 'OPEN', d, firstOk = null;
       for (d = 1; d <= o.days; d++) {
         st.ddLevel = RS.ddLevel(o.rule, st.peak);
         const day = RS.simDay(st, o.pr, o.rule, 'FUNDED', o.sample, rnd, o);
@@ -918,9 +968,12 @@
         if (day.breach) { res = 'BREACH'; break; }
         st.peak = Math.max(st.peak, st.profit); st.redDays = day.pnl < 0 ? st.redDays + 1 : day.pnl > 0 ? 0 : st.redDays;
         if (day.pnl >= qmin && day.trades) q++;
+        if (buffer != null) { if (firstOk == null && st.profit > buffer) firstOk = d; continue; }
         if (q >= need && st.profit > 0) { res = 'OK'; break; }
       }
-      if (res === 'OK') { ok++; daysTo.push(d); payouts.push(Math.min(st.profit, cap) * split); } else if (res === 'BREACH') breach++;
+      // Puffer-Modell (TakeProfitTrader): täglich auszahlbar, was über dem Puffer liegt. Gewertet am Ende des Zeitraums.
+      if (buffer != null && res !== 'BREACH' && st.profit > buffer) { res = 'OK'; d = firstOk; }
+      if (res === 'OK') { ok++; daysTo.push(d); payouts.push((Math.min(st.profit, cap) - (buffer || 0)) * split); } else if (res === 'BREACH') breach++;
     }
     payouts.sort((a, b) => a - b); daysTo.sort((a, b) => a - b);
     const avg = payouts.length ? payouts.reduce((s, x) => s + x, 0) / payouts.length : 0;
