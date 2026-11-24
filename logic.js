@@ -668,6 +668,7 @@
     if (!x) return null;
     const neg = /^\(.*\)$/.test(x) || /^-/.test(x);
     x = x.replace(/[()\-+]/g, '');
+    if (!x) return null; // „-   €“ = leer
     if (x.includes(',')) x = x.replace(/\./g, '').replace(',', '.');
     else if (/^\d{1,3}(\.\d{3})+$/.test(x)) x = x.replace(/\./g, '');
     const n = Number(x);
@@ -690,7 +691,10 @@
    * fehlt Net, ist es Payout − Total Spend. Rückgabe: { rows, errors }
    */
   RS.parseCostCsv = (text) => {
-    const lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim());
+    let lines = String(text || '').replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.replace(/[;\s]/g, ''));
+    // Übersichtszeilen oberhalb der Tabelle (z. B. „Total Spend; 4.347,91 €“) überspringen: Kopfzeile suchen
+    const hi = lines.findIndex((l) => /(^|;)\s*account[^;]*;\s*firm\s*;\s*date\s*;/i.test(l));
+    if (hi > 0) lines = lines.slice(hi);
     if (lines.length < 2) return { rows: [], errors: ['Keine Datenzeilen gefunden.'] };
     const split = (l) => { const out = []; let cur = '', q = false; for (const ch of l) { if (ch === '"') { q = !q; continue; } if (ch === ';' && !q) { out.push(cur.trim()); cur = ''; continue; } cur += ch; } out.push(cur.trim()); return out; };
     const norm = (h) => h.toLowerCase().replace(/[^a-z]/g, '');
@@ -708,10 +712,43 @@
       const total = RS.parseDeNumber(get('total_spend')); const payout = RS.parseDeNumber(get('payout')) || 0;
       const totalSpend = total != null ? total : Math.round((fee + reset + act) * 100) / 100;
       const net = RS.parseDeNumber(get('net'));
-      rows.push({ account: get('account'), firm: get('firm'), date, eval_fee: fee, reset, eval_status: get('eval_status'), activation_fee: act,
+      const FIRMS = { tpt: 'TPT', apex: 'Apex', ftmo: 'FTMO' };
+      let firm = get('firm'); if (!firm && /ftmo/i.test(get('account'))) firm = 'FTMO'; firm = FIRMS[firm.toLowerCase()] || firm;
+      const es = get('eval_status').replace(/\s+/g, ' ').trim(), esN = /dd ?hit/i.test(es) ? 'DD Hit' : /pass/i.test(es) ? 'Passed' : es;
+      rows.push({ account: get('account'), firm, date, eval_fee: fee, reset, eval_status: esN, activation_fee: act,
         total_spend: totalSpend, payout, net: net != null ? net : Math.round((payout - totalSpend) * 100) / 100, status: get('status'), notes: get('notes') });
     });
     return { rows, errors };
+  };
+
+  /**
+   * Jahres-KPIs aus der Kosten-Historie (Prop-Firm-Ausgaben vs. Payouts, Beträge in €).
+   * Eval = Zeile mit Eval-Gebühr. Bestanden = Eval mit Status „Passed“. Funded-Konten = bestandene Evals.
+   */
+  RS.costKpis = (rows) => {
+    const r2 = (x) => Math.round(x * 100) / 100;
+    const all = rows || [];
+    const isEval = (x) => num(x.eval_fee) > 0;
+    const passed = (x) => isEval(x) && /pass/i.test(x.eval_status || '');
+    const ddHit = (x) => isEval(x) && /dd ?hit/i.test(x.eval_status || '');
+    const spend = all.reduce((s, x) => s + num(x.total_spend), 0), payouts = all.reduce((s, x) => s + num(x.payout), 0);
+    const evals = all.filter(isEval).length, pass = all.filter(passed).length, payoutCount = all.filter((x) => num(x.payout) > 0).length;
+    const group = (keyFn) => {
+      const o = {};
+      all.forEach((x) => { const k = keyFn(x); const g = o[k] || (o[k] = { evals: 0, passed: 0, ddHits: 0, spend: 0, payouts: 0, payoutCount: 0 });
+        g.evals += isEval(x) ? 1 : 0; g.passed += passed(x) ? 1 : 0; g.ddHits += ddHit(x) ? 1 : 0; g.spend += num(x.total_spend); g.payouts += num(x.payout); g.payoutCount += num(x.payout) > 0 ? 1 : 0; });
+      Object.values(o).forEach((g) => { g.spend = r2(g.spend); g.payouts = r2(g.payouts); g.net = r2(g.payouts - g.spend); g.passRate = g.evals ? g.passed / g.evals : null; });
+      return o;
+    };
+    return {
+      rows: all.length, spend: r2(spend), payouts: r2(payouts), net: r2(payouts - spend), roiPct: spend ? Math.round(((payouts - spend) / spend) * 1000) / 10 : null,
+      evals, passed: pass, ddHits: all.filter(ddHit).length, passRate: evals ? pass / evals : null,
+      payoutCount, payoutRateEval: evals ? payoutCount / evals : null, payoutRateFunded: pass ? payoutCount / pass : null,
+      avgEvalCost: evals ? r2(all.filter(isEval).reduce((s, x) => s + num(x.eval_fee), 0) / evals) : null,
+      costPerPass: pass ? r2(spend / pass) : null, costPerPayout: payoutCount ? r2(spend / payoutCount) : null,
+      activationSpend: r2(all.reduce((s, x) => s + num(x.activation_fee), 0)), resetSpend: r2(all.reduce((s, x) => s + num(x.reset), 0)),
+      byFirm: group((x) => x.firm || '–'), byMonth: group((x) => String(x.date).slice(0, 7)),
+    };
   };
 
   /**

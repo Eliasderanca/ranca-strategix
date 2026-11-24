@@ -106,3 +106,21 @@ test('milestoneState: erledigt, läuft, kommt', () => {
   assert.equal(RS.milestoneState(m, '2026-12-12'), 'done');
   assert.equal(RS.milestoneState({ to: '2026-11-30' }, '2026-11-30'), 'now');
 });
+
+test('parseCostCsv: Übersichtszeilen oben, „-   €“ und leere Zeilen; costKpis rechnet Pass- und Payout-Quote', () => {
+  const csv = 'Prop Firm Spend vs Payout Tracker;;;;;;;;;;;\n;;;;;;;;;;;\nTotal Spend; 400,00 € ;;;;;;;;;;\n'
+    + 'Account #;Firm;Date; Eval Fee ; Reset ; Eval Status ; Activation Fee ; Total Spend ; Payout $ ; Net ;Status;Notes\n'
+    + 'TPT1 - 25K;TPT;2.1.2026; 76,52 € ; -   € ; DD Hit ; -   € ; 76,52 € ; -   € ;-76,52 € ;Breached;\n'
+    + 'TPT2 - 25K;tpt;02.03.26; 80,00 € ;; Passed ;; 80,00 € ; 711,00 € ; 631,00 € ;Breached;Payout\n'
+    + 'TPT2 FUNDED;TPT;29.10.2026; -   € ;; Passed ; 404,00 € ; 404,00 € ;;-404,00 € ;Breached;\n'
+    + 'FTMO 150K;;29.10.2026; 242,00 € ;; DDHit ;; 242,00 € ;;-242,00 € ;Breached;\n;;;;;;;  ;;  ;;\n';
+  const r = RS.parseCostCsv(csv);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.rows.length, 4);
+  assert.equal(r.rows[0].reset, 0);
+  assert.equal(r.rows[1].firm, 'TPT'); assert.equal(r.rows[3].firm, 'FTMO'); assert.equal(r.rows[3].eval_status, 'DD Hit');
+  const k = RS.costKpis(r.rows);
+  assert.deepEqual([k.evals, k.passed, k.ddHits, k.payoutCount], [3, 1, 2, 1]);
+  assert.equal(k.spend, 802.52); assert.equal(k.payouts, 711); assert.equal(k.activationSpend, 404);
+  assert.equal(k.payoutRateFunded, 1); assert.equal(k.byFirm.TPT.evals, 2); assert.equal(k.byMonth['2026-10'].spend, 646);
+});
