@@ -15,10 +15,13 @@ Interne Trading-Software von Ranca: Markt-Lage, Daily Check-in, Journal, Dashboa
 | `config/seed.json` | Startwerte für Regelsätze und persönliche Regeln (gilt nur, solange die Datenbank leer ist) |
 | `tests/` | Unit-Tests für `logic.js` |
 | `scripts/smoke.js` | Browser-Rauchtest mit Playwright |
+| `scripts/smoke-szenarien.js` | Rauchtest Prop-Konten-Übersicht und Szenario-Ansicht |
 | `scripts/noscroll-check.js` | Prüft je Seite und Tab, dass am Desktop nichts scrollt (`W=1440 H=800 node scripts/noscroll-check.js`) |
 | `desktop/` | Mac-App (Electron-Fenster um die Live-App) |
 
 **Archiv und Interview:** Unter Coach → Archiv lässt sich ein Journal-Export (CSV mit `tradeAccount`, `entryDate`, `pnlDollars` …) importieren. Er landet in `archive_accounts`, getrennt von den Live-Trades. Strategix erkennt Test- und PRO-Konten, Copy-Gruppen und Verlusttage und wertet nach Uhrzeit aus. Coach, Agenten und die Interview-Session (Coach → Interview) nutzen das Archiv. Erkenntnisse aus Sessions stehen in `coach_sessions`.
+
+**Prop-Konten und Szenarien:** Prop-Konten zeigt alle Konten als Liste (P&L, Handelstage, Eval/Funded, Fortschritt, freier Drawdown, Chance für die nächsten Tage). Ein Klick öffnet `#prop/<id>`: Kennzahlen und ein Gitter aller Szenarien ab dem aktuellen Stand. Spalten sind die nächsten Trades, Zeilen die Kontostände; oben Ziel (Eval) bzw. Payout über dem Puffer (Funded, z. B. ab 26.000 $), unten Breach. Gleiche Zustände werden zusammengelegt (`RS.scenarioStart`, `RS.scenarioTree` in `logic.js`). Mit Firmenregeln rechnet es Tagesschluss-Trailing, Tageslimit soft/hart und die 50-%-Konsistenz mit, ohne sie wie das ursprüngliche Miro-Diagramm. Annahmen (Risiko, Trades/Tag, Tage, Trefferquote, Anteil 1:2) speichert jedes Konto in `accounts.scenario`; Startwerte in `config/seed.json` → `scenario_defaults`. Feld anklicken hebt alle Wege dorthin und von dort hervor.
 
 **Ohne Scrollen:** Am Desktop hat jede Seite eine feste Bildschirmhöhe. Längere Seiten teilen sich in Tabs (`<div class="tabpane" data-tab="…" data-tl="…">`), die `applyTabs()` als Tab-Leiste in den Seitenkopf setzt. Der zuletzt gewählte Tab pro Seite bleibt gespeichert. Lange Listen (Trades, Journal) sind in Seiten aufgeteilt.
 

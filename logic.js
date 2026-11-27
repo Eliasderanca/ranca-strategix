@@ -1223,5 +1223,129 @@
     };
   };
 
+  /* ---------- Prop-Szenarien: alle Wege bis Ziel/Payout oder Breach ---------- */
+  const c2 = (x) => Math.round(num(x) * 100) / 100;
+
+  /**
+   * Startzustand eines Kontos für die Szenarien, aus seinen Trades. Alle Beträge relativ zum Startkapital.
+   * o: {trades:[{date,pnl}] zeitlich sortiert, today, todayOpen (heute wird noch gehandelt), paidOut,
+   *     maxDD, ddType ('trailing-eod'|'trailing-intraday'|'static'), ddLock, ddAfterPayout, dll, dllMode}
+   */
+  RS.scenarioStart = (o) => {
+    const today = o.today, trades = (o.trades || []).filter((t) => t.date && t.date <= today);
+    const open = !!o.todayOpen && trades.some((t) => t.date === today);
+    const byDate = {}; for (const t of trades) (byDate[t.date] = byDate[t.date] || []).push(num(t.pnl));
+    const dates = Object.keys(byDate).sort();
+    let cum = 0, peakEod = 0, peakIntra = 0, best = 0, dayStart = null, dayPnl = 0, todayTrades = 0;
+    for (const d of dates) {
+      const isOpen = open && d === today; if (isOpen) dayStart = cum;
+      let dp = 0; for (const p of byDate[d]) { cum += p; dp += p; peakIntra = Math.max(peakIntra, cum); }
+      if (isOpen) { dayPnl = dp; todayTrades = byDate[d].length; } else { peakEod = Math.max(peakEod, cum); best = Math.max(best, dp); }
+    }
+    if (dayStart == null) dayStart = cum;
+    const paid = num(o.paidOut), afterPayout = paid > 0 && o.ddAfterPayout === 'start_balance', maxDD = num(o.maxDD);
+    let floor = null, floorStatic = null;
+    if (maxDD > 0) {
+      floorStatic = afterPayout ? 0 : -maxDD;
+      if (afterPayout || o.ddType === 'static') floor = floorStatic;
+      else { floor = (o.ddType === 'trailing-intraday' ? peakIntra : peakEod) - maxDD; if (o.ddLock) floor = Math.min(floor, 0); }
+    }
+    const pnl = c2(cum - paid), dll = num(o.dll);
+    const dllHit = open && dll > 0 && dayPnl <= -dll;
+    const breached = (floor != null && pnl <= floor) || (dllHit && RS.dllIsHard(o.dllMode || 'HARD', pnl));
+    return { pnl, dayStart: c2(dayStart - paid), dayPnl: c2(dayPnl), open, todayTrades, daysDone: dates.length,
+      floor: floor == null ? null : c2(floor), floorStatic: floorStatic == null ? null : c2(floorStatic), best: c2(best),
+      paused: dllHit && !breached, breached };
+  };
+
+  /**
+   * Szenario-Baum: jeder Trade endet als einer der Ausgänge (z. B. Win 1:2, Win 1:1, Loss). Gleiche Zustände werden
+   * zusammengelegt, Ziel (Eval) bzw. Payout über dem Puffer (Funded) und Breach beenden einen Weg.
+   * s: scenarioStart(); r: {mode:'eval'|'funded', firm, target, consPct, consMode, maxDD, ddType, ddLock, dll, dllMode, buffer}
+   * p: {risk, perDay, days, todaySlots, outcomes:[{k, r, p}]}
+   * Firmenregeln (r.firm): Drawdown trailt wie im Regelsatz, Tageslimit soft/hart, Konsistenz. Ohne: fester Drawdown, nichts davon.
+   */
+  RS.scenarioTree = (s, r, p) => {
+    const firm = r.firm !== false, risk = num(p.risk), perDay = Math.max(1, Math.round(num(p.perDay) || 1));
+    const outs = p.outcomes || []; // alle Ausgänge zählen als Wege, auch mit Wahrscheinlichkeit 0
+    const ddType = firm ? r.ddType : 'static', dll = firm ? num(r.dll) : 0, dllMode = r.dllMode || 'HARD';
+    const maxDD = num(r.maxDD), consPct = firm ? num(r.consPct) : 0, strictCons = r.consMode === 'RAISE_TARGET';
+    const target = r.mode === 'eval' && r.target != null && r.target !== '' ? num(r.target) : null;
+    const buffer = r.mode === 'funded' ? num(r.buffer) : null;
+    const floor0 = firm ? s.floor : s.floorStatic;
+    const trail = (floor, level) => { if (floor == null || ddType === 'static') return floor; const f = Math.max(floor, c2(level - maxDD)); return r.ddLock ? Math.min(f, 0) : f; };
+    const isGoal = (st) => {
+      if (r.mode === 'funded') return st.pnl > buffer;
+      if (target == null || st.pnl < target) return false;
+      if (!consPct) return true;
+      const b = Math.max(st.best, st.day);
+      return strictCons ? b * 100 < consPct * st.pnl : b * 100 <= consPct * st.pnl;
+    };
+    // Zeitplan der Trades: Rest von heute, dann ganze Tage
+    const slots = [];
+    if (s.open && !s.paused) for (let k = s.todayTrades + 1; k <= perDay && (p.todaySlots == null || k - s.todayTrades <= p.todaySlots); k++) slots.push({ dayIdx: 0, dayNo: s.daysDone, k, newDay: false });
+    for (let d = 1; d <= Math.max(0, Math.round(num(p.days))); d++) for (let k = 1; k <= perDay; k++) slots.push({ dayIdx: d, dayNo: s.daysDone + d, k, newDay: k === 1 });
+    let states = new Map();
+    const start = { pnl: s.pnl, floor: floor0, best: s.best, day: s.dayPnl, paused: !!s.paused && firm, ways: 1, prob: 1 };
+    const key = (x) => `${x.pnl}|${x.floor}|${x.best}|${x.day}|${x.paused ? 1 : 0}`;
+    const cols = [{ now: true, nodes: [{ pnl: s.pnl, ways: 1, prob: 1, floorMin: floor0, floorMax: floor0, pausedWays: start.paused ? 1 : 0 }], edges: [], goal: null, breach: null }];
+    const total = { goal: { ways: 0, prob: 0 }, breach: { ways: 0, prob: 0, dll: 0, floor: 0 } };
+    if (s.breached) return { cols, slots, total: { ...total, breach: { ways: 1, prob: 1, dll: 0, floor: 1 } }, open: { ways: 0, prob: 0 }, startGoal: false, startBreached: true };
+    if (isGoal(start)) return { cols, slots, total: { ...total, goal: { ways: 1, prob: 1 } }, open: { ways: 0, prob: 0 }, startGoal: true, startBreached: false };
+    states.set(key(start), start);
+    for (const sl of slots) {
+      const next = new Map(), nodes = new Map(), edges = new Map();
+      const goal = { ways: 0, prob: 0, early: 0 }, breach = { ways: 0, prob: 0, dll: 0, floor: 0, dllProb: 0 };
+      const addState = (x, w, pr) => { const k = key(x), e = next.get(k); if (e) { e.ways += w; e.prob += pr; } else next.set(k, { ...x, ways: w, prob: pr }); };
+      const addEdge = (from, to, kind, w, pr) => { const k = `${from}>${to}>${kind}`, e = edges.get(k); if (e) { e.ways += w; e.prob += pr; } else edges.set(k, { from, to, kind, ways: w, prob: pr }); };
+      for (let st of states.values()) {
+        const from = st.pnl;
+        if (sl.newDay) { // Tagesschluss des Vortags: Drawdown nachziehen, bester Tag, neues Tageslimit
+          st = { ...st, floor: trail(st.floor, st.pnl), best: Math.max(st.best, st.day), day: 0, paused: false };
+        }
+        if (st.paused) { addState(st, st.ways, st.prob); addEdge(from, String(st.pnl), 'pause', st.ways, st.prob); continue; }
+        for (const o of outs) {
+          const w = st.ways, pr = st.prob * num(o.p), move = c2(num(o.r) * risk);
+          if (move >= 0) {
+            const nx = { ...st, pnl: c2(st.pnl + move), day: c2(st.day + move) };
+            if (ddType === 'trailing-intraday') nx.floor = trail(nx.floor, nx.pnl);
+            if (isGoal(nx)) { goal.ways += w; goal.prob += pr; if (r.mode === 'eval' && r.minDays && sl.dayNo < r.minDays) goal.early += w; addEdge(from, 'G', o.k, w, pr); }
+            else { addState(nx, w, pr); addEdge(from, String(nx.pnl), o.k, w, pr); }
+            continue;
+          }
+          // Verlust: zuerst wird die höhere der beiden Grenzen erreicht (Drawdown-Floor oder Tageslimit)
+          const to = c2(st.pnl + move), dayStart = c2(st.pnl - st.day), dllLevel = dll > 0 ? c2(dayStart - dll) : -Infinity;
+          const fl = st.floor == null ? -Infinity : st.floor, first = Math.max(fl, dllLevel);
+          if (to > first) { const nx = { ...st, pnl: to, day: c2(st.day + move) }; addState(nx, w, pr); addEdge(from, String(to), o.k, w, pr); continue; }
+          if (fl >= dllLevel) { breach.ways += w; breach.prob += pr; breach.floor += w; addEdge(from, 'B', o.k, w, pr); continue; }
+          if (RS.dllIsHard(dllMode, dllLevel)) { breach.ways += w; breach.prob += pr; breach.dll += w; breach.dllProb += pr; addEdge(from, 'B', 'dll', w, pr); continue; }
+          const nx = { ...st, pnl: dllLevel, day: c2(dllLevel - dayStart), paused: true }; addState(nx, w, pr); addEdge(from, String(dllLevel), 'dll', w, pr);
+        }
+      }
+      for (const x of next.values()) {
+        const n = nodes.get(x.pnl) || { pnl: x.pnl, ways: 0, prob: 0, floorMin: x.floor, floorMax: x.floor, pausedWays: 0 };
+        n.ways += x.ways; n.prob += x.prob; if (x.paused) n.pausedWays += x.ways;
+        if (x.floor != null) { n.floorMin = n.floorMin == null ? x.floor : Math.min(n.floorMin, x.floor); n.floorMax = n.floorMax == null ? x.floor : Math.max(n.floorMax, x.floor); }
+        nodes.set(x.pnl, n);
+      }
+      total.goal.ways += goal.ways; total.goal.prob += goal.prob;
+      total.breach.ways += breach.ways; total.breach.prob += breach.prob; total.breach.dll += breach.dll; total.breach.floor += breach.floor;
+      cols.push({ ...sl, nodes: [...nodes.values()].sort((a, b) => b.pnl - a.pnl), edges: [...edges.values()], goal: goal.ways ? goal : null, breach: breach.ways ? breach : null });
+      states = next;
+    }
+    const open = { ways: 0, prob: 0 }; for (const x of states.values()) { open.ways += x.ways; open.prob += x.prob; }
+    return { cols, slots, total, open, startGoal: false, startBreached: false };
+  };
+
+  /** Wahrscheinlichkeiten der Ausgänge aus Trefferquote (0–1) und Anteil 1:2 an den Gewinnern (0–1) */
+  RS.scenarioOutcomes = (hit, share2, rBig = 2, rSmall = 1) => {
+    const h = Math.min(1, Math.max(0, num(hit))), s = Math.min(1, Math.max(0, num(share2)));
+    return [
+      { k: 'w2', r: rBig, p: h * s, label: `Win 1:${rBig}` },
+      { k: 'w1', r: rSmall, p: h * (1 - s), label: `Win 1:${rSmall}` },
+      { k: 'l', r: -1, p: 1 - h, label: 'Loss' },
+    ];
+  };
+
   return RS;
 });

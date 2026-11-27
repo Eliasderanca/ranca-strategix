@@ -473,6 +473,67 @@ select,input[type=text],input[type=number],input[type=date],input[type=time],tex
 .radar-sm svg{max-width:270px!important}
 @media (min-width:821px) and (max-height:860px){h1{font-size:38px}.main{padding-block:22px 20px}.dash-verse{display:none}
   .rail{padding:16px 12px}.rail .brand{padding:2px 10px 4px}.rail .addbtn{padding:8px 14px}.nav a{padding:2px 8px;font-size:13px}.nav a .ni{width:25px;height:25px}.nav a svg{width:14px;height:14px}}
+/* ============ Prop-Konten: Übersicht und Szenarien ============ */
+.plist{background:var(--surface);border-radius:var(--r-card);overflow:hidden}
+.prow{display:grid;grid-template-columns:minmax(150px,1.5fr) 76px 92px 80px minmax(110px,1fr) 96px minmax(130px,1.1fr) 12px;gap:12px;align-items:center;padding:12px 18px;border-top:1px solid var(--sep);color:var(--fg);text-decoration:none}
+.prow:first-child{border-top:0}
+a.prow:hover{background:var(--surface2)}a.prow:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.prow.ph{font-size:12px;font-weight:600;color:var(--muted);padding-block:9px}
+.prow .r{text-align:right}.prow>span{min-width:0}.prow .r b,.prow .r .small{display:block}
+.pname{display:flex;gap:10px;align-items:center}.pname b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pname .small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chev{color:var(--faint);font-size:22px;line-height:1}
+.pbar{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden;margin-bottom:4px}.pbar i{display:block;height:100%;background:var(--accent);border-radius:99px}.pbar.win i{background:var(--win)}.pbar.loss i{background:var(--loss)}
+.sbar{display:flex;height:9px;border-radius:99px;overflow:hidden;background:var(--surface2);margin-bottom:4px}.sbar i{display:block;height:100%}.sbar .g{background:var(--win)}.sbar .o{background:#c9d5d3}.sbar .b{background:var(--loss)}
+a.back{display:inline-block;margin-bottom:2px;color:var(--accent);text-decoration:none;font-weight:600}
+.head.det{margin-bottom:12px}.head.det h1{font-size:34px;line-height:1.1}
+.scen-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.skpi{background:var(--surface);border-radius:16px;padding:8px 13px;min-width:0}.skpi .v{font-size:18px;font-weight:700;letter-spacing:-.01em;margin:2px 0 1px;white-space:nowrap}.skpi .small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scen-body{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:12px}
+.scen-card{display:flex;flex-direction:column;padding:10px 12px;min-height:0}
+.scen-ctl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px 8px;align-items:end;margin:6px 0 2px}
+.scen-ctl label{display:flex;flex-direction:column;gap:2px;color:var(--muted);font-weight:500;font-size:11.5px;min-width:0}
+.scen-ctl label.tog{grid-column:span 2;flex-direction:row;align-items:center;gap:6px;font-size:12.5px;color:var(--fg);align-self:center}
+.scen-ctl input[type=number],.scen-ctl select{width:100%;min-width:0;padding:4px 7px;border-radius:9px;border:1px solid var(--line);background:#fff;font-size:13px}
+.scen-ctl .sc-reset{align-self:center;font-size:12px}
+.scen-ctl .seg{justify-self:end;flex-wrap:nowrap}.scen-ctl .seg button{padding:3px 8px;font-size:12.5px}
+.scen-scroll{flex:1;min-height:0;display:flex}
+.scen-box{position:relative;flex:1;min-height:340px;min-width:0;border-radius:12px;background:#fff;overflow:hidden}
+.scen-svg{display:block;font-family:var(--f-body)}
+.scen-svg .lane-g{fill:var(--win-soft)}.scen-svg .lane-b{fill:var(--loss-soft)}.scen-svg .lane-a{fill:#f7faf9}.scen-svg .lane-0{fill:var(--info-soft);opacity:.6}.scen-svg .lane-now{fill:var(--accent-soft)}
+.scen-svg .ll{fill:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}.scen-svg .ll.pos{fill:var(--win)}.scen-svg .ll.neg{fill:var(--loss)}.scen-svg .ls{fill:var(--faint);font-variant-numeric:tabular-nums}
+.scen-svg .ch{font-size:12px;font-weight:700;fill:var(--fg)}.scen-svg .cs{font-size:10.5px;fill:var(--muted)}
+.scen-svg .dsep{stroke:var(--line);stroke-width:1}
+.scen-svg .se{stroke-width:1.4;opacity:.55;transition:opacity .15s}
+.scen-svg .e-w2{stroke:var(--win);stroke-width:2.2}.scen-svg .e-w1{stroke:#7fcf9b}.scen-svg .e-l{stroke:var(--loss)}.scen-svg .e-dll{stroke:var(--warn);stroke-dasharray:4 3}.scen-svg .e-p{stroke:var(--faint);stroke-dasharray:2 3}
+.scen-svg .sn{cursor:pointer;transition:opacity .15s}.scen-svg .sn text{font-weight:700;font-variant-numeric:tabular-nums;pointer-events:none}
+.scen-svg .sn.paused rect{stroke:var(--warn);stroke-width:1.6;stroke-dasharray:3 2}
+.scen-svg .sn:focus{outline:none}.scen-svg .sn:focus-visible rect{stroke:var(--brand);stroke-width:2}
+.scen-svg.dim .se{opacity:.06}.scen-svg.dim .se.hl{opacity:1}.scen-svg.dim .sn{opacity:.22}.scen-svg.dim .sn.hl{opacity:1}
+.scen-tip{position:absolute;z-index:5;max-width:280px;background:var(--brand);color:#fff;border-radius:12px;padding:9px 12px;font-size:12.5px;line-height:1.4;pointer-events:none;box-shadow:var(--shadow)}
+.scen-tip .small{font-size:11.5px;opacity:.85}
+.scen-leg{display:flex;flex-wrap:nowrap;gap:14px;align-items:center;margin-top:8px;color:var(--muted);min-width:0}
+.scen-leg span{display:inline-flex;gap:6px;align-items:center}.scen-leg i{display:inline-block;width:18px;height:2px;border-radius:2px}.scen-leg i.dash{height:0;border-top:2px dashed}
+#scenInfo{flex:1;min-width:0;display:block!important;text-align:right;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scen-side{padding:12px 14px;min-height:0;overflow:hidden;font-size:13px;display:flex;flex-direction:column}.scen-side .sep{margin:10px 0}
+.sbar.big{height:12px;margin:8px 0 6px}
+.odds{display:flex;justify-content:space-between;gap:6px;margin-bottom:4px;font-size:12px;color:var(--muted)}.odds b{font-size:16px;font-variant-numeric:tabular-nums}
+.callout-s{border-radius:12px;padding:10px 12px;margin:6px 0}.callout-s.win{background:var(--win-soft);color:var(--win)}.callout-s.loss{background:var(--loss-soft);color:var(--loss)}
+.scen-hist{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center;margin-left:4px}
+.hday{display:inline-flex;gap:4px;align-items:center;background:var(--surface);border-radius:999px;padding:2px 9px;font-size:12px;color:var(--muted)}.hday b{font-size:12px}
+.scen-notes{list-style:none;margin:6px 0 0;padding:0 2px 0 0;display:flex;flex-direction:column;gap:6px;flex:1;min-height:0;overflow-y:auto;scrollbar-width:thin}
+.scen-notes li{padding:7px 10px;border-radius:10px;background:#fff;line-height:1.4;font-size:12.5px}.scen-notes li.loss{background:var(--loss-soft)}.scen-notes li.warn{background:var(--warn-soft)}
+.linkbtn{border:0;background:none;padding:0;color:var(--accent);font-weight:700;cursor:pointer;text-decoration:underline;font-size:inherit}
+.hide-pnl .scen-box svg{filter:blur(9px);user-select:none}
+@media (min-width:821px){
+  .main.pane-fill .tabpane.on .scen-body{flex:1;min-height:0}
+  .scen-box{min-height:0}
+}
+@media (max-width:1180px){.scen-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.scen-body{grid-template-columns:minmax(0,1fr) 250px}.prow{grid-template-columns:minmax(140px,1.6fr) 76px 92px 76px minmax(110px,1.2fr) minmax(130px,1.2fr) 12px}.prow>:nth-child(6){display:none}}
+@media (max-width:820px){
+  .prow{grid-template-columns:minmax(0,1fr) auto 14px;gap:6px 10px}.prow.ph{display:none}.prow>:nth-child(2){grid-column:2;grid-row:1}.prow>:nth-child(3){grid-column:1}.prow>:nth-child(4),.prow>:nth-child(6){display:none}.prow>:nth-child(5),.prow>:nth-child(7){grid-column:1/3}.prow .chev{grid-column:3;grid-row:1}.prow>:nth-child(3){text-align:left}
+  .scen-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.scen-body{grid-template-columns:minmax(0,1fr)}
+  .scen-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}.scen-box{min-width:760px;height:62vh;min-height:420px;flex:none;width:760px}
+}
 </style>
 
 <div class="app">
@@ -798,18 +859,28 @@ document.addEventListener('focusout',()=>{if(pending){setTimeout(()=>{const a=do
 function toast(msg){document.querySelectorAll('.toast').forEach(x=>x.remove());const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3800)}
 
 function render(){
-  const v=(location.hash||'').slice(1);UI.view=VIEWS.some(x=>x[0]===v)?v:'heute';
+  const [v,par]=(location.hash||'').slice(1).split('/');UI.view=VIEWS.some(x=>x[0]===v)?v:'heute';UI.param=par?decodeURIComponent(par):'';
   $('#tabbar').innerHTML=TABS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}">${ICON[i]}<span>${l}</span></a>`).join('')+`<a role="button" tabindex="0" data-act="more" class="${TABS.some(t=>t[0]===UI.view)?'':'on'}">${ICON.more}<span>Mehr</span></a>`;
   $('#nav').innerHTML=VIEWS.map(([k,l,i])=>`<a href="#${k}" class="${UI.view===k?'on':''}"><span class="ni">${ICON[i]}</span><span>${l}</span></a>`).join('');
   try{$('#railCard').innerHTML=railCard()}catch(e){}
   document.body.classList.toggle('hide-pnl',hidePnlNow());
   const f={heute:vHeute,simulator:vSim,woche:vWoche,cockpit:vCockpit,profil:vProfil,statistik:vStats,risiko:vRisk,checkin:vCheckin,markt:vMarket,dashboard:vDash,kalender:vKalender,trades:vTrades,playbook:vPlaybook,prop:vProp,coach:vCoach,agents:vAgents,journal:vJournal,regeln:vRules}[UI.view];
   $('#main').innerHTML=f();applyTabs();setSync();
+  if(UI.view==='prop'&&UI.param)drawScen();
   if(UI.view==='coach'){const c=$('#chatBox');if(c)c.scrollTop=c.scrollHeight}
   if(UI.view==='agents')tickCooldown();
   renderLock();renderTilt();armNewsTimer();
 }
 window.addEventListener('hashchange',render);
+/* Szenario-Gitter: neu zeichnen bei Größenänderung, Tooltip beim Zeigen, Auswahl per Klick oder Enter */
+let _scRz=0;window.addEventListener('resize',()=>{clearTimeout(_scRz);_scRz=setTimeout(()=>{if(UI.view==='prop'&&UI.param)drawScen()},120)});
+document.addEventListener('pointermove',e=>{const tip=$('#scenTip');if(!tip)return;const box=e.target.closest&&e.target.closest('#scenBox'),n=box&&e.target.closest('.sn');
+  if(!n){tip.hidden=true;return}
+  tip.innerHTML=scenNodeInfo(n.dataset.id);tip.hidden=false;const r=box.getBoundingClientRect();let x=e.clientX-r.left+14,y=e.clientY-r.top+14;
+  if(x+tip.offsetWidth>box.clientWidth)x=e.clientX-r.left-tip.offsetWidth-14;if(y+tip.offsetHeight>box.clientHeight)y=e.clientY-r.top-tip.offsetHeight-14;
+  tip.style.left=Math.max(0,x)+'px';tip.style.top=Math.max(0,y)+'px'});
+document.addEventListener('click',e=>{if(!e.target.closest||!e.target.closest('#scenBox'))return;const n=e.target.closest('.sn');scenHighlight(n?n.dataset.id:null)});
+document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest&&e.target.closest('#scenBox .sn')){e.preventDefault();scenHighlight(e.target.closest('.sn').dataset.id)}});
 
 /* ============ Seiten-Tabs: statt scrollen zwischen Bereichen wechseln ============ */
 // Jede View kann Bereiche als <div class="tabpane" data-tab="key" data-tl="Label"> markieren.
@@ -829,7 +900,8 @@ function applyTabs(){const main=$('#main'),panes=[...main.querySelectorAll('.tab
 function setSubTab(v){UI.sub[UI.view]=v;try{localStorage.setItem('rs-sub',JSON.stringify(UI.sub))}catch(e){}
   const main=$('#main');main.querySelectorAll('.tabpane').forEach(p=>p.classList.toggle('on',p.dataset.tab===v));
   main.querySelectorAll('.ptabs button').forEach(b=>{const on=b.dataset.v===v;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});
-  main.classList.toggle('pane-fill',main.querySelector('.tabpane.on.fill')!=null);main.scrollTop=0}
+  main.classList.toggle('pane-fill',main.querySelector('.tabpane.on.fill')!=null);main.scrollTop=0;
+  if(UI.view==='prop'&&UI.param)drawScen()}
 
 /* ============ components ============ */
 function acctSelect(id,val,withNone=true){return `<select id="${id}"><option value="all">Alle Konten</option>${withNone?`<option value="none" ${val==='none'?'selected':''}>Ohne Konto</option>`:''}${S.accounts.map(a=>`<option value="${a.id}" ${val===a.id?'selected':''}>${esc(a.name)}</option>`).join('')}</select>`}
@@ -1158,19 +1230,188 @@ function propCtx(){
     return `<button type="button" class="cal-cell pcell ${d===today?'today':''}" data-act="pday" data-d="${d}">${h}</button>`};
   return {acts,sel,shown,M,today,keyDates,cell};
 }
-function vProp(){const {acts,M}=propCtx();
-  return `<div class="head"><div><h1>Prop-Konten</h1><div class="sub">Challenge- und Funded-Konten mit Regeln, Fortschritt und erwartetem Payout.</div></div><div class="row"><a class="btn" href="#kalender">Zum Prop-Kalender</a><button class="btn pri" data-act="add-acct">Konto anlegen</button></div></div>
-  ${riskBar()}
-  ${acts.length?propPanes(acts,M):`<div class="card">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`}`;
+/* Übersicht aller Prop-Konten; #prop/<id> öffnet die Detailansicht mit den Szenarien */
+function vProp(){const a=UI.param?AC(UI.param):null;if(a)return vPropDetail(a);
+  const all=S.accounts.map(EA),act=all.filter(RS.isActive),old=all.filter(x=>!RS.isActive(x));
+  const head=`<div class="head"><div><h1>Prop-Konten</h1><div class="sub">Alle Challenges und Funded-Konten. Klick auf ein Konto zeigt, wo es steht und welche Wege zu Ziel, Payout oder Breach führen.</div></div><div class="row"><a class="btn" href="#kalender">Zum Prop-Kalender</a><button class="btn pri" data-act="add-acct">Konto anlegen</button></div></div>`;
+  if(!all.length)return head+riskBar()+`<div class="card">${emptyBox('Noch kein Prop-Konto','Lege deine Challenge oder dein Funded-Konto mit allen Regeln an: Profitziel, Tagesverlust, Drawdown-Art, Mindesttage, Konsistenzregel und Payout-Bedingungen.','<button class="btn pri" data-act="add-acct">Erstes Konto anlegen</button>')}</div>`;
+  const list=arr=>`<div class="plist" role="list"><div class="prow ph" aria-hidden="true"><span>Konto</span><span>Phase</span><span class="r">P&amp;L</span><span class="r">Tage aktiv</span><span>Fortschritt</span><span class="r">Drawdown frei</span><span>Chance nächste Tage</span><span></span></div>${arr.map(propRow).join('')}</div>`;
+  const none=`<div class="card">${emptyBox('Kein aktives Konto','Beendete Konten stehen im Tab „Beendet“. Lege für die nächste Challenge ein neues Konto an.','<button class="btn pri" data-act="add-acct">Konto anlegen</button>')}</div>`;
+  return head+riskBar()+(old.length?`<div class="tabpane" data-tab="aktiv" data-tl="Aktiv (${act.length})">${act.length?list(act):none}</div><div class="tabpane" data-tab="beendet" data-tl="Beendet (${old.length})">${list(old)}</div>`:list(act));
 }
-/* Konten auf Tabs verteilen: je Copy-Gruppe ein Tab, Einzelkonten je 2 pro Tab */
-function propPanes(acts,M){const g=RS.groupAccounts(acts);let h='';
-  g.groups.forEach((gr,i)=>{h+=`<div class="tabpane" data-tab="g${i}" data-tl="${esc(gr.name)}">${groupCard(gr,M)}</div>`});
-  for(let i=0;i<g.singles.length;i+=2){const part=g.singles.slice(i,i+2);h+=`<div class="tabpane" data-tab="s${i}" data-tl="${esc(part.map(a=>a.name).join(' + '))}"><div class="grid g-2">${part.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`}
-  return h}
-function groupCard(gr,M){const ms=gr.members.map(a=>M[a.id]);const tp=ms.reduce((x,m)=>x+m.todayP,0),pr=ms.reduce((x,m)=>x+m.profit,0);
-  return `<div class="card" style="margin-bottom:14px;background:var(--accent-soft)"><div class="row" style="justify-content:space-between;margin-bottom:12px"><div><div class="lbl">Copy-Gruppe</div><h2 style="margin:0">${esc(gr.name)} · ${gr.members.length} Konten</h2></div><div class="row"><span class="chip">Heute <b class="mono ${cls(tp)}">&nbsp;${money(tp,0)}</b></span><span class="chip">Gesamt <b class="mono ${cls(pr)}">&nbsp;${money(pr,0)}</b></span></div></div>
-    <div class="grid g-2">${gr.members.map(a=>acctCard(a,M[a.id])).join('')}</div></div>`}
+function phaseChip(a){let c='info',l='Eval';const st=a.stage||'';
+  if(st==='FUNDED'||(!st&&a.phase==='funded'))[c,l]=['win',a.plus?'Funded+':'Funded'];
+  if(st==='BREACHED'||a.status==='verloren')[c,l]=['loss','Verloren'];else if(st==='PAYOUT'||a.status==='ausbezahlt')[c,l]=['gold','Ausgezahlt'];else if(a.status==='beendet')[c,l]=['','Beendet'];else if(!st&&a.status==='bestanden')[c,l]=['win','Bestanden'];
+  return `<span class="chip ${c}">${l}</span>`}
+const sgnUsd=(v,d=0)=>(num(v)>0?'+':'')+money(v,d);
+const fmtP=p=>p<=0?'0 %':p<.001?'<0,1 %':(p*100).toLocaleString('de-DE',{maximumFractionDigits:p<.1?1:0})+' %';
+const fmtWays=n=>Math.round(n).toLocaleString('de-DE');
+function propRow(a){const m=acctM(a),fund=a.phase==='funded',c=a.color||COLORS[0],X=RS.isActive(a)?scenOf(AC(a.id)):null;
+  const first=m.dates[0],since=a.startDate||first;
+  let prog='<span class="small muted">–</span>';
+  if(!fund&&a.profitTarget)prog=`<div class="pbar"><i style="width:${clamp((m.progress||0)*100)}%"></i></div><div class="small muted"><span class="pnlv">${money(m.profit,0)}</span> von ${money(m.target,0)}${m.targetRaised?' (erhöht)':''}</div>`;
+  else if(fund&&a.payoutBufferUsd!=null&&!a.plus){const paid=(a.payouts||[]).reduce((x,p)=>x+num(p.amount),0),net=m.profit-paid;
+    prog=m.withdrawable>0?`<div class="pbar win"><i style="width:100%"></i></div><div class="small pos">Auszahlbar ${money(m.withdrawable,0)}</div>`:`<div class="pbar"><i style="width:${clamp(net/a.payoutBufferUsd*100)}%"></i></div><div class="small muted">bis Payout noch ${money(Math.max(0,a.payoutBufferUsd-net),0)}</div>`}
+  else if(fund)prog=`<div class="small muted">seit Payout <b class="mono pnlv ${cls(m.profitSince)}">${money(m.profitSince,0)}</b></div>`;
+  let sc='<span class="small muted">–</span>';
+  if(X){const t=X.tree,G=t.total.goal.prob,B=t.total.breach.prob,O=t.open.prob,gl=X.gl;
+    sc=t.startGoal?`<span class="chip win">${X.glDone}</span>`:t.startBreached?'<span class="chip loss">Grenze erreicht</span>'
+     :`<div class="sbar" title="${gl} ${fmtP(G)} · Breach ${fmtP(B)} · offen ${fmtP(O)}"><i class="g" style="width:${G*100}%"></i><i class="o" style="width:${O*100}%"></i><i class="b" style="width:${B*100}%"></i></div><div class="small muted" title="nächste ${X.p.days} Handelstage">${gl} <b class="pos">${fmtP(G)}</b> · Breach <b class="neg">${fmtP(B)}</b></div>`}
+  const dd=a.maxDrawdown?`<b class="mono">${money(m.ddLeft,0)}</b><div class="pbar ${m.ddLeft<.3*a.maxDrawdown?'loss':''}" style="margin-top:4px"><i style="width:${clamp(m.ddLeft/a.maxDrawdown*100)}%"></i></div>`:'<span class="small muted">–</span>';
+  return `<a class="prow" role="listitem" href="#prop/${encodeURIComponent(a.id)}" style="--c:${c}">
+   <span class="pname"><span class="setup-dot" style="background:${c}"></span><span style="min-width:0"><b>${esc(a.name)}</b><span class="small muted">${esc(a.ruleName||a.firm||'')}${a.size?' · '+money(a.size,0):''}${a.copy_group?' · Copy '+esc(a.copy_group):''}${a.demo?' · Demo':''}</span></span></span>
+   <span>${phaseChip(a)}</span>
+   <span class="r"><b class="mono pnlv ${cls(m.profit)}">${money(m.profit,0)}</b><span class="small muted pnlv">heute ${money(m.todayP,0)}</span></span>
+   <span class="r"><b class="mono">${m.tradingDays}${!fund&&a.minDays?' / '+a.minDays:''}</b><span class="small muted">${since?'seit '+dLabel(since).replace(/^\w+, /,''):'noch kein Trade'}</span></span>
+   <span>${prog}</span><span class="r">${dd}</span><span>${sc}</span><span class="chev" aria-hidden="true">›</span></a>`}
+
+/* ============ Prop-Szenarien: wo steht das Konto, welche Wege führen zu Ziel, Payout oder Breach ============ */
+let SC=null;
+function scenCfg(acc){const d=SEED.scenario_defaults||{};
+  const base={risk:num(d.risk_per_trade)||300,perDay:num(d.trades_per_day)||2,days:num(d.days_ahead)||5,hit:d.hit_rate_pct!=null?num(d.hit_rate_pct):50,share2:d.share_rr2_pct!=null?num(d.share_rr2_pct):50,rrBig:num(d.rr_big)||2,firm:d.firm_rules!==false,show:d.show||'prob'};
+  return {...base,...((acc&&acc.scenario)||{})}}
+const scenMaxDays=perDay=>Math.min(8,Math.floor(16/Math.max(1,perDay)));
+function scenOf(acc,cfg){const a=EA(acc);cfg=cfg||scenCfg(acc);const fund=a.phase==='funded';
+  const trs=S.trades.filter(t=>RS.tradeHasAccount(t,a.id)).sort(byDT),pr=PRU(acc),today=TODAY(),now=RS.berlinTime();
+  const todayOpen=now<(pr.sessionEnd||'23:00'),tradedToday=trs.some(t=>t.date===today);
+  const paid=fund?(a.payouts||[]).reduce((x,p)=>x+num(p.amount),0):0;
+  const dllMode=a.maxDailyLoss?(a.dllMode||(a.dllSoft?'SOFT':'HARD')):null;
+  const s=RS.scenarioStart({trades:trs.map(t=>({date:t.date,pnl:num(t.pnl)})),today,todayOpen,paidOut:paid,maxDD:a.maxDrawdown,ddType:a.ddType,ddLock:a.ddLock,ddAfterPayout:a.ddAfterPayout,dll:a.maxDailyLoss,dllMode});
+  const buffer=fund?(a.payoutBufferUsd!=null?a.payoutBufferUsd:num(a.payoutBuffer)):null;
+  const r={mode:fund?'funded':'eval',firm:cfg.firm,target:fund?null:a.profitTarget,consPct:a.consistencyPct,consMode:a.consistencyMode,minDays:a.minDays,maxDD:a.maxDrawdown,ddType:a.ddType,ddLock:a.ddLock,dll:a.maxDailyLoss,dllMode,buffer};
+  const p={risk:cfg.risk,perDay:cfg.perDay,days:Math.min(cfg.days,scenMaxDays(cfg.perDay)),outcomes:RS.scenarioOutcomes(cfg.hit/100,cfg.share2/100,cfg.rrBig,1)};
+  const tree=RS.scenarioTree(s,r,p);
+  const from=tradedToday||!todayOpen?addDays(today,1):today;
+  const dayDate=i=>i===0?today:futureDays(a,from,i);
+  const bufModel=fund&&a.payoutBufferUsd!=null;
+  return {acc,a,cfg,s,r,p,tree,fund,paid,trs,pr,today,dayDate,start:a.startBalance||a.size||0,gl:fund?(bufModel?'Payout':'Über Puffer'):'Ziel',glDone:fund?(bufModel?'Payout möglich':'Über Puffer'):'Ziel erreicht',bufModel}}
+
+function vPropDetail(acc){const X=scenOf(acc);SC=X;UI.scenSel=UI.scenSel&&UI.scenSel.id===acc.id?UI.scenSel:null;
+  const {a,cfg,s,tree,fund,start,r,gl}=X,m=acctM(acc),T=tree.total,G=T.goal.prob,B=T.breach.prob,O=tree.open.prob;
+  const ended=!RS.isActive(a),maxD=scenMaxDays(cfg.perDay),days=Math.min(cfg.days,maxD);
+  const tgtRaised=!fund&&r.target&&cfg.firm&&a.consistencyPct&&a.consistencyMode==='RAISE_TARGET'&&s.best*100/a.consistencyPct>=r.target;
+  const kpi=(l,v,sub,c='',tt='')=>`<div class="skpi"${tt?` title="${esc(tt)}"`:''}><div class="lbl">${l}</div><div class="v mono ${c}">${v}</div><div class="small muted">${sub}</div></div>`;
+  const floorAbs=s.floor!=null?start+s.floor:null,todayP=s.open?s.dayPnl:(m.days[X.today]?.pnl||0),todayN=X.trs.filter(t=>t.date===X.today).length;
+  const dllTxt=X.r.dllMode==='SOFT_ABOVE_START'?`Über ${money(start,0)} pausiert das Tageslimit nur den Tag, darunter ist das Konto verloren.`:X.r.dllMode==='HARD'?'Hartes Tageslimit: Erreichen beendet das Konto.':'Weiches Tageslimit: Pause bis zum nächsten Tag.';
+  const k=[
+    kpi('Kontostand',`<span class="pnlv">${money(start+s.pnl,0)}</span>`,`P&amp;L <b class="pnlv ${cls(s.pnl)}">${sgnUsd(s.pnl)}</b>${X.paid?' · ausgezahlt '+money(X.paid,0):''}`),
+    kpi('Handelstage',`${s.daysDone}${!fund&&a.minDays?' / '+a.minDays:''}`,a.startDate||m.dates[0]?'seit '+dLabel(a.startDate||m.dates[0]):'noch kein Trade'),
+    kpi('Drawdown-Grenze',floorAbs!=null?money(floorAbs,0):'–',floorAbs!=null?`noch <b class="pnlv">${money(s.pnl-s.floor,0)}</b>${a.ddLock&&s.floor>=0?' · gelockt':''}`:'nicht hinterlegt','',floorAbs!=null?(a.ddType==='static'?'Feste Grenze':a.ddType==='trailing-intraday'?'Trailt intraday mit dem höchsten Stand':'Trailt am Tagesschluss mit dem höchsten Schlussstand')+(a.ddLock?`, stoppt bei ${money(start,0)}.`:'.'):''),
+    fund?kpi('Payout ab',r.buffer!=null?money(start+r.buffer,0):'–',s.pnl>r.buffer?`auszahlbar <b class="pos pnlv">${money(s.pnl-r.buffer,0)}</b>`:`fehlen <b class="pnlv">${money(Math.max(0,r.buffer-s.pnl)+1,0)}</b>`)
+        :kpi('Ziel',r.target?(tgtRaised?'> '+sgnUsd(2*s.best):sgnUsd(r.target)):'–',r.target?(tgtRaised?'erhöht (Konsistenz)':`noch <b class="pnlv">${money(Math.max(0,r.target-s.pnl),0)}</b>`):'nicht hinterlegt'),
+    kpi('Heute',`<span class="pnlv ${cls(todayP)}">${sgnUsd(todayP)}</span>`,`${todayN}/${cfg.perDay} Trades${a.maxDailyLoss?` · frei <b>${money(Math.max(0,a.maxDailyLoss+Math.min(0,todayP)),0)}</b>`:''}`,'',a.maxDailyLoss?`Tageslimit ${money(a.maxDailyLoss,0)}. ${dllTxt}`:''),
+    kpi(`Chance ${days} Tage`,tree.startGoal?'erreicht':tree.startBreached?'–':fmtP(G),tree.startGoal||tree.startBreached?'':`${gl} · Breach <b class="neg">${fmtP(B)}</b>`,tree.startBreached?'neg':'pos')].join('');
+  const opt=(n,v)=>Array.from({length:n},(_,i)=>i+1).map(x=>`<option value="${x}" ${x===v?'selected':''}>${x}</option>`).join('');
+  const ctl=`<div class="scen-ctl">
+    <label>Risiko $<input id="sc_risk" type="number" min="10" step="10" value="${cfg.risk}" inputmode="numeric"></label>
+    <label>Trades/Tag<select id="sc_perDay">${opt(4,cfg.perDay)}</select></label>
+    <label>Tage voraus<select id="sc_days">${opt(maxD,days)}</select></label>
+    <label>Treffer %<input id="sc_hit" type="number" min="0" max="100" step="5" value="${cfg.hit}"></label>
+    <label>davon 1:${cfg.rrBig} %<input id="sc_share2" type="number" min="0" max="100" step="5" value="${cfg.share2}"></label>
+    <span class="sc-reset">${acc.scenario?'<button type="button" class="linkbtn" data-act="sc-reset">Zurücksetzen</button>':''}</span>
+    <label class="tog"><input type="checkbox" id="sc_firm" ${cfg.firm?'checked':''}> Firmenregeln</label>
+    <div class="seg" role="group" aria-label="Anzeige im Gitter"><button type="button" data-act="sc-show" data-v="prob" class="${cfg.show!=='ways'?'on':''}">%</button><button type="button" data-act="sc-show" data-v="ways" class="${cfg.show==='ways'?'on':''}">Wege</button></div></div>`;
+  const legend=`<div class="scen-leg small"><span><i style="background:var(--win);height:3px"></i>Win 1:${cfg.rrBig}</span><span><i style="background:#7fcf9b"></i>Win 1:1</span><span><i style="background:var(--loss)"></i>Loss</span>${cfg.firm&&a.maxDailyLoss?'<span><i class="dash" style="border-color:var(--warn)"></i>Tageslimit</span>':''}<span><i class="dash" style="border-color:var(--faint)"></i>Pause</span><span id="scenInfo">Feld antippen: alle Wege dorthin und von dort weiter.</span></div>`;
+  const hist=(()=>{const dd=byDay(X.trs),ds=Object.keys(dd).sort();let cum=0;const rows=ds.map((d,i)=>{cum+=dd[d].pnl;return [d,i+1,dd[d].pnl,cum]});
+    return rows.slice(-5).map(([d,n,p,c])=>`<span class="hday" title="${dLabel(d)}: Tagesschluss ${money(start+c,0)}">Tag ${n} <b class="mono pnlv ${cls(p)}">${sgnUsd(p)}</b></span>`).join('')})();
+  const NL=scenNotes(X),notes=NL.map(([lv,t])=>`<li class="${lv}">${t}</li>`).join('');
+  const fastG=tree.cols.findIndex(c=>c.goal),fastB=tree.cols.findIndex(c=>c.breach),slot=i=>{const c=tree.cols[i];return `Tag ${c.dayNo} · T${c.k}`};
+  const res=tree.startGoal?`<div class="callout-s win"><b>${X.glDone}</b><div class="small">${fund?'Der Kontostand liegt über '+money(start+r.buffer,0)+'.'+(X.bufModel?'':' Für einen Payout zählen zusätzlich die Payout-Tage im Regelsatz.'):a.minDays&&s.daysDone<a.minDays?'Noch '+(a.minDays-s.daysDone)+' Handelstag(e) bis bestanden.':'Die Regeln für das Ziel sind erfüllt.'}</div></div>`
+    :tree.startBreached?`<div class="callout-s loss"><b>Grenze erreicht</b><div class="small">Laut Trades liegt das Konto auf oder unter der Drawdown-Grenze oder hat das harte Tageslimit gerissen.</div></div>`
+    :`<div class="sbar big" title="${gl} ${fmtP(G)} · Breach ${fmtP(B)} · offen ${fmtP(O)}"><i class="g" style="width:${G*100}%"></i><i class="o" style="width:${O*100}%"></i><i class="b" style="width:${B*100}%"></i></div>
+     <div class="odds"><span><b class="pos">${fmtP(G)}</b> ${gl}</span><span><b class="neg">${fmtP(B)}</b> Breach</span><span><b>${fmtP(O)}</b> offen</span></div>
+     <div class="small muted">${fmtWays(T.goal.ways+T.breach.ways+tree.open.ways)} Wege: ${fmtWays(T.goal.ways)} ${gl} · ${fmtWays(T.breach.ways)} Breach${T.breach.dll?' ('+fmtWays(T.breach.dll)+' Tageslimit)':''} · ${fmtWays(tree.open.ways)} offen</div>
+     ${fastG>0||fastB>0?`<div class="small" style="margin-top:4px">Am schnellsten: ${[fastG>0?`${gl} <b>${slot(fastG)}</b>`:'',fastB>0?`Breach <b>${slot(fastB)}</b>`:''].filter(Boolean).join(', ')}</div>`:''}`;
+  return `<div class="head det"><div><a class="back small" href="#prop">‹ Alle Prop-Konten</a><h1>${esc(a.name)}</h1><div class="sub row" style="gap:6px">${phaseChip(a)}<span>${esc(a.ruleName||a.firm||'')}${a.size?' · '+money(a.size,0):''}</span>${a.copy_group?`<span class="chip info">Copy: ${esc(a.copy_group)}</span>`:''}${ended?'<span class="chip">beendet</span>':''}${hist?`<span class="scen-hist">${hist}</span>`:''}</div></div><div class="row"><button class="btn" data-act="edit-acct" data-id="${a.id}">Regeln</button>${fund?`<button class="btn" data-act="payout" data-id="${a.id}">Payout erfassen</button>`:''}</div></div>
+  <div class="tabpane fill" data-tab="szen" data-tl="Szenarien">
+   <div class="scen-kpis">${k}</div>
+   <div class="scen-body">
+    <div class="card scen-card"><div class="scen-scroll"><div id="scenBox" class="scen-box" aria-label="Szenario-Gitter: Kontostand je Trade"></div></div>${legend}</div>
+    <div class="card scen-side">
+     <div class="lbl">Annahmen</div>${ctl}
+     <div class="sep"></div><div class="lbl">Nächste ${days} Handelstage</div>${res}
+     ${notes?`<div class="sep"></div><div class="lbl">Darauf achten${NL.length>1?' ('+NL.length+')':''}</div><ul class="scen-notes">${notes}</ul>`:''}
+    </div>
+   </div>
+  </div>
+  <div class="tabpane" data-tab="konto" data-tl="Konto &amp; Regeln"><div style="max-width:760px">${acctCard(acc,m)}</div></div>`;
+}
+/* Hinweise mit konkreten Zahlen zu den Regeln, die die Szenarien am stärksten prägen */
+function scenNotes(X){const {a,cfg,s,fund,start,r,pr}=X,out=[],R=num(cfg.risk);
+  if(!cfg.firm)out.push(['warn','Firmenregeln aus: fester Drawdown, kein Tageslimit, keine Konsistenz. So rechnet das Miro-Diagramm.']);
+  if(cfg.firm&&a.maxDailyLoss&&R>0){const n=Math.ceil(a.maxDailyLoss/R);
+    if(n<=cfg.perDay){const base=`Mit ${money(R,0)} Risiko löst der ${n}. Verlust am Tag das Tageslimit (${money(a.maxDailyLoss,0)}) aus.`;
+      if(r.dllMode==='SOFT_ABOVE_START')out.push(['loss',`${base} Startest du den Tag unter ${money(start+a.maxDailyLoss,0)}, ist das Konto weg.`]);
+      else if(r.dllMode==='HARD')out.push(['loss',`${base} Das Limit ist hart: Konto weg.`]);
+      else out.push(['warn',`${base} Danach Pause bis zum nächsten Tag.`])}}
+  if(!fund&&cfg.firm&&a.consistencyPct&&r.target){const cap=Math.floor(r.target*a.consistencyPct/100);
+    out.push(['warn',`Konsistenz ${a.consistencyPct} %: Ein Tag ab ${money(cap,0)} hebt das Ziel auf mehr als das Doppelte dieses Tages.${s.best*100>=a.consistencyPct*r.target?' Bester Tag bisher: '+money(s.best,0)+'.':''}`])}
+  if(!fund&&cfg.firm&&a.minDays&&s.daysDone<a.minDays)out.push(['info',`Bestanden frühestens an Handelstag ${a.minDays}, auch wenn das Ziel vorher erreicht ist.`]);
+  if(fund&&X.bufModel)out.push(['info',`Auszahlbar ist alles über ${money(start+r.buffer,0)}.${a.ddLock?' Ein Tagesschluss dort lockt die Grenze bei '+money(start,0)+'.':''}`]);
+  else if(fund&&a.payoutMinDays)out.push(['info',`Das Gitter rechnet nur bis über den Puffer. Für den Payout zählen zusätzlich ${a.payoutMinDays} Tage mit mindestens ${money(a.minDayProfit||0,0)} Gewinn.`]);
+  const own=num(pr.risk_per_trade_phase1);if(own&&own!==R)out.push(['info',`Deine Regel für dieses Konto: ${money(own,0)} Risiko${num(pr.risk_per_trade_phase2)?` (ab ${sgnUsd(pr.phase2_from_profit)}: ${money(pr.risk_per_trade_phase2,0)})`:''}. <button type="button" class="linkbtn" data-act="sc-own">Übernehmen</button>`]);
+  return out}
+
+/* Zeichnet das Gitter passend zur Fläche: Spalten = Trades, Zeilen = Kontostände, oben Ziel/Payout, unten Breach */
+function drawScen(){const box=$('#scenBox');if(!box||!SC)return;const W=box.clientWidth,H=box.clientHeight;if(W<120||H<80)return;
+  const {tree,cfg,fund,start,s,gl}=SC,cols=tree.cols,useP=cfg.show!=='ways';
+  const vals=[...new Set(cols.flatMap(c=>c.nodes.map(n=>n.pnl)))].sort((x,y)=>y-x);
+  const hasG=cols.some(c=>c.goal),hasB=cols.some(c=>c.breach),lanes=[...(hasG?['G']:[]),...vals,...(hasB?['B']:[])];
+  const labW=Math.round(Math.min(96,Math.max(66,W*.085))),top=38,cw=(W-labW-4)/cols.length,lh=(H-top-2)/lanes.length;
+  const nw=Math.max(24,Math.min(cw*.72,96)),nh=Math.max(11,Math.min(lh*.76,32)),fs=Math.max(8.5,Math.min(12.5,nh*.48,nw*.2));
+  const li=new Map(lanes.map((k,i)=>[String(k),i])),ly=k=>top+li.get(String(k))*lh+lh/2,cx=i=>labW+i*cw+cw/2;
+  let g='';
+  // Zeilen
+  lanes.forEach((k,i)=>{const y=top+i*lh,cl=k==='G'?'lane-g':k==='B'?'lane-b':k===s.pnl?'lane-now':k===0?'lane-0':i%2?'lane-a':'';
+    if(cl)g+=`<rect class="${cl}" x="0" y="${y}" width="${W}" height="${lh}"/>`;
+    const lab=k==='G'?gl:k==='B'?'Breach':sgnUsd(k),sub=k==='G'||k==='B'?'':money(start+k,0);
+    g+=`<text class="ll ${k==='G'?'pos':k==='B'?'neg':''}" x="${labW-8}" y="${y+lh/2+(lh>=26&&sub?-2:4)}" text-anchor="end" font-size="${Math.min(12.5,Math.max(9,lh*.42))}">${lab}</text>`;
+    if(lh>=26&&sub)g+=`<text class="ls" x="${labW-8}" y="${y+lh/2+11}" text-anchor="end" font-size="9.5">${sub}</text>`});
+  // Kopf: Tage und Trades
+  g+=`<text class="ch" x="${cx(0)}" y="15" text-anchor="middle">Jetzt</text><text class="cs" x="${cx(0)}" y="31" text-anchor="middle">${s.daysDone?'nach Tag '+s.daysDone+(s.open?' (läuft)':''):'Start'}</text>`;
+  let i0=1;while(i0<cols.length){const d=cols[i0].dayIdx;let i1=i0;while(i1+1<cols.length&&cols[i1+1].dayIdx===d)i1++;
+    const x0=labW+i0*cw,x1=labW+(i1+1)*cw,dt=SC.dayDate(d),wd=dt?['So','Mo','Di','Mi','Do','Fr','Sa'][parseD(dt).getDay()]+' '+(+dt.slice(8))+'.'+(+dt.slice(5,7))+'.':'';
+    g+=`<line class="dsep" x1="${x0}" y1="2" x2="${x0}" y2="${H}"/><text class="ch" x="${(x0+x1)/2}" y="15" text-anchor="middle">Tag ${cols[i0].dayNo}${d===0?' (heute)':''}${cw*(i1-i0+1)>110&&wd?' · '+wd:''}</text>`;
+    for(let i=i0;i<=i1;i++)g+=`<text class="cs" x="${cx(i)}" y="31" text-anchor="middle">${cw>44?'Trade ':'T'}${cols[i].k}</text>`;
+    i0=i1+1}
+  // Linien
+  const EK={w2:'e-w2',w1:'e-w1',l:'e-l',dll:'e-dll',pause:'e-p'};
+  cols.forEach((c,i)=>{if(!i)return;c.edges.forEach((e,j)=>{const to=e.to==='G'||e.to==='B'?e.to:+e.to;
+    g+=`<line class="se ${EK[e.kind]||''}" data-id="${i}|${j}" x1="${cx(i-1)+nw/2}" y1="${ly(e.from)}" x2="${cx(i)-nw/2}" y2="${ly(to)}"/>`})});
+  // Felder
+  const node=(i,key,n,kind)=>{const x=cx(i)-nw/2,y=ly(key)-nh/2,val=useP?fmtP(n.prob):fmtWays(n.ways);
+    let fill,tc,extra='';
+    if(kind==='now'){fill='var(--brand)';tc='#fff'}else if(kind==='G'){fill=n.prob>0||!useP?'var(--win)':'var(--win-soft)';tc=n.prob>0||!useP?'#fff':'var(--win)'}
+    else if(kind==='B'){fill=n.prob>0||!useP?'var(--loss)':'var(--loss-soft)';tc=n.prob>0||!useP?'#fff':'var(--loss)'}
+    else{const mx=Math.max(...cols[i].nodes.map(q=>useP?q.prob:q.ways))||1,al=.12+.68*Math.sqrt((useP?n.prob:n.ways)/mx);fill=`rgba(14,107,92,${al.toFixed(3)})`;tc=al>.5?'#fff':'var(--fg)';if(n.pausedWays)extra=' paused'}
+    return `<g class="sn${extra}" data-id="${i}|${key}" tabindex="0" role="button" aria-label="${kind==='now'?'Jetzt':esc(String(key==='G'?gl:key==='B'?'Breach':sgnUsd(key)))}"><rect x="${x}" y="${y}" width="${nw}" height="${nh}" rx="${Math.min(nh/2,9)}" style="fill:${fill}"/><text x="${x+nw/2}" y="${y+nh/2+fs*.36}" text-anchor="middle" font-size="${fs}" style="fill:${tc}">${kind==='now'?(nw>50?'Jetzt':'●'):val}</text></g>`};
+  cols.forEach((c,i)=>{if(!i){g+=node(0,s.pnl,c.nodes[0],'now');return}
+    c.nodes.forEach(n=>{g+=node(i,n.pnl,n,'n')});if(c.goal)g+=node(i,'G',c.goal,'G');if(c.breach)g+=node(i,'B',c.breach,'B')});
+  box.innerHTML=`<svg class="scen-svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Szenarien">${g}</svg><div class="scen-tip" id="scenTip" hidden></div>`;
+  if(UI.scenSel&&UI.scenSel.id===SC.acc.id)scenHighlight(UI.scenSel.node,false);
+}
+function scenNode(id){const [ci,key]=id.split('|'),i=+ci,c=SC.tree.cols[i];if(!c)return null;
+  if(key==='G')return {i,key,c,n:c.goal,kind:'G'};if(key==='B')return {i,key,c,n:c.breach,kind:'B'};
+  const n=c.nodes.find(q=>String(q.pnl)===key);return n?{i,key,c,n,kind:i?'n':'now'}:null}
+function scenNodeInfo(id){const N=scenNode(id);if(!N)return '';const {i,key,c,n,kind}=N,{fund,start,a,cfg}=SC,gl=SC.glDone;
+  const when=i===0?'Jetzt':`Tag ${c.dayNo}, Trade ${c.k}${c.dayIdx===0?' (heute)':''}`,wp=`${fmtWays(n.ways)} ${n.ways===1?'Weg':'Wege'} · ${fmtP(n.prob)}`;
+  if(kind==='G')return `<b>${when}: ${gl}</b><div>${wp}</div>${n.early?`<div class="small">${fmtWays(n.early)} davon vor Tag ${a.minDays}: erst mit dem ${a.minDays}. Handelstag bestanden.</div>`:''}`;
+  if(kind==='B')return `<b>${when}: Breach</b><div>${wp}</div><div class="small">${n.dll?fmtWays(n.dll)+' durchs Tageslimit unter '+money(start,0)+(n.floor?', ':''):''}${n.floor?fmtWays(n.floor)+' an der Drawdown-Grenze':''}</div>`;
+  const fl=n.floorMin==null?'':n.floorMin===n.floorMax?`Drawdown-Grenze ${money(start+n.floorMin,0)}`:`Drawdown-Grenze ${money(start+n.floorMin,0)} bis ${money(start+n.floorMax,0)} (je nach Weg)`;
+  return `<b>${when}: ${sgnUsd(n.pnl)} · ${money(start+n.pnl,0)}</b><div>${kind==='now'?'Aktueller Stand':wp}</div>${fl?`<div class="small">${fl}</div>`:''}${n.pausedWays?`<div class="small">${fmtWays(n.pausedWays)} ${n.pausedWays===1?'Weg':'Wege'} in Tageslimit-Pause (Soft Breach)</div>`:''}`}
+/* Alle Wege zu einem Feld und von dort weiter hervorheben */
+function scenHighlight(id,toggle=true){const svg=$('#scenBox .scen-svg');if(!svg)return;
+  if(toggle&&UI.scenSel&&UI.scenSel.node===id)id=null;
+  svg.classList.remove('dim');svg.querySelectorAll('.hl').forEach(x=>x.classList.remove('hl'));
+  const info=$('#scenInfo');if(!id){UI.scenSel=null;if(info)info.innerHTML='Feld antippen: alle Wege dorthin und von dort weiter.';return}
+  UI.scenSel={id:SC.acc.id,node:id};const cols=SC.tree.cols,[ci,key]=id.split('|'),nodes=new Set([id]),edges=new Set();
+  let cur=new Set([key]);for(let i=+ci;i>=1&&cur.size;i--){const prev=new Set();cols[i].edges.forEach((e,j)=>{if(cur.has(String(e.to))){edges.add(i+'|'+j);prev.add(String(e.from));nodes.add((i-1)+'|'+e.from)}});cur=prev}
+  if(key!=='G'&&key!=='B'){cur=new Set([key]);for(let i=+ci+1;i<cols.length&&cur.size;i++){const nx=new Set();cols[i].edges.forEach((e,j)=>{if(cur.has(String(e.from))){edges.add(i+'|'+j);nodes.add(i+'|'+e.to);if(e.to!=='G'&&e.to!=='B')nx.add(String(e.to))}});cur=nx}}
+  svg.classList.add('dim');svg.querySelectorAll('.se').forEach(x=>{if(edges.has(x.dataset.id))x.classList.add('hl')});svg.querySelectorAll('.sn').forEach(x=>{if(nodes.has(x.dataset.id))x.classList.add('hl')});
+  if(info){info.innerHTML=scenNodeInfo(id).replace(/<div[^>]*>/g,' · ').replace(/<\/div>/g,'');info.title=info.textContent}}
+async function scenSave(patch){const acc=AC(UI.param);if(!acc)return;const c={...scenCfg(acc),...patch};
+  c.risk=Math.max(1,Math.round(num(c.risk))||300);c.perDay=clamp(Math.round(num(c.perDay))||1,1,4);c.days=clamp(Math.round(num(c.days))||1,1,scenMaxDays(c.perDay));
+  c.hit=clamp(num(c.hit),0,100);c.share2=clamp(num(c.share2),0,100);UI.scenSel=null;await put('accounts',{...acc,scenario:c})}
 
 /* ============ VIEW: Kalender (P&L + Prop) ============ */
 function vKalender(){
@@ -2343,6 +2584,9 @@ document.addEventListener('click',async e=>{
    case 'del-acct':if(b.dataset.confirm){await del('accounts',id);closeModal();toast('Konto gelöscht')}else{b.dataset.confirm=1;b.textContent='Wirklich löschen?'}break;
    case 'payout':payoutModal(AC(id));break;
    case 'subtab':setSubTab(b.dataset.v);break;
+   case 'sc-show':scenSave({show:b.dataset.v});break;
+   case 'sc-own':{const acc=AC(UI.param);if(acc)scenSave({risk:num(PRU(acc).risk_per_trade_phase1)})}break;
+   case 'sc-reset':{const acc=AC(UI.param);if(acc){const {scenario,...rest}=acc;UI.scenSel=null;await put('accounts',rest)}}break;
    case 'iv-topic':UI.iv.topic=b.dataset.v;render();break;
    case 'iv-start':ivSend('__start__');break;
    case 'iv-reset':UI.iv={topic:UI.iv.topic,chat:[],busy:false};render();break;
@@ -2382,6 +2626,7 @@ document.addEventListener('change',e=>{const t=e.target;
   if(t.id==='dashAcct'){UI.acct=t.value;saveUI();render()}
   else if(t.id==='tfYm'){UI.tFilter.ym=t.value;render()}else if(t.id==='tfAcct'){UI.tFilter.acct=t.value;render()}else if(t.id==='tfSetup'){UI.tFilter.setup=t.value;render()}
   else if(t.id==='propAcct'){UI.propAcct=t.value;saveUI();render()}
+  else if(/^sc_/.test(t.id||'')){const k=t.id.slice(3);scenSave({[k]:t.type==='checkbox'?t.checked:t.value})}
   else if(t.id==='jDate'&&t.value){UI.jDate=t.value;pending=false;render()}
   else if(t.id==='tplSel')applyTpl(t.value);
   else if(t.id==='f_rule_id')syncAcctForm();

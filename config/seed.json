@@ -119,6 +119,17 @@
       "hoch"
     ]
   },
+  "scenario_defaults": {
+    "_hinweis": "Startwerte der Szenario-Ansicht je Prop-Konto (Prop-Konten → Konto anklicken). Pro Konto in der App änderbar.",
+    "risk_per_trade": 300,
+    "trades_per_day": 2,
+    "days_ahead": 5,
+    "hit_rate_pct": 50,
+    "share_rr2_pct": 50,
+    "rr_big": 2,
+    "firm_rules": true,
+    "show": "prob"
+  },
   "instruments": [
     {
       "id": "MNQ",
